@@ -1,13 +1,11 @@
-import { formatDate } from "../utils/dateFormatter";
+import React from "react";
+import AuthLayout from "../components/templates/AuthLayout";
+import LoginForm from "../components/organisms/LoginForm";
 
 export default function Home() {
-  const currentDate = new Date();
-  const formattedDate = formatDate(currentDate);
-
   return (
-    <div>
-      <h1>今日の日付</h1>
-      <p>{formattedDate}</p>
-    </div>
+    <AuthLayout title="ログイン">
+      <LoginForm />
+    </AuthLayout>
   );
 }

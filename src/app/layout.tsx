@@ -1,5 +1,6 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import { Metadata } from "next";
+import { Providers } from "../lib/providers";
 
 export const metadata: Metadata = {
   title: "オンラインフラワーショップ",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body>
-        <ChakraProvider>{children}</ChakraProvider>
+        <Providers>
+          <ChakraProvider>{children}</ChakraProvider>
+        </Providers>
       </body>
     </html>
   );

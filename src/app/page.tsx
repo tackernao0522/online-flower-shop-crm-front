@@ -1,11 +1,23 @@
-import React from "react";
-import AuthLayout from "../components/templates/AuthLayout";
-import LoginForm from "../components/organisms/LoginForm";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "../store";
 
 export default function Home() {
-  return (
-    <AuthLayout title="ログイン">
-      <LoginForm />
-    </AuthLayout>
+  const router = useRouter();
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
   );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    } else {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
+
+  return null; // または適切なローディング表示
 }

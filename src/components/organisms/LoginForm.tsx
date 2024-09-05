@@ -8,7 +8,8 @@ import {
   useColorModeValue,
   Text,
   useBreakpointValue,
-  Spinner, // Spinnerコンポーネントをインポート
+  Spinner,
+  Box,
 } from "@chakra-ui/react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -25,7 +26,7 @@ const LoginForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // ローディング状態を管理するstateを追加
+  const [loading, setLoading] = useState(false);
 
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated
@@ -55,7 +56,7 @@ const LoginForm: React.FC = () => {
       };
 
       checkLocalStorage();
-      const interval = setInterval(checkLocalStorage, 1000); // 1秒ごとにチェック
+      const interval = setInterval(checkLocalStorage, 1000);
 
       return () => clearInterval(interval);
     }
@@ -64,13 +65,13 @@ const LoginForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true); // ログイン処理が始まるときにローディング状態をtrueに設定
+    setLoading(true);
 
     if (isAuthenticated) {
       setError(
         "既にログインしています。新しくログインするには一度ログアウトしてください。"
       );
-      setLoading(false); // エラーメッセージが表示された後、ローディングを停止
+      setLoading(false);
       return;
     }
 
@@ -133,7 +134,7 @@ const LoginForm: React.FC = () => {
         );
       }
     } finally {
-      setLoading(false); // ログイン処理が完了したらローディング状態をfalseに設定
+      setLoading(false);
     }
   };
 
@@ -142,8 +143,8 @@ const LoginForm: React.FC = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <VStack spacing={4} align="stretch">
+    <Box as="form" onSubmit={handleSubmit} width="100%">
+      <VStack spacing={{ base: 4, md: 5 }} align="stretch">
         <FormField
           label="メールアドレス"
           name="email"
@@ -161,34 +162,35 @@ const LoginForm: React.FC = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <Checkbox size={["sm", "md"]}>ログイン状態を保持する</Checkbox>
+        <Checkbox size={{ base: "sm", md: "md" }}>
+          ログイン状態を保持する
+        </Checkbox>
         <Button
           type="submit"
           colorScheme="blue"
           size={buttonSize}
           width="100%"
-          disabled={loading} // ローディング中はボタンを無効化
-        >
-          {loading ? <Spinner size="sm" /> : "ログイン"}{" "}
-          {/* ローディング中はSpinnerを表示 */}
+          disabled={loading}
+          height={{ base: "40px", md: "48px" }}
+          fontSize={{ base: "md", md: "lg" }}>
+          {loading ? <Spinner size="sm" /> : "ログイン"}
         </Button>
         {error && (
-          <Text color="red.500" fontSize={["xs", "sm"]}>
+          <Text color="red.500" fontSize={{ base: "sm", md: "md" }}>
             {error}
           </Text>
         )}
         <Flex
           justify="space-between"
-          fontSize={["xs", "sm"]}
-          flexDirection={["column", "row"]}
-          align={["stretch", "center"]}>
-          <Link color={linkColor} mb={[2, 0]}>
-            パスワードを忘れた場合
-          </Link>
+          fontSize={{ base: "sm", md: "md" }}
+          flexDirection={{ base: "column", sm: "row" }}
+          align={{ base: "stretch", sm: "center" }}
+          gap={2}>
+          <Link color={linkColor}>パスワードを忘れた場合</Link>
           <Link color={linkColor}>新規登録</Link>
         </Flex>
       </VStack>
-    </form>
+    </Box>
   );
 };
 

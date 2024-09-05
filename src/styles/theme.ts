@@ -1,3 +1,5 @@
+// src/styles/theme.ts
+
 import { extendTheme } from "@chakra-ui/react";
 
 const theme = extendTheme({
@@ -30,6 +32,59 @@ const theme = extendTheme({
         }),
       },
     },
+    Heading: {
+      baseStyle: {
+        fontWeight: "bold",
+      },
+      sizes: {
+        xl: {
+          fontSize: ["24px", "28px", "32px"],
+          lineHeight: ["32px", "36px", "40px"],
+        },
+        lg: {
+          fontSize: ["20px", "22px", "24px"],
+          lineHeight: ["28px", "30px", "32px"],
+        },
+        md: {
+          fontSize: ["18px", "20px", "22px"],
+          lineHeight: ["24px", "26px", "28px"],
+        },
+        sm: {
+          fontSize: ["16px", "18px", "20px"],
+          lineHeight: ["22px", "24px", "26px"],
+        },
+      },
+    },
+    Text: {
+      baseStyle: {
+        fontSize: ["14px", "16px"],
+        lineHeight: ["20px", "24px"],
+      },
+    },
+  },
+  // 横向き用のスタイルを追加
+  styles: {
+    global: (props) => ({
+      body: {
+        bg: "gray.50",
+        color: "gray.800",
+      },
+      // 横向き時のスタイル
+      "@media (orientation: landscape) and (max-height: 500px)": {
+        "html, body": {
+          fontSize: "0.9em",
+        },
+      },
+    }),
+  },
+  breakpoints: {
+    sm: "30em", // 480px
+    md: "48em", // 768px
+    lg: "62em", // 992px
+    xl: "80em", // 1280px
+    "2xl": "96em", // 1536px
+    // 横向き用のブレークポイントを追加
+    landscape: { raw: "(orientation: landscape) and (max-height: 500px)" },
   },
 });
 

@@ -15,7 +15,7 @@ interface AuthLayoutProps {
 }
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
-  const bgColor = useColorModeValue("gray.50", "gray.800"); // ここを修正
+  const bgColor = useColorModeValue("gray.50", "gray.800");
   const boxBgColor = useColorModeValue("white", "gray.700");
   const boxWidth = useBreakpointValue({
     base: "90%",

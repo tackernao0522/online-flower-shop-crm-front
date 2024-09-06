@@ -41,27 +41,6 @@ const LoginForm: React.FC = () => {
     }
   }, [isAuthenticated, router]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const checkLocalStorage = () => {
-        try {
-          const storedToken = localStorage.getItem("token");
-          console.log(
-            "Stored token in LoginForm during interval check:",
-            storedToken
-          );
-        } catch (e) {
-          console.error("Error reading from localStorage in LoginForm:", e);
-        }
-      };
-
-      checkLocalStorage();
-      const interval = setInterval(checkLocalStorage, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -91,40 +70,27 @@ const LoginForm: React.FC = () => {
         }
       );
 
-      console.log("Full login response:", response);
-      console.log("Login response data:", response.data);
-
       if (response.data && response.data.accessToken) {
         const { accessToken, user } = response.data;
-        console.log("Saving token to localStorage:", accessToken);
-        console.log("User data to save:", user);
 
         if (typeof window !== "undefined") {
           try {
             localStorage.setItem("token", accessToken);
             localStorage.setItem("user", JSON.stringify(user));
-            console.log(
-              "Token and user saved to localStorage:",
-              localStorage.getItem("token"),
-              localStorage.getItem("user")
-            );
+            localStorage.setItem("userId", user.id);
           } catch (e) {
             console.error("Error saving to localStorage:", e);
           }
         }
 
-        console.log("Dispatching login action");
         dispatch(login({ token: accessToken, user }));
-        console.log("Dispatched login action, attempting to redirect...");
         router.push("/dashboard");
-        console.log("Redirect instruction sent");
       } else {
         throw new Error("Unexpected response from server.");
       }
     } catch (error) {
       console.error("Login Error:", error);
       if (axios.isAxiosError(error) && error.response) {
-        console.error("Response data:", error.response.data);
         setError(
           error.response.data.error?.message || "ログインに失敗しました。"
         );

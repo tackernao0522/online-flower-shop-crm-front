@@ -1,5 +1,3 @@
-// src/components/organisms/DashboardHeader.tsx
-
 import React from "react";
 import {
   Flex,
@@ -20,6 +18,9 @@ import {
 } from "@chakra-ui/react";
 import { SearchIcon, BellIcon, HamburgerIcon } from "@chakra-ui/icons";
 import LogoutButton from "../molecules/LogoutButton";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store";
+import { useUserOnlineStatus } from "../../hooks/useUserOnlineStatus";
 
 const DashboardHeader: React.FC = () => {
   const isLandscape = useBreakpointValue({ landscape: true });
@@ -28,6 +29,23 @@ const DashboardHeader: React.FC = () => {
     md: "md",
     landscape: "sm",
   });
+
+  const user = useSelector((state: RootState) => state.auth.user);
+
+  const {
+    data: onlineStatus,
+    isLoading,
+    isError,
+  } = useUserOnlineStatus(user?.id);
+
+  // オンラインステータスのローディングまたはエラー状態を処理
+  const badgeColor = isLoading
+    ? "yellow.500"
+    : isError
+    ? "red.500"
+    : onlineStatus?.is_online
+    ? "green.500"
+    : "gray.500";
 
   return (
     <Flex
@@ -92,7 +110,7 @@ const DashboardHeader: React.FC = () => {
           <Menu placement="bottom-end" strategy="fixed">
             <MenuButton as={Box} cursor="pointer">
               <Avatar size={iconSize}>
-                <AvatarBadge boxSize="1em" bg="green.500" />
+                <AvatarBadge boxSize="1em" bg={badgeColor} />
               </Avatar>
             </MenuButton>
             <Portal>

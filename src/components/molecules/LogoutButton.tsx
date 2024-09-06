@@ -6,14 +6,16 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { logout } from "../../features/auth/authSlice";
 import { MenuItem } from "@chakra-ui/react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const LogoutButton: React.FC = () => {
   const dispatch = useDispatch();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem("token"); // トークンをローカルストレージから取得
+      const token = localStorage.getItem("token");
 
       if (!token) {
         console.error("No token found, unable to logout");
@@ -26,22 +28,23 @@ const LogoutButton: React.FC = () => {
         {
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // トークンをAuthorizationヘッダーに追加
+            Authorization: `Bearer ${token}`,
           },
           withCredentials: true,
         }
       );
 
-      // Reduxのステートを更新し、ログアウト状態にする
       dispatch(logout());
 
-      // ローカルストレージからユーザーデータを削除
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("userId");
       }
 
-      // ログインページにリダイレクト
+      // オンラインステータスのキャッシュを無効化
+      queryClient.invalidateQueries(["onlineStatus"]);
+
       router.push("/login");
     } catch (error) {
       console.error("Logout Error:", error);

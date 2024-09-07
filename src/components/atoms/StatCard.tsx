@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
-import { Box, Text, HStack } from '@chakra-ui/react';
-import { ArrowUpIcon, ArrowDownIcon } from '@chakra-ui/icons';
+import React from "react";
+import { Box, Text, HStack } from "@chakra-ui/react";
+import { ArrowUpIcon, ArrowDownIcon } from "@chakra-ui/icons";
 
 interface StatCardProps {
   title: string;
@@ -20,11 +20,11 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change }) => (
     </Text>
     <HStack>
       {change > 0 ? (
-        <ArrowUpIcon color="green.500" />
+        <ArrowUpIcon color="green.500" data-testid="arrow-up" />
       ) : (
-        <ArrowDownIcon color="red.500" />
+        <ArrowDownIcon color="red.500" data-testid="arrow-down" />
       )}
-      <Text color={change > 0 ? 'green.500' : 'red.500'}>
+      <Text color={change > 0 ? "green.500" : "red.500"}>
         {Math.abs(change)}%
       </Text>
     </HStack>

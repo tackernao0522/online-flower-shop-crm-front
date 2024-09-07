@@ -41,4 +41,6 @@ const DashboardTemplate: React.FC = () => (
   </Container>
 );
 
+DashboardTemplate.displayName = "DashboardTemplate";
+
 export default DashboardTemplate;

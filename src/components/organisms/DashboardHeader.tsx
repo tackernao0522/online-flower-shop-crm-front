@@ -47,6 +47,18 @@ const DashboardHeader: React.FC = () => {
     ? "green.500"
     : "gray.500";
 
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("Search query:", event.target.value);
+  };
+
+  const handleNotificationClick = () => {
+    console.log("Notification clicked");
+  };
+
+  const handleOptionSelect = (option: string) => {
+    console.log("Selected option:", option);
+  };
+
   return (
     <Flex
       direction={{ base: "column", sm: "row" }}
@@ -74,7 +86,12 @@ const DashboardHeader: React.FC = () => {
           <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.300" />
           </InputLeftElement>
-          <Input type="text" placeholder="検索..." />
+          <Input
+            type="text"
+            placeholder="検索..."
+            onChange={handleSearch}
+            data-testid="search-input"
+          />
         </InputGroup>
         <Flex gap={2} alignItems="center">
           <IconButton
@@ -82,6 +99,8 @@ const DashboardHeader: React.FC = () => {
             icon={<BellIcon />}
             variant="outline"
             size={iconSize}
+            onClick={handleNotificationClick}
+            data-testid="notification-button"
           />
           <Menu placement="bottom-end" strategy="fixed">
             <MenuButton
@@ -93,24 +112,36 @@ const DashboardHeader: React.FC = () => {
             />
             <Portal>
               <MenuList>
-                <MenuItem>配送管理</MenuItem>
-                <MenuItem>顧客対応履歴</MenuItem>
-                <MenuItem>キャンペーン管理</MenuItem>
-                <MenuItem>ユーザー管理</MenuItem>
-                <MenuItem>レポート・分析</MenuItem>
-                <MenuItem>eコマース連携</MenuItem>
-                <MenuItem>API管理</MenuItem>
-                <MenuItem>セキュリティ監査</MenuItem>
-                <MenuItem>バックアップと復旧</MenuItem>
-                <MenuItem>設定</MenuItem>
-                <MenuItem>ヘルプ・サポート</MenuItem>
+                {[
+                  "配送管理",
+                  "顧客対応履歴",
+                  "キャンペーン管理",
+                  "ユーザー管理",
+                  "レポート・分析",
+                  "eコマース連携",
+                  "API管理",
+                  "セキュリティ監査",
+                  "バックアップと復旧",
+                  "設定",
+                  "ヘルプ・サポート",
+                ].map((option) => (
+                  <MenuItem
+                    key={option}
+                    onClick={() => handleOptionSelect(option)}>
+                    {option}
+                  </MenuItem>
+                ))}
               </MenuList>
             </Portal>
           </Menu>
           <Menu placement="bottom-end" strategy="fixed">
             <MenuButton as={Box} cursor="pointer">
               <Avatar size={iconSize}>
-                <AvatarBadge boxSize="1em" bg={badgeColor} />
+                <AvatarBadge
+                  boxSize="1em"
+                  bg={badgeColor}
+                  data-testid="avatar-badge"
+                />
               </Avatar>
             </MenuButton>
             <Portal>

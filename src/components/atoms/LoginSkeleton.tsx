@@ -11,3 +11,7 @@ export const LoginSkeleton: React.FC = () => (
     <SkeletonText mt="4" noOfLines={1} spacing="4" skeletonHeight="2" />
   </Box>
 );
+
+LoginSkeleton.displayName = "LoginSkeleton";
+
+export default LoginSkeleton;

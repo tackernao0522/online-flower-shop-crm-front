@@ -2,6 +2,7 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { Metadata } from "next";
 import { Providers } from "../lib/providers";
 import AuthCheck from "../components/AuthCheck";
+import RootLayoutClient from "./RootLayoutClient";
 
 export const metadata: Metadata = {
   title: "オンラインフラワーショップ",
@@ -17,8 +18,12 @@ export default function RootLayout({
     <html lang="ja">
       <body>
         <Providers>
-          <AuthCheck />
-          <ChakraProvider>{children}</ChakraProvider>
+          <ChakraProvider>
+            <RootLayoutClient>
+              <AuthCheck />
+              {children}
+            </RootLayoutClient>
+          </ChakraProvider>
         </Providers>
       </body>
     </html>

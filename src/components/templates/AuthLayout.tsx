@@ -7,14 +7,20 @@ import {
   Heading,
   useColorModeValue,
   useBreakpointValue,
+  Skeleton,
 } from "@chakra-ui/react";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
   title: string;
+  isLoading?: boolean;
 }
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
+const AuthLayout: React.FC<AuthLayoutProps> = ({
+  children,
+  title,
+  isLoading = false,
+}) => {
   const bgColor = useColorModeValue("gray.50", "gray.800");
   const boxBgColor = useColorModeValue("white", "gray.700");
   const boxWidth = useBreakpointValue({
@@ -41,9 +47,13 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title }) => {
         boxShadow="lg"
         width={boxWidth}
         maxWidth="400px">
-        <Heading as="h1" size={headingSize} textAlign="center" mb={6}>
-          {title}
-        </Heading>
+        {isLoading ? (
+          <Skeleton height="36px" width="80%" mx="auto" />
+        ) : (
+          <Heading as="h1" size={headingSize} textAlign="center" mb={6}>
+            {title}
+          </Heading>
+        )}
         {children}
       </Box>
     </Flex>

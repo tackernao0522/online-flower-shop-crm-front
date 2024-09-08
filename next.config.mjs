@@ -30,9 +30,6 @@ const nextConfig = {
       },
     ];
   },
-  experimental: {
-    appDir: true, // Appディレクトリを使用する場合の設定
-  },
   swcMinify: true,
 };
 

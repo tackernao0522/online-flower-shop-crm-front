@@ -1,14 +1,15 @@
 import "@testing-library/jest-dom";
 
-const nextJest = require("next/jest");
-
-const createJestConfig = nextJest({
-  dir: "./",
+Object.defineProperty(window, "matchMedia", {
+  writable: true,
+  value: jest.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
 });
-
-const customJestConfig = {
-  setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
-  testEnvironment: "jest-environment-jsdom",
-};
-
-module.exports = createJestConfig(customJestConfig);

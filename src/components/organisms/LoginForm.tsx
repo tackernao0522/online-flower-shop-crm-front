@@ -139,7 +139,13 @@ const LoginForm: React.FC = () => {
           disabled={loading}
           height={{ base: "40px", md: "48px" }}
           fontSize={{ base: "md", md: "lg" }}>
-          {loading ? <Spinner size="sm" /> : "ログイン"}
+          {loading ? (
+            <Spinner size="sm" role="status">
+              <span className="sr-only">Loading...</span>
+            </Spinner>
+          ) : (
+            "ログイン"
+          )}
         </Button>
         {error && (
           <Text color="red.500" fontSize={{ base: "sm", md: "md" }}>

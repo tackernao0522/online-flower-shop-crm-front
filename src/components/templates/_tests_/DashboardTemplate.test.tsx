@@ -3,6 +3,21 @@ import { render, screen } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
 import DashboardTemplate from "../DashboardTemplate";
 
+// useLoading フックをモック
+jest.mock("../../../hooks/useLoading", () => ({
+  useLoading: jest.fn(() => false),
+}));
+
+// スケルトンコンポーネントをモック
+jest.mock("../../atoms/SkeletonComponents", () => ({
+  CardSkeleton: () => <div data-testid="card-skeleton">CardSkeleton</div>,
+  StatCardSkeleton: () => (
+    <div data-testid="stat-card-skeleton">StatCardSkeleton</div>
+  ),
+  TableSkeleton: () => <div data-testid="table-skeleton">TableSkeleton</div>,
+  ChartSkeleton: () => <div data-testid="chart-skeleton">ChartSkeleton</div>,
+}));
+
 // モックコンポーネントを作成
 jest.mock("../../organisms/DashboardHeader", () => {
   const DashboardHeader = () => (

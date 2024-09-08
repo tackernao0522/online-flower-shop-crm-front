@@ -1,10 +1,10 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import LoginPage from "../page";
 
-// モックの設定
+// すべての jest.mock 呼び出しをファイルの最上部に移動
 jest.mock("next/navigation", () => ({
   useRouter: jest.fn(),
 }));
@@ -13,16 +13,40 @@ jest.mock("react-redux", () => ({
   useSelector: jest.fn(),
 }));
 
-jest.mock(
-  "../../../components/templates/AuthLayout",
-  () =>
-    ({ children }: { children: React.ReactNode }) =>
-      <div data-testid="auth-layout">{children}</div>
-);
+jest.mock("@chakra-ui/react", () => ({
+  ChakraProvider: ({ children }) => children,
+}));
 
-jest.mock("../../../components/organisms/LoginForm", () => () => (
-  <div data-testid="login-form">Login Form</div>
-));
+jest.mock("../../../components/templates/AuthLayout", () => ({
+  __esModule: true,
+  default: ({ children }) => <div data-testid="auth-layout">{children}</div>,
+}));
+
+jest.mock("../../../components/organisms/LoginForm", () => ({
+  __esModule: true,
+  default: () => <div data-testid="login-form">Login Form</div>,
+}));
+
+jest.mock("../../../components/atoms/LoginSkeleton", () => ({
+  __esModule: true,
+  default: () => <div data-testid="login-skeleton">Login Skeleton</div>,
+}));
+
+// モックコンポーネントの displayName を設定
+const MockAuthLayout = jest.requireMock(
+  "../../../components/templates/AuthLayout"
+).default;
+MockAuthLayout.displayName = "MockAuthLayout";
+
+const MockLoginForm = jest.requireMock(
+  "../../../components/organisms/LoginForm"
+).default;
+MockLoginForm.displayName = "MockLoginForm";
+
+const MockLoginSkeleton = jest.requireMock(
+  "../../../components/atoms/LoginSkeleton"
+).default;
+MockLoginSkeleton.displayName = "MockLoginSkeleton";
 
 describe("LoginPageコンポーネント", () => {
   const mockPush = jest.fn();
@@ -33,41 +57,41 @@ describe("LoginPageコンポーネント", () => {
     mockUseRouter.mockReturnValue({ push: mockPush });
     mockUseSelector.mockClear();
     mockPush.mockClear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("認証済みの場合、/dashboardにリダイレクトされること", () => {
-    // isAuthenticatedがtrueの場合
     mockUseSelector.mockReturnValue(true);
-
     render(<LoginPage />);
-
-    // /dashboardにリダイレクトされることを確認
     expect(mockPush).toHaveBeenCalledWith("/dashboard");
-
-    // ログインフォームが表示されていないことを確認
     expect(screen.queryByTestId("login-form")).not.toBeInTheDocument();
   });
 
-  it("未認証の場合、ログインフォームが表示されること", () => {
-    // isAuthenticatedがfalseの場合
+  it("未認証の場合、ログインフォームが表示されること", async () => {
     mockUseSelector.mockReturnValue(false);
-
     render(<LoginPage />);
-
-    // /dashboardにリダイレクトされていないことを確認
     expect(mockPush).not.toHaveBeenCalled();
 
-    // ログインフォームが表示されることを確認
+    // 最初はスケルトンが表示される
+    expect(screen.getByTestId("login-skeleton")).toBeInTheDocument();
+
+    // タイマーを進める
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // スケルトンが消えてログインフォームが表示される
+    expect(screen.queryByTestId("login-skeleton")).not.toBeInTheDocument();
     expect(screen.getByTestId("login-form")).toBeInTheDocument();
   });
 
   it("AuthLayoutが正しく表示されること", () => {
-    // isAuthenticatedがfalseの場合
     mockUseSelector.mockReturnValue(false);
-
     render(<LoginPage />);
-
-    // AuthLayoutが表示されることを確認
     expect(screen.getByTestId("auth-layout")).toBeInTheDocument();
   });
 });

@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import AuthLayout from "../../components/templates/AuthLayout";
 import LoginForm from "../../components/organisms/LoginForm";
-import { LoginSkeleton } from "../../components/atoms/LoginSkeleton";
+import LoginSkeleton from "../../components/atoms/LoginSkeleton";
 
 export default function LoginPage() {
   const router = useRouter();

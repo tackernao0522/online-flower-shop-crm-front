@@ -166,4 +166,6 @@ const LoginForm: React.FC = () => {
   );
 };
 
+LoginForm.displayName = "LoginForm";
+
 export default LoginForm;

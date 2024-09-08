@@ -159,4 +159,6 @@ const DashboardHeader: React.FC = () => {
   );
 };
 
+DashboardHeader.displayName = "DashboardHeader";
+
 export default DashboardHeader;

@@ -22,9 +22,13 @@ jest.mock("../../../hooks/useUserOnlineStatus", () => ({
   useUserOnlineStatus: jest.fn(),
 }));
 
-jest.mock("../../molecules/LogoutButton", () => () => (
-  <div data-testid="logout-button">ログアウト</div>
-));
+jest.mock("../../molecules/LogoutButton", () => {
+  const MockLogoutButton = () => (
+    <div data-testid="logout-button">ログアウト</div>
+  );
+  MockLogoutButton.displayName = "MockLogoutButton";
+  return MockLogoutButton;
+});
 
 describe("DashboardHeader", () => {
   beforeEach(() => {

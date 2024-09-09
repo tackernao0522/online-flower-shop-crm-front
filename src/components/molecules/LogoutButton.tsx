@@ -14,14 +14,14 @@ const LogoutButton: React.FC = () => {
   const queryClient = useQueryClient();
 
   const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      console.error("No token found, unable to logout");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        console.error("No token found, unable to logout");
-        return;
-      }
-
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout`,
         {},
@@ -36,11 +36,9 @@ const LogoutButton: React.FC = () => {
 
       dispatch(logout());
 
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userId");
-      }
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("userId");
 
       // オンラインステータスのキャッシュを無効化
       queryClient.invalidateQueries(["onlineStatus"]);

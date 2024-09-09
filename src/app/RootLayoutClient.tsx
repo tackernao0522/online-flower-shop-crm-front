@@ -12,12 +12,17 @@ const RootLayoutClient: React.FC<RootLayoutClientProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsLoading(false);
-  }, []);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []); // 空の依存配列を使用
 
   if (isLoading) {
     return (
       <Box
+        data-testid="loading-box"
         display="flex"
         justifyContent="center"
         alignItems="center"

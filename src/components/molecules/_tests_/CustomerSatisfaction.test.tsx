@@ -1,10 +1,10 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
 import { ChakraProvider } from "@chakra-ui/react";
-import CustomerSatisfaction from "./CustomerSatisfaction";
-import * as useLoadingHook from "../../hooks/useLoading";
+import CustomerSatisfaction from "../CustomerSatisfaction";
+import * as useLoadingHook from "../../../hooks/useLoading";
 
-jest.mock("../../hooks/useLoading");
+jest.mock("../../../hooks/useLoading");
 
 describe("CustomerSatisfaction", () => {
   it("ローディング中にスケルトンを表示する", () => {

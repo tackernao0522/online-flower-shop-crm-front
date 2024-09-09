@@ -5,7 +5,7 @@ import DashboardTemplate from "../DashboardTemplate";
 
 // useLoading フックをモック
 jest.mock("../../../hooks/useLoading", () => ({
-  useLoading: jest.fn(() => false),
+  useLoading: jest.fn(),
 }));
 
 // スケルトンコンポーネントをモック
@@ -94,7 +94,23 @@ const renderWithChakra = (component: React.ReactElement) => {
 };
 
 describe("DashboardTemplate", () => {
-  it("すべての子コンポーネントが正しくレンダリングされること", () => {
+  it("ローディング中にスケルトンコンポーネントが表示されること", () => {
+    (require("../../../hooks/useLoading") as any).useLoading.mockReturnValue(
+      true
+    );
+    renderWithChakra(<DashboardTemplate />);
+
+    expect(screen.getByTestId("mock-dashboard-header")).toBeInTheDocument();
+    expect(screen.getAllByTestId("stat-card-skeleton")).toHaveLength(3);
+    expect(screen.getByTestId("table-skeleton")).toBeInTheDocument();
+    expect(screen.getByTestId("chart-skeleton")).toBeInTheDocument();
+    expect(screen.getAllByTestId("card-skeleton")).toHaveLength(5);
+  });
+
+  it("ローディング完了後に全てのコンポーネントが表示されること", () => {
+    (require("../../../hooks/useLoading") as any).useLoading.mockReturnValue(
+      false
+    );
     renderWithChakra(<DashboardTemplate />);
 
     expect(screen.getByTestId("mock-dashboard-header")).toBeInTheDocument();
@@ -112,25 +128,30 @@ describe("DashboardTemplate", () => {
     ).toBeInTheDocument();
   });
 
-  it("正しいChakra UIコンポーネントが使用されていること", () => {
-    renderWithChakra(<DashboardTemplate />);
+  it("正しい構造でコンポーネントがレンダリングされていること", () => {
+    (require("../../../hooks/useLoading") as any).useLoading.mockReturnValue(
+      false
+    );
+    const { container } = renderWithChakra(<DashboardTemplate />);
 
-    const container = screen
-      .getByTestId("mock-dashboard-header")
-      .closest("div");
-    expect(container).toBeTruthy();
-
-    // Chakra UIのクラス名確認を削除
+    // 子要素が存在することを確認
+    expect(container.firstChild?.childNodes.length).toBeGreaterThan(1);
   });
 
-  it("レスポンシブデザインのプロパティが適用されていること", () => {
-    renderWithChakra(<DashboardTemplate />);
+  it("レスポンシブデザインのためのコンポーネントが存在すること", () => {
+    (require("../../../hooks/useLoading") as any).useLoading.mockReturnValue(
+      false
+    );
+    const { container } = renderWithChakra(<DashboardTemplate />);
 
-    const container = screen
-      .getByTestId("mock-dashboard-header")
-      .closest("div");
-    expect(container).toBeTruthy();
-    // Note: JSDOMの制限により、実際のスタイルは適用されません。
-    // ここでは、Containerコンポーネントが正しくレンダリングされていることのみを確認します。
+    const mainContainer = container.firstChild as HTMLElement;
+
+    // 子要素が存在することを確認
+    const children = mainContainer.childNodes;
+    expect(children.length).toBeGreaterThan(1);
+
+    // SimpleGridコンポーネントの代わりに使用されているdiv要素の数を確認
+    const divElements = mainContainer.querySelectorAll("div");
+    expect(divElements.length).toBeGreaterThan(4); // DashboardHeader + 少なくとも4つのSimpleGrid
   });
 });

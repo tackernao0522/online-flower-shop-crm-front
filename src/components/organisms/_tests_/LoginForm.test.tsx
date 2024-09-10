@@ -137,4 +137,91 @@ describe("LoginForm", () => {
 
     expect(screen.queryByRole("form")).not.toBeInTheDocument();
   });
+
+  // 新しく追加したテストケース
+
+  it("既にログインしている場合、エラーメッセージが表示されること", async () => {
+    store = configureStore({
+      reducer: {
+        auth: authReducer,
+      },
+      preloadedState: {
+        auth: { isAuthenticated: true, token: "fake-token", user: null },
+      },
+    });
+
+    renderLoginForm();
+
+    await waitFor(() => {
+      expect(
+        screen.queryByText(
+          "既にログインしています。新しくログインするには一度ログアウトしてください。"
+        )
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("ローカルストレージへの書き込みエラーが発生した場合、エラーメッセージが表示されること", async () => {
+    const setItemMock = jest.spyOn(Storage.prototype, "setItem");
+    const consoleErrorMock = jest.spyOn(console, "error").mockImplementation();
+
+    setItemMock.mockImplementation(() => {
+      throw new Error("Storage error");
+    });
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: { accessToken: "fake-token", user: { id: "1", name: "Test User" } },
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText("メールアドレス"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("パスワード"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
+
+    await waitFor(() => {
+      expect(consoleErrorMock).toHaveBeenCalledWith(
+        "Error saving to localStorage:",
+        expect.any(Error)
+      );
+    });
+
+    setItemMock.mockRestore();
+    consoleErrorMock.mockRestore();
+  });
+
+  it("サーバーから予期しないレスポンスが返ってきた場合、エラーメッセージが表示されること", async () => {
+    const consoleErrorMock = jest.spyOn(console, "error").mockImplementation();
+
+    // サーバーから期待するレスポンスが返ってこない場合のシミュレーション
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {}, // 期待するトークンとユーザー情報が返ってこない
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText("メールアドレス"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("パスワード"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "ログイン" }));
+
+    await waitFor(
+      () => {
+        const errorMessages = screen.queryAllByText(
+          "Unexpected response from server."
+        );
+        expect(errorMessages.length).toBeGreaterThan(0);
+      },
+      { timeout: 2000 }
+    );
+
+    consoleErrorMock.mockRestore();
+  });
 });

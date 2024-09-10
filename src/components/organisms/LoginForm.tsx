@@ -80,6 +80,9 @@ const LoginForm: React.FC = () => {
             localStorage.setItem("userId", user.id);
           } catch (e) {
             console.error("Error saving to localStorage:", e);
+            setError("ローカルストレージへの保存中にエラーが発生しました。");
+            setLoading(false);
+            return;
           }
         }
 
@@ -94,6 +97,8 @@ const LoginForm: React.FC = () => {
         setError(
           error.response.data.error?.message || "ログインに失敗しました。"
         );
+      } else if (error.message === "Unexpected response from server.") {
+        setError("Unexpected response from server.");
       } else {
         setError(
           "ログインに失敗しました。メールアドレスとパスワードを確認してください。"
@@ -105,7 +110,11 @@ const LoginForm: React.FC = () => {
   };
 
   if (isAuthenticated) {
-    return null;
+    return (
+      <Text color="red.500" fontSize={{ base: "sm", md: "md" }}>
+        既にログインしています。新しくログインするには一度ログアウトしてください。
+      </Text>
+    );
   }
 
   return (

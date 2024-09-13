@@ -21,6 +21,7 @@ import LogoutButton from "../molecules/LogoutButton";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { useUserOnlineStatus } from "../../hooks/useUserOnlineStatus";
+import { useRouter } from "next/navigation";
 
 const DashboardHeader: React.FC = () => {
   const isLandscape = useBreakpointValue({ landscape: true });
@@ -55,7 +56,12 @@ const DashboardHeader: React.FC = () => {
     console.log("Notification clicked");
   };
 
+  const router = useRouter();
+
   const handleOptionSelect = (option: string) => {
+    if (option === "顧客管理") {
+      router.push("/customers");
+    }
     console.log("Selected option:", option);
   };
 
@@ -113,6 +119,7 @@ const DashboardHeader: React.FC = () => {
             <Portal>
               <MenuList>
                 {[
+                  "顧客管理",
                   "配送管理",
                   "顧客対応履歴",
                   "キャンペーン管理",

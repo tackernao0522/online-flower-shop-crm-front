@@ -1,11 +1,12 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { createWrapper } from "next-redux-wrapper";
 import authReducer from "../features/auth/authSlice";
-
+import customersReducer from "../features/customers/customersSlice";
 export const makeStore = () =>
   configureStore({
     reducer: {
       auth: authReducer,
+      customers: customersReducer,
     },
   });
 
@@ -15,5 +16,4 @@ export type AppDispatch = AppStore["dispatch"];
 
 export const wrapper = createWrapper<AppStore>(makeStore);
 
-// ここに store をエクスポートする行を追加
 export const store = makeStore();

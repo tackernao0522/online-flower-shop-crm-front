@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { useBreakpointValue } from "@chakra-ui/react";
 import DashboardHeader from "../DashboardHeader";
 import { useUserOnlineStatus } from "../../../hooks/useUserOnlineStatus";
+import { useRouter } from "next/navigation";
 
 // モックの設定
 jest.mock("react-redux", () => ({
@@ -29,6 +30,15 @@ jest.mock("../../molecules/LogoutButton", () => {
   MockLogoutButton.displayName = "MockLogoutButton";
   return MockLogoutButton;
 });
+
+// useRouterのモック設定（next/navigation版）
+jest.mock("next/navigation", () => ({
+  useRouter: jest.fn().mockReturnValue({
+    push: jest.fn(),
+    prefetch: jest.fn(),
+    pathname: "/dashboard",
+  }),
+}));
 
 describe("DashboardHeader", () => {
   beforeEach(() => {
@@ -110,7 +120,6 @@ describe("DashboardHeader", () => {
     );
   });
 
-  // 新しいテストケース
   it("検索入力が機能すること", () => {
     const consoleSpy = jest.spyOn(console, "log");
     render(<DashboardHeader />);
@@ -140,14 +149,12 @@ describe("DashboardHeader", () => {
     consoleSpy.mockRestore();
   });
 
-  // 新しいテスト: useBreakpointValueの動作確認
   it("useBreakpointValueのレスポンシブな値が正しく動作すること", () => {
     (useBreakpointValue as jest.Mock).mockReturnValue("lg");
     render(<DashboardHeader />);
     expect(screen.getByPlaceholderText("検索...")).toBeInTheDocument();
   });
 
-  // 新しいテスト: エラーハンドリング
   it("オンラインステータスのエラーハンドリングが機能すること", () => {
     (useUserOnlineStatus as jest.Mock).mockReturnValue({
       data: null,

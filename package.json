@@ -15,7 +15,8 @@
     "test:coverage": "jest --coverage",
     "test:coverage-detail": "jest --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
     "test:coverage-html": "jest --coverage --coverageReporters=\"html\" --coverageReporters=\"text-summary\"",
-    "test:debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch"
+    "test:debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand --watch",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.1.1",

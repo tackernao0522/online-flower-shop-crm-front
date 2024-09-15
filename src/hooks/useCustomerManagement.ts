@@ -372,5 +372,6 @@ export const useCustomerManagement = () => {
     scrollToTop,
     ref,
     setSearchTerm,
+    fetchCustomersData,
   };
 };

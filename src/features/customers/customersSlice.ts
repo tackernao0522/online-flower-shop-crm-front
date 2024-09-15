@@ -157,6 +157,7 @@ const customersSlice = createSlice({
         addCustomer.fulfilled,
         (state, action: PayloadAction<Customer>) => {
           state.customers.push(action.payload);
+          state.totalCount += 1;
         }
       )
       .addCase(
@@ -176,6 +177,7 @@ const customersSlice = createSlice({
           state.customers = state.customers.filter(
             (customer) => customer.id !== action.payload
           );
+          state.totalCount -= 1;
         }
       );
   },

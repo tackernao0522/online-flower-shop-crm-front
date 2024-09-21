@@ -5,11 +5,19 @@ import DashboardStats from "../DashboardStats";
 import { Provider } from "react-redux";
 import configureStore from "redux-mock-store";
 
+// モックストアを作成
 const mockStore = configureStore([]);
 
 jest.mock("../../../hooks/useCustomerManagement", () => ({
   useCustomerManagement: jest.fn(() => ({
-    loading: false,
+    loading: false, // ロードが完了した状態を設定
+  })),
+}));
+
+jest.mock("../../../hooks/useWebSocket", () => ({
+  useWebSocket: jest.fn(() => ({
+    totalCount: 1234, // テスト用の顧客総数
+    changeRate: 2, // テスト用の変化率
   })),
 }));
 
@@ -51,14 +59,18 @@ describe("DashboardStats コンポーネント", () => {
   };
 
   it("ローディング中にスケルトンを表示する", () => {
-    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue({ loading: true });
+    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue(
+      { loading: true }
+    );
     renderWithProviders(<DashboardStats />);
 
     expect(screen.getAllByTestId("stat-card-skeleton")).toHaveLength(3);
   });
 
   it("ローディング完了後に統計カードを表示する", () => {
-    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue({ loading: false });
+    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue(
+      { loading: false }
+    );
     renderWithProviders(<DashboardStats />);
 
     expect(screen.getByTestId("stat-card-顧客数")).toBeInTheDocument();
@@ -67,7 +79,9 @@ describe("DashboardStats コンポーネント", () => {
   });
 
   it("統計カードに正しい情報が表示される", () => {
-    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue({ loading: false });
+    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue(
+      { loading: false }
+    );
     renderWithProviders(<DashboardStats />);
 
     expect(screen.getByTestId("stat-card-顧客数")).toHaveTextContent(
@@ -82,7 +96,9 @@ describe("DashboardStats コンポーネント", () => {
   });
 
   it("レスポンシブデザインが適用されている", () => {
-    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue({ loading: false });
+    require("../../../hooks/useCustomerManagement").useCustomerManagement.mockReturnValue(
+      { loading: false }
+    );
     renderWithProviders(<DashboardStats />);
 
     const grid = screen.getByTestId("dashboard-stats-grid");

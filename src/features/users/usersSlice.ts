@@ -6,16 +6,23 @@ const initialState: UserState = {
   users: [],
   status: "idle",
   error: null,
+  currentPage: 1,
+  totalPages: 1,
+  totalCount: 0,
 };
 
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
-  async (_, { rejectWithValue }) => {
+  async (
+    { page, limit = 10 }: { page: number; limit?: number },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          params: { page, limit },
         }
       );
       return response.data;
@@ -98,18 +105,23 @@ const usersSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchUsers.fulfilled, (state, action: PayloadAction<any>) => {
-        console.log("Fulfilled payload:", action.payload);
         state.status = "succeeded";
-        state.users = action.payload.data; // dataプロパティのみを保存
+        state.users =
+          state.currentPage === 1
+            ? action.payload.data
+            : [...state.users, ...action.payload.data];
+        state.currentPage = action.payload.meta.currentPage;
+        state.totalPages = action.payload.meta.totalPages;
+        state.totalCount = action.payload.meta.totalCount;
         state.error = null;
       })
       .addCase(fetchUsers.rejected, (state, action) => {
-        console.error("Rejected action:", action);
         state.status = "failed";
         state.error = (action.payload as string) || "An error occurred";
       })
       .addCase(addUser.fulfilled, (state, action: PayloadAction<User>) => {
-        state.users.push(action.payload);
+        state.users.unshift(action.payload);
+        state.totalCount += 1;
       })
       .addCase(updateUser.fulfilled, (state, action: PayloadAction<User>) => {
         const index = state.users.findIndex(
@@ -121,6 +133,7 @@ const usersSlice = createSlice({
       })
       .addCase(deleteUser.fulfilled, (state, action: PayloadAction<string>) => {
         state.users = state.users.filter((user) => user.id !== action.payload);
+        state.totalCount -= 1;
       });
   },
 });

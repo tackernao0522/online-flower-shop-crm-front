@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Flex,
@@ -28,6 +28,8 @@ import {
   Checkbox,
   Text,
   Spinner,
+  Center,
+  IconButton,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -36,6 +38,7 @@ import {
   ArrowBackIcon,
   ViewIcon,
   LockIcon,
+  ArrowUpIcon,
 } from "@chakra-ui/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -53,6 +56,7 @@ import {
   deleteRole,
 } from "@/features/roles/rolesSlice";
 import { User, UserState } from "@/types/user";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 interface Role {
   id: number;
@@ -69,11 +73,25 @@ const UserManagementTemplate: React.FC = () => {
     "detail"
   );
   const [currentView, setCurrentView] = useState<"users" | "roles">("users");
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
 
   const usersState = useSelector((state: RootState) => state.users);
-  const { users, status, error } = usersState;
+  const { users, status, error, currentPage, totalPages, totalCount } =
+    usersState;
   const roles = useSelector((state: RootState) => state.roles.roles);
   const user = useSelector((state: RootState) => state.auth.user);
+
+  const loadMore = useCallback(() => {
+    if (currentPage < totalPages) {
+      dispatch(fetchUsers({ page: currentPage + 1 }));
+    } else {
+      setHasMore(false);
+    }
+  }, [dispatch, currentPage, totalPages]);
+
+  const { lastElementRef } = useInfiniteScroll(loadMore);
 
   useEffect(() => {
     if (user?.role === "STAFF") {
@@ -84,16 +102,26 @@ const UserManagementTemplate: React.FC = () => {
   useEffect(() => {
     if (status === "idle") {
       console.log("Fetching users and roles...");
-      dispatch(fetchUsers()).then((action) => {
-        if (fetchUsers.fulfilled.match(action)) {
-          console.log("Fetched users:", action.payload);
-        } else if (fetchUsers.rejected.match(action)) {
-          console.error("Failed to fetch users:", action.error);
-        }
-      });
+      dispatch(fetchUsers({ page: 1 }));
       dispatch(fetchRoles());
     }
   }, [dispatch, status]);
+
+  useEffect(() => {
+    setTotalUsers(totalCount);
+  }, [totalCount]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.pageYOffset > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const permissions = [
     { id: 1, name: "顧客管理", actions: ["表示", "作成", "編集", "削除"] },
@@ -216,60 +244,76 @@ const UserManagementTemplate: React.FC = () => {
       </Flex>
 
       {users && users.length > 0 ? (
-        <Table variant="simple">
-          <Thead>
-            <Tr>
-              <Th>ID</Th>
-              <Th>ユーザー名</Th>
-              <Th>メールアドレス</Th>
-              <Th>役割</Th>
-              <Th>ステータス</Th>
-              <Th>アクション</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {users.map((user) => (
-              <Tr key={user.id}>
-                <Td>{user.id}</Td>
-                <Td>{user.username}</Td>
-                <Td>{user.email}</Td>
-                <Td>{user.role}</Td>
-                <Td>
-                  <Badge colorScheme={user.isActive ? "green" : "red"}>
-                    {user.isActive ? "アクティブ" : "非アクティブ"}
-                  </Badge>
-                </Td>
-                <Td>
-                  <HStack spacing={2}>
-                    <Button
-                      size="sm"
-                      leftIcon={<ViewIcon />}
-                      onClick={() => handleUserClick(user)}>
-                      詳細
-                    </Button>
-                    <Button
-                      size="sm"
-                      leftIcon={<EditIcon />}
-                      onClick={() => handleEditUser(user)}>
-                      編集
-                    </Button>
-                    <Button
-                      size="sm"
-                      leftIcon={<DeleteIcon />}
-                      colorScheme="red"
-                      onClick={() => dispatch(deleteUser(user.id))}>
-                      削除
-                    </Button>
-                  </HStack>
-                </Td>
+        <>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th>ID</Th>
+                <Th>ユーザー名</Th>
+                <Th>メールアドレス</Th>
+                <Th>役割</Th>
+                <Th>ステータス</Th>
+                <Th>アクション</Th>
               </Tr>
-            ))}
-          </Tbody>
-        </Table>
+            </Thead>
+            <Tbody>
+              {users.map((user, index) => (
+                <Tr
+                  key={user.id}
+                  ref={index === users.length - 1 ? lastElementRef : null}>
+                  <Td>{user.id}</Td>
+                  <Td>{user.username}</Td>
+                  <Td>{user.email}</Td>
+                  <Td>{user.role}</Td>
+                  <Td>
+                    <Badge colorScheme={user.isActive ? "green" : "red"}>
+                      {user.isActive ? "アクティブ" : "非アクティブ"}
+                    </Badge>
+                  </Td>
+                  <Td>
+                    <HStack spacing={2}>
+                      <Button
+                        size="sm"
+                        leftIcon={<ViewIcon />}
+                        onClick={() => handleUserClick(user)}>
+                        詳細
+                      </Button>
+                      <Button
+                        size="sm"
+                        leftIcon={<EditIcon />}
+                        onClick={() => handleEditUser(user)}>
+                        編集
+                      </Button>
+                      <Button
+                        size="sm"
+                        leftIcon={<DeleteIcon />}
+                        colorScheme="red"
+                        onClick={() => dispatch(deleteUser(user.id))}>
+                        削除
+                      </Button>
+                    </HStack>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+          <Flex justify="center" my={4}>
+            <Text color="red">
+              {!hasMore
+                ? `すべてのユーザーを表示しました (${totalUsers}名)`
+                : `${users.length}名のユーザーを表示中 (全${totalUsers}名)`}
+            </Text>
+          </Flex>
+        </>
       ) : (
         <Text>
           ユーザーが見つかりません。新しいユーザーを追加してください。
         </Text>
+      )}
+      {status === "loading" && (
+        <Center mt={4}>
+          <Spinner size="xl" />
+        </Center>
       )}
 
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
@@ -388,15 +432,11 @@ const UserManagementTemplate: React.FC = () => {
     </Box>
   );
 
-  if (status === "loading") {
+  if (status === "loading" && users.length === 0) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="100vh">
+      <Center height="100vh">
         <Spinner size="xl" />
-      </Box>
+      </Center>
     );
   }
 
@@ -450,6 +490,18 @@ const UserManagementTemplate: React.FC = () => {
       {currentView === "users"
         ? renderUserManagement()
         : renderRoleManagement()}
+
+      {showScrollTop && (
+        <IconButton
+          icon={<ArrowUpIcon />}
+          position="fixed"
+          bottom="50px"
+          right="50px"
+          colorScheme="blue"
+          onClick={scrollToTop}
+          aria-label="トップに戻る"
+        />
+      )}
     </Box>
   );
 };

@@ -5,7 +5,7 @@ interface User {
   id: string;
   email: string;
   username: string;
-  // 他の必要なユーザー情報フィールド
+  role: "ADMIN" | "MANAGER" | "STAFF"; // roleフィールドを追加
 }
 
 interface AuthState {
@@ -28,9 +28,11 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     login: (state, action: PayloadAction<{ token: string; user: User }>) => {
+      console.log("Logged in user:", action.payload.user);
       state.token = action.payload.token;
       state.user = action.payload.user;
       state.isAuthenticated = true;
+
       if (typeof window !== "undefined") {
         localStorage.setItem("token", action.payload.token);
         localStorage.setItem("user", JSON.stringify(action.payload.user));

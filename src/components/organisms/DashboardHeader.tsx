@@ -23,6 +23,31 @@ import { RootState } from "../../store";
 import { useUserOnlineStatus } from "../../hooks/useUserOnlineStatus";
 import { useRouter } from "next/navigation";
 
+// メニューオプションの定義
+const menuOptions = [
+  "ユーザー管理",
+  "顧客管理",
+  "配送管理",
+  "顧客対応履歴",
+  "キャンペーン管理",
+  "レポート・分析",
+  "eコマース連携",
+  "API管理",
+  "セキュリティ監査",
+  "バックアップと復旧",
+  "設定",
+  "ヘルプ・サポート",
+] as const;
+
+type MenuOption = (typeof menuOptions)[number];
+
+// ルーティング情報
+const ROUTES: Partial<Record<MenuOption, string>> = {
+  ユーザー管理: "/user-management",
+  顧客管理: "/customers",
+  // 他のルートも必要に応じて追加
+};
+
 const DashboardHeader: React.FC = () => {
   const isLandscape = useBreakpointValue({ landscape: true });
   const iconSize = useBreakpointValue({
@@ -32,6 +57,7 @@ const DashboardHeader: React.FC = () => {
   });
 
   const user = useSelector((state: RootState) => state.auth.user);
+  console.log("User role:", user?.role); // roleが正しく取得できているか確認
 
   const {
     data: onlineStatus,
@@ -58,12 +84,21 @@ const DashboardHeader: React.FC = () => {
 
   const router = useRouter();
 
-  const handleOptionSelect = (option: string) => {
-    if (option === "顧客管理") {
-      router.push("/customers");
+  const handleOptionSelect = (option: MenuOption) => {
+    const route = ROUTES[option];
+    if (route) {
+      console.log(`Navigating to: ${route}`); // デバッグ用のログ
+      router.push(route);
+    } else {
+      console.log(`Selected option "${option}" has no route.`);
     }
-    console.log("Selected option:", option);
   };
+
+  // STAFFロールの場合、"ユーザー管理"メニューを表示しない
+  const filteredMenuOptions =
+    user?.role === "STAFF"
+      ? menuOptions.filter((option) => option !== "ユーザー管理")
+      : menuOptions;
 
   return (
     <Flex
@@ -118,20 +153,7 @@ const DashboardHeader: React.FC = () => {
             />
             <Portal>
               <MenuList>
-                {[
-                  "顧客管理",
-                  "配送管理",
-                  "顧客対応履歴",
-                  "キャンペーン管理",
-                  "ユーザー管理",
-                  "レポート・分析",
-                  "eコマース連携",
-                  "API管理",
-                  "セキュリティ監査",
-                  "バックアップと復旧",
-                  "設定",
-                  "ヘルプ・サポート",
-                ].map((option) => (
+                {filteredMenuOptions.map((option) => (
                   <MenuItem
                     key={option}
                     onClick={() => handleOptionSelect(option)}>
@@ -165,7 +187,5 @@ const DashboardHeader: React.FC = () => {
     </Flex>
   );
 };
-
-DashboardHeader.displayName = "DashboardHeader";
 
 export default DashboardHeader;

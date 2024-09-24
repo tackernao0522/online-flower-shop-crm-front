@@ -2,11 +2,14 @@ import { configureStore } from "@reduxjs/toolkit";
 import { createWrapper } from "next-redux-wrapper";
 import authReducer from "../features/auth/authSlice";
 import customersReducer from "../features/customers/customersSlice";
+import usersReducer from "../features/users/usersSlice";
+
 export const makeStore = () =>
   configureStore({
     reducer: {
       auth: authReducer,
       customers: customersReducer,
+      users: usersReducer,
     },
   });
 

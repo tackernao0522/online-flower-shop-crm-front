@@ -4,7 +4,6 @@ import { useSelector } from "react-redux";
 import { useBreakpointValue } from "@chakra-ui/react";
 import DashboardHeader from "../DashboardHeader";
 import { useUserOnlineStatus } from "../../../hooks/useUserOnlineStatus";
-import { useRouter } from "next/navigation";
 
 // モックの設定
 jest.mock("react-redux", () => ({
@@ -33,16 +32,20 @@ jest.mock("../../molecules/LogoutButton", () => {
 
 // useRouterのモック設定（next/navigation版）
 jest.mock("next/navigation", () => ({
-  useRouter: jest.fn().mockReturnValue({
+  useRouter: () => ({
     push: jest.fn(),
     prefetch: jest.fn(),
     pathname: "/dashboard",
   }),
 }));
 
+const mockedUseSelector = useSelector as jest.MockedFunction<
+  typeof useSelector
+>;
+
 describe("DashboardHeader", () => {
   beforeEach(() => {
-    (useSelector as jest.Mock).mockReturnValue({ id: "user-id" });
+    mockedUseSelector.mockReturnValue({ id: "user-id", role: "ADMIN" });
     (useBreakpointValue as jest.Mock).mockReturnValue("md");
     (useUserOnlineStatus as jest.Mock).mockReturnValue({
       data: { is_online: true },
@@ -138,14 +141,27 @@ describe("DashboardHeader", () => {
     consoleSpy.mockRestore();
   });
 
-  it("オプションメニューの項目がクリックされたときにログが出力されること", () => {
+  it("オプションメニューの項目がクリックされたときに適切な処理が行われること", () => {
+    const consoleSpy = jest.spyOn(console, "log");
+    render(<DashboardHeader />);
+    const optionsButton = screen.getByLabelText("Options");
+    fireEvent.click(optionsButton);
+    const menuItem = screen.getByText("ユーザー管理");
+    fireEvent.click(menuItem);
+    expect(consoleSpy).toHaveBeenCalledWith("Navigating to: /user-management");
+    consoleSpy.mockRestore();
+  });
+
+  it("ルートが定義されていないオプションメニューの項目がクリックされたときにログが出力されること", () => {
     const consoleSpy = jest.spyOn(console, "log");
     render(<DashboardHeader />);
     const optionsButton = screen.getByLabelText("Options");
     fireEvent.click(optionsButton);
     const menuItem = screen.getByText("配送管理");
     fireEvent.click(menuItem);
-    expect(consoleSpy).toHaveBeenCalledWith("Selected option:", "配送管理");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Selected option "配送管理" has no route.'
+    );
     consoleSpy.mockRestore();
   });
 

@@ -4,7 +4,7 @@ export interface User {
   email: string;
   role: "admin" | "staff" | "user";
   isActive: boolean;
-  createdAt: string; // 修正
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -12,4 +12,7 @@ export interface UserState {
   users: User[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
 }

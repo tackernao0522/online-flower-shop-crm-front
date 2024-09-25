@@ -20,3 +20,5 @@ export type AppDispatch = AppStore["dispatch"];
 export const wrapper = createWrapper<AppStore>(makeStore);
 
 export const store = makeStore();
+
+export const selectUsers = (state: RootState) => state.users;

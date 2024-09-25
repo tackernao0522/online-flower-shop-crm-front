@@ -48,6 +48,8 @@ import {
   addUser,
   updateUser,
   deleteUser,
+  resetUsers,
+  resetUsersState,
 } from "@/features/users/usersSlice";
 import {
   fetchRoles,
@@ -77,19 +79,35 @@ const UserManagementTemplate: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [totalUsers, setTotalUsers] = useState<number>(0);
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchRole, setSearchRole] = useState("");
+  const [lastSearch, setLastSearch] = useState({ type: "", value: "" });
+
+  const isSearchTermEmpty = searchTerm.trim() === "";
+  const isSearchRoleEmpty = searchRole === "";
+
   const usersState = useSelector((state: RootState) => state.users);
   const { users, status, error, currentPage, totalPages, totalCount } =
     usersState;
   const roles = useSelector((state: RootState) => state.roles.roles);
   const user = useSelector((state: RootState) => state.auth.user);
 
+  console.log("Current users state:", usersState);
+
   const loadMore = useCallback(() => {
     if (currentPage < totalPages) {
-      dispatch(fetchUsers({ page: currentPage + 1 }));
+      dispatch(
+        fetchUsers({
+          page: currentPage + 1,
+          search: lastSearch.type === "term" ? lastSearch.value : "",
+          role: lastSearch.type === "role" ? lastSearch.value : "",
+          isNewSearch: false,
+        })
+      );
     } else {
       setHasMore(false);
     }
-  }, [dispatch, currentPage, totalPages]);
+  }, [dispatch, currentPage, totalPages, lastSearch]);
 
   const { lastElementRef } = useInfiniteScroll(loadMore);
 
@@ -100,12 +118,19 @@ const UserManagementTemplate: React.FC = () => {
   }, [user, router]);
 
   useEffect(() => {
-    if (status === "idle") {
-      console.log("Fetching users and roles...");
-      dispatch(fetchUsers({ page: 1 }));
-      dispatch(fetchRoles());
-    }
-  }, [dispatch, status]);
+    // コンポーネントのマウント時に状態をリセット
+    dispatch(resetUsersState());
+    dispatch(fetchUsers({ page: 1, search: "", role: "", isNewSearch: true }));
+    dispatch(fetchRoles());
+    setSearchTerm("");
+    setSearchRole("");
+    setLastSearch({ type: "", value: "" });
+
+    // コンポーネントのアンマウント時に状態をリセット
+    return () => {
+      dispatch(resetUsersState());
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     setTotalUsers(totalCount);
@@ -134,6 +159,38 @@ const UserManagementTemplate: React.FC = () => {
     },
     { id: 5, name: "レポート閲覧", actions: ["表示"] },
   ];
+
+  const handleSearch = (type: "term" | "role") => {
+    const searchValue = type === "term" ? searchTerm : searchRole;
+    dispatch(
+      fetchUsers({
+        page: 1,
+        search: type === "term" ? searchValue : "",
+        role: type === "role" ? searchValue : "",
+        isNewSearch: true,
+      })
+    );
+    setLastSearch({ type, value: searchValue });
+    setHasMore(true);
+    type === "term" ? setSearchTerm("") : setSearchRole("");
+  };
+
+  const handleResetSearch = () => {
+    dispatch(resetUsersState());
+    dispatch(fetchUsers({ page: 1, search: "", role: "", isNewSearch: true }));
+    setSearchTerm("");
+    setSearchRole("");
+    setLastSearch({ type: "", value: "" });
+  };
+
+  const handleKeyPress = (
+    event: React.KeyboardEvent,
+    type: "term" | "role"
+  ) => {
+    if (event.key === "Enter") {
+      handleSearch(type);
+    }
+  };
 
   const handleUserClick = (user: User) => {
     setActiveItem(user);
@@ -239,9 +296,46 @@ const UserManagementTemplate: React.FC = () => {
   const renderUserManagement = () => (
     <>
       <Flex mb={5}>
-        <Input placeholder="ユーザー名またはメールアドレスで検索" mr={3} />
-        <Button>検索</Button>
+        <Input
+          placeholder="ユーザー名またはメールアドレスで検索"
+          mr={3}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={(e) => handleKeyPress(e, "term")}
+        />
+        <Button
+          onClick={() => handleSearch("term")}
+          isDisabled={isSearchTermEmpty}>
+          名前またはメール検索
+        </Button>
       </Flex>
+      <Flex mb={5}>
+        <Select
+          placeholder="役割を選択"
+          mr={3}
+          value={searchRole}
+          onChange={(e) => setSearchRole(e.target.value)}
+          onKeyPress={(e) => handleKeyPress(e, "role")}>
+          <option value="ADMIN">管理者</option>
+          <option value="MANAGER">マネージャー</option>
+          <option value="STAFF">スタッフ</option>
+        </Select>
+        <Button
+          onClick={() => handleSearch("role")}
+          isDisabled={isSearchRoleEmpty}>
+          役割検索
+        </Button>
+      </Flex>
+      <Button onClick={handleResetSearch} mb={5}>
+        検索結果をリセット
+      </Button>
+
+      {lastSearch.value && (
+        <Text>
+          最後の検索: {lastSearch.type === "term" ? "名前/メール" : "役割"} -{" "}
+          {lastSearch.value === "" ? "全ての役割" : lastSearch.value}
+        </Text>
+      )}
 
       {users && users.length > 0 ? (
         <>
@@ -259,7 +353,7 @@ const UserManagementTemplate: React.FC = () => {
             <Tbody>
               {users.map((user, index) => (
                 <Tr
-                  key={user.id}
+                  key={`${user.id}-${index}`}
                   ref={index === users.length - 1 ? lastElementRef : null}>
                   <Td>{user.id}</Td>
                   <Td>{user.username}</Td>
@@ -306,8 +400,8 @@ const UserManagementTemplate: React.FC = () => {
           </Flex>
         </>
       ) : (
-        <Text>
-          ユーザーが見つかりません。新しいユーザーを追加してください。
+        <Text color="red.500" fontWeight="bold">
+          検索条件に一致するユーザーが見つかりませんでした。
         </Text>
       )}
       {status === "loading" && (

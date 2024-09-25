@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import LogoutButton from "../LogoutButton";
+import { logout } from "../../../features/auth/authSlice"; // logoutをインポート
+
+// logoutのモック化
+jest.mock("../../../features/auth/authSlice", () => ({
+  logout: jest.fn(),
+}));
 
 jest.mock("react-redux", () => ({
   useDispatch: jest.fn(),
@@ -96,7 +102,9 @@ describe("LogoutButton", () => {
         }
       );
 
-      expect(mockDispatch).toHaveBeenCalledWith({ type: "auth/logout" });
+      // logout アクションが正しくdispatchされていることを確認
+      expect(mockDispatch).toHaveBeenCalledWith(logout());
+
       expect(localStorage.removeItem).toHaveBeenCalledWith("token");
       expect(localStorage.removeItem).toHaveBeenCalledWith("user");
       expect(localStorage.removeItem).toHaveBeenCalledWith("userId");

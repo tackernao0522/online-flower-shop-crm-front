@@ -1,14 +1,15 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { resetUsers, resetUsersState } from "../users/usersSlice";
 
-// ユーザータイプの定義
 interface User {
   id: string;
   email: string;
   username: string;
-  role: "ADMIN" | "MANAGER" | "STAFF"; // roleフィールドを追加
+  role: "ADMIN" | "MANAGER" | "STAFF";
 }
 
-interface AuthState {
+export interface AuthState {
+  // ここでエクスポート
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
@@ -22,6 +23,17 @@ const initialState: AuthState = {
       : null,
   isAuthenticated: false,
 };
+
+export const logout = createAsyncThunk(
+  "auth/logout",
+  async (_, { dispatch }) => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
+    dispatch(resetUsersState());
+  }
+);
 
 const authSlice = createSlice({
   name: "auth",
@@ -38,15 +50,6 @@ const authSlice = createSlice({
         localStorage.setItem("user", JSON.stringify(action.payload.user));
       }
     },
-    logout: (state) => {
-      state.token = null;
-      state.user = null;
-      state.isAuthenticated = false;
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
-    },
     setAuthState: (state, action: PayloadAction<boolean>) => {
       state.isAuthenticated = action.payload;
     },
@@ -54,12 +57,18 @@ const authSlice = createSlice({
       state.user = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder.addCase(logout.fulfilled, (state) => {
+      state.token = null;
+      state.user = null;
+      state.isAuthenticated = false;
+    });
+  },
 });
 
-export const { login, logout, setAuthState, setUser } = authSlice.actions;
+export const { login, setAuthState, setUser } = authSlice.actions;
 export default authSlice.reducer;
 
-// セレクター
 export const selectIsAuthenticated = (state: { auth: AuthState }) =>
   state.auth.isAuthenticated;
 export const selectUser = (state: { auth: AuthState }) => state.auth.user;

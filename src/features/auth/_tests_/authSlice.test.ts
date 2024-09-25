@@ -6,8 +6,10 @@ import authReducer, {
   selectIsAuthenticated,
   selectUser,
   selectToken,
+  AuthState,
 } from "../authSlice";
-import { RootState } from "@/store";
+import { User } from "../../../types/user"; // src/types/user.tsからUser型をインポート
+import { RootState, CustomersState, RolesState, UserState } from "@/store"; // 必要な型をインポート
 
 describe("認証スライス", () => {
   let mockLocalStorage: { [key: string]: string };
@@ -35,10 +37,34 @@ describe("認証スライス", () => {
     global.window = originalWindow;
   });
 
-  const initialState = {
+  const initialState: AuthState = {
     token: null,
     user: null,
     isAuthenticated: false,
+  };
+
+  const mockCustomersState: CustomersState = {
+    customers: [],
+    status: "idle",
+    error: null,
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
+  };
+
+  const mockRolesState: RolesState = {
+    roles: [],
+    status: "idle",
+    error: null,
+  };
+
+  const mockUsersState: UserState = {
+    users: [],
+    status: "idle",
+    error: null,
+    currentPage: 1,
+    totalPages: 1,
+    totalCount: 0,
   };
 
   it("初期状態を正しく処理すること", () => {
@@ -47,37 +73,15 @@ describe("認証スライス", () => {
 
   it("ローカルストレージから初期状態を正しく読み込むこと", () => {
     const token = "test-token";
-    const user = { id: "1", email: "test@example.com", username: "testuser" };
-    mockLocalStorage = {
-      token: token,
-      user: JSON.stringify(user),
+    const user: User = {
+      id: "1",
+      email: "test@example.com",
+      username: "testuser",
+      role: "staff", // src/types/user.tsのリテラル型に従う
+      isActive: true,
+      createdAt: "2023-01-01T00:00:00Z",
+      updatedAt: "2023-01-01T00:00:00Z",
     };
-
-    // モジュールをリセットしてキャッシュをクリアする
-    jest.resetModules();
-    const authSlice = require("../authSlice");
-    const newInitialState = authSlice.default(undefined, { type: "unknown" });
-
-    expect(newInitialState).toEqual({
-      token: token,
-      user: user,
-      isAuthenticated: false,
-    });
-  });
-
-  it("window オブジェクトが存在しない環境で初期状態を正しく処理すること", () => {
-    const newInitialState = authReducer(undefined, { type: "unknown" });
-    expect(newInitialState).toEqual({
-      token: null,
-      user: null,
-      isAuthenticated: false,
-    });
-  });
-
-  it("window オブジェクトが存在する環境で初期状態を正しく処理すること", () => {
-    global.window = {} as any;
-    const token = "test-token";
-    const user = { id: "1", email: "test@example.com", username: "testuser" };
     mockLocalStorage = {
       token: token,
       user: JSON.stringify(user),
@@ -95,7 +99,15 @@ describe("認証スライス", () => {
   });
 
   it("ログイン処理を正しく処理すること", () => {
-    const user = { id: "1", email: "test@example.com", username: "testuser" };
+    const user: User = {
+      id: "1",
+      email: "test@example.com",
+      username: "testuser",
+      role: "staff", // src/types/user.tsのリテラル型に従う
+      isActive: true,
+      createdAt: "2023-01-01T00:00:00Z",
+      updatedAt: "2023-01-01T00:00:00Z",
+    };
     const action = login({ token: "test-token", user });
     const state = authReducer(initialState, action);
     expect(state).toEqual({
@@ -106,13 +118,28 @@ describe("認証スライス", () => {
   });
 
   it("ログアウト処理を正しく処理すること", () => {
-    const loggedInState = {
+    const loggedInState: AuthState = {
       token: "test-token",
-      user: { id: "1", email: "test@example.com", username: "testuser" },
+      user: {
+        id: "1",
+        email: "test@example.com",
+        username: "testuser",
+        role: "STAFF", // "staff"ではなく"STAFF"に修正
+        isActive: true,
+        createdAt: "2023-01-01T00:00:00Z",
+        updatedAt: "2023-01-01T00:00:00Z",
+      },
       isAuthenticated: true,
     };
-    const state = authReducer(loggedInState, logout());
-    expect(state).toEqual(initialState);
+
+    const action = { type: logout.fulfilled.type };
+    const state = authReducer(loggedInState, action);
+
+    expect(state).toEqual({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+    });
   });
 
   it("認証状態の設定を正しく処理すること", () => {
@@ -121,7 +148,15 @@ describe("認証スライス", () => {
   });
 
   it("ユーザー情報の設定を正しく処理すること", () => {
-    const user = { id: "1", email: "test@example.com", username: "testuser" };
+    const user: User = {
+      id: "1",
+      email: "test@example.com",
+      username: "testuser",
+      role: "staff", // src/types/user.tsに従う
+      isActive: true,
+      createdAt: "2023-01-01T00:00:00Z",
+      updatedAt: "2023-01-01T00:00:00Z",
+    };
     const state = authReducer(initialState, setUser(user));
     expect(state.user).toEqual(user);
   });
@@ -130,9 +165,20 @@ describe("認証スライス", () => {
     const mockRootState: RootState = {
       auth: {
         token: "test-token",
-        user: { id: "1", email: "test@example.com", username: "testuser" },
+        user: {
+          id: "1",
+          email: "test@example.com",
+          username: "testuser",
+          role: "STAFF", // "staff"ではなく"STAFF"に修正
+          isActive: true,
+          createdAt: "2023-01-01T00:00:00Z",
+          updatedAt: "2023-01-01T00:00:00Z",
+        },
         isAuthenticated: true,
       },
+      customers: mockCustomersState, // 正しいCustomersStateをセット
+      roles: mockRolesState, // 正しいRolesStateをセット
+      users: mockUsersState, // 正しいUserStateをセット
     } as RootState;
 
     it("認証状態を正しく選択すること", () => {

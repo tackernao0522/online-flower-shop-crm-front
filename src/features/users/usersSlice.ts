@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
-import { User, UserState } from "@/types/user";
+import type { User, UserState } from "@/types/user";
 
 const initialState: UserState = {
   users: [],
@@ -14,23 +14,80 @@ const initialState: UserState = {
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
   async (
-    { page, limit = 10 }: { page: number; limit?: number },
-    { rejectWithValue }
+    {
+      page,
+      limit = 10,
+      search = "",
+      role = "",
+      isNewSearch = false,
+    }: {
+      page: number;
+      limit?: number;
+      search?: string;
+      role?: string;
+      isNewSearch?: boolean;
+    },
+    { dispatch, rejectWithValue }
   ) => {
+    if (isNewSearch) {
+      dispatch(resetUsersState());
+    }
+
+    console.log("fetchUsers called with params:", {
+      page,
+      limit,
+      search,
+      role,
+      isNewSearch,
+    });
+
     try {
+      console.log(
+        "Sending request to:",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users`
+      );
+      console.log("Request params:", { page, limit, search, role });
+
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          params: { page, limit },
+          params: { page, limit, search, role },
         }
       );
-      return response.data;
+
+      console.log("Received response:", response.data);
+
+      return { ...response.data, isNewSearch };
     } catch (error: any) {
-      if (error.response && error.response.status === 404) {
-        return rejectWithValue("ユーザーが見つかりません。");
+      console.error("Error in fetchUsers:", error);
+
+      if (error.response) {
+        console.log("Error response:", error.response.data);
+        console.log("Error status:", error.response.status);
+
+        switch (error.response.status) {
+          case 400:
+            return rejectWithValue("無効なパラメータが指定されました。");
+          case 404:
+            return {
+              data: [],
+              meta: {
+                currentPage: 1,
+                totalPages: 1,
+                totalCount: 0,
+              },
+              isNewSearch,
+            };
+          case 403:
+            return rejectWithValue("この操作を行う権限がありません。");
+          default:
+            return rejectWithValue(
+              error.response.data?.message || "エラーが発生しました。"
+            );
+        }
       }
-      return rejectWithValue(error.response?.data || "エラーが発生しました。");
+      return rejectWithValue("サーバーに接続できません。");
     }
   }
 );
@@ -97,7 +154,16 @@ export const deleteUser = createAsyncThunk(
 const usersSlice = createSlice({
   name: "users",
   initialState,
-  reducers: {},
+  reducers: {
+    resetUsers: (state) => {
+      state.users = [];
+      state.currentPage = 1;
+      state.totalPages = 1;
+      state.totalCount = 0;
+      state.status = "idle";
+    },
+    resetUsersState: () => initialState,
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchUsers.pending, (state) => {
@@ -106,10 +172,11 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action: PayloadAction<any>) => {
         state.status = "succeeded";
-        state.users =
-          state.currentPage === 1
-            ? action.payload.data
-            : [...state.users, ...action.payload.data];
+        if (action.payload.isNewSearch) {
+          state.users = action.payload.data;
+        } else {
+          state.users = [...state.users, ...action.payload.data];
+        }
         state.currentPage = action.payload.meta.currentPage;
         state.totalPages = action.payload.meta.totalPages;
         state.totalCount = action.payload.meta.totalCount;
@@ -137,5 +204,7 @@ const usersSlice = createSlice({
       });
   },
 });
+
+export const { resetUsers, resetUsersState } = usersSlice.actions;
 
 export default usersSlice.reducer;

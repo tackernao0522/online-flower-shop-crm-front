@@ -13,14 +13,16 @@ interface DeleteAlertDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  customerName: string;
+  itemName: string;
+  itemType: string;
 }
 
 const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  customerName,
+  itemName,
+  itemType,
 }) => {
   const cancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -32,11 +34,11 @@ const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
       <AlertDialogOverlay>
         <AlertDialogContent>
           <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            顧客を削除
+            {itemType}を削除
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            本当に{customerName}を削除しますか？この操作は取り消せません。
+            本当に{itemName}を削除しますか？この操作は取り消せません。
           </AlertDialogBody>
 
           <AlertDialogFooter>

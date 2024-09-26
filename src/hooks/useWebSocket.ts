@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import Pusher from "pusher-js";
+import * as Pusher from "pusher-js";
 
 export const useWebSocket = () => {
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [changeRate, setChangeRate] = useState<number | null>(null);
-  const pusherRef = useRef<Pusher | null>(null);
-  const channelRef = useRef<Pusher.Channel | null>(null);
+  const [totalUserCount, setTotalUserCount] = useState<number | null>(null);
+  const pusherRef = useRef<Pusher.default | null>(null);
+  const customerChannelRef = useRef<Pusher.Channel | null>(null);
+  const userChannelRef = useRef<Pusher.Channel | null>(null);
   const lastNonZeroChangeRate = useRef<number | null>(null);
 
   const cleanupPusher = useCallback(() => {
@@ -15,13 +17,20 @@ export const useWebSocket = () => {
     ) {
       pusherRef.current.disconnect();
     }
-    if (channelRef.current) {
-      channelRef.current.unbind_all();
+    if (customerChannelRef.current) {
+      customerChannelRef.current.unbind_all();
       if (pusherRef.current) {
         pusherRef.current.unsubscribe("customer-stats");
       }
     }
-    channelRef.current = null;
+    if (userChannelRef.current) {
+      userChannelRef.current.unbind_all();
+      if (pusherRef.current) {
+        pusherRef.current.unsubscribe("user-stats");
+      }
+    }
+    customerChannelRef.current = null;
+    userChannelRef.current = null;
     pusherRef.current = null;
   }, []);
 
@@ -29,7 +38,6 @@ export const useWebSocket = () => {
     const pusherKey = process.env.NEXT_PUBLIC_PUSHER_APP_KEY;
     const pusherHost = process.env.NEXT_PUBLIC_PUSHER_HOST;
     const pusherPort = process.env.NEXT_PUBLIC_PUSHER_PORT;
-    const pusherScheme = process.env.NEXT_PUBLIC_PUSHER_SCHEME;
     const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER;
 
     if (!pusherKey) {
@@ -40,20 +48,30 @@ export const useWebSocket = () => {
     const initializePusher = () => {
       cleanupPusher();
 
-      pusherRef.current = new Pusher(pusherKey, {
+      pusherRef.current = new Pusher.default(pusherKey, {
         wsHost: pusherHost,
         wsPort: pusherPort ? parseInt(pusherPort, 10) : undefined,
         forceTLS: false,
-        encrypted: false,
         enabledTransports: ["ws", "wss"],
         disableStats: true,
-        cluster: pusherCluster,
-        enableLogging: true,
+        cluster: pusherCluster || "default-cluster",
       });
 
-      channelRef.current = pusherRef.current.subscribe("customer-stats");
+      // 接続状態の変更をログに出力
+      pusherRef.current.connection.bind("state_change", (states: any) => {
+        console.log("Connection state change:", states);
+      });
 
-      channelRef.current.bind(
+      // エラーが発生した場合のログを出力
+      pusherRef.current.connection.bind("error", (err: any) => {
+        console.error("Connection error:", err);
+      });
+
+      customerChannelRef.current =
+        pusherRef.current.subscribe("customer-stats");
+      userChannelRef.current = pusherRef.current.subscribe("user-stats");
+
+      customerChannelRef.current.bind(
         "App\\Events\\CustomerCountUpdated",
         (data: {
           totalCount: number;
@@ -65,6 +83,14 @@ export const useWebSocket = () => {
           setChangeRate(data.changeRate);
         }
       );
+
+      userChannelRef.current.bind(
+        "App\\Events\\UserCountUpdated",
+        (data: { totalCount: number }) => {
+          console.log("Received user count update:", data);
+          setTotalUserCount(data.totalCount);
+        }
+      );
     };
 
     initializePusher();
@@ -74,5 +100,5 @@ export const useWebSocket = () => {
     };
   }, [cleanupPusher]);
 
-  return { totalCount, changeRate };
+  return { totalCount, changeRate, totalUserCount };
 };

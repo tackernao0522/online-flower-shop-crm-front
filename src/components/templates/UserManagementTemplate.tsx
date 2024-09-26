@@ -30,6 +30,7 @@ import {
   Spinner,
   Center,
   IconButton,
+  useToast,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -59,6 +60,7 @@ import {
 } from "@/features/roles/rolesSlice";
 import { User, UserState } from "@/types/user";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
 
 interface Role {
   id: number;
@@ -82,6 +84,10 @@ const UserManagementTemplate: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchRole, setSearchRole] = useState("");
   const [lastSearch, setLastSearch] = useState({ type: "", value: "" });
+
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const toast = useToast();
 
   const isSearchTermEmpty = searchTerm.trim() === "";
   const isSearchRoleEmpty = searchRole === "";
@@ -229,6 +235,44 @@ const UserManagementTemplate: React.FC = () => {
   const handleDeleteRole = (roleId: number) => {
     dispatch(deleteRole(roleId));
   };
+
+  const handleDeleteUser = useCallback((user: User) => {
+    console.log("handleDeleteUser called", user);
+    setUserToDelete(user);
+    setIsDeleteAlertOpen(true);
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    console.log("confirmDelete called", userToDelete);
+    if (userToDelete) {
+      try {
+        await dispatch(deleteUser(userToDelete.id)).unwrap();
+        toast({
+          title: "ユーザーを削除しました",
+          description: `${userToDelete.username} の情報が削除されました。`,
+          status: "warning",
+          duration: 5000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        toast({
+          title: "ユーザーの削除に失敗しました",
+          description: "エラーが発生しました。もう一度お試しください。",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
+      setIsDeleteAlertOpen(false);
+      setUserToDelete(null);
+    }
+  }, [userToDelete, dispatch, toast]);
+
+  const cancelDelete = useCallback(() => {
+    setIsDeleteAlertOpen(false);
+    setUserToDelete(null);
+  }, []);
 
   const renderUserForm = () => {
     const userItem = activeItem as User | null;
@@ -382,7 +426,7 @@ const UserManagementTemplate: React.FC = () => {
                         size="sm"
                         leftIcon={<DeleteIcon />}
                         colorScheme="red"
-                        onClick={() => dispatch(deleteUser(user.id))}>
+                        onClick={() => handleDeleteUser(user)}>
                         削除
                       </Button>
                     </HStack>
@@ -596,6 +640,14 @@ const UserManagementTemplate: React.FC = () => {
           aria-label="トップに戻る"
         />
       )}
+
+      <DeleteAlertDialog
+        isOpen={isDeleteAlertOpen}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        itemName={userToDelete?.username || ""}
+        itemType="ユーザー"
+      />
     </Box>
   );
 };

@@ -61,6 +61,7 @@ import {
 import { User, UserState } from "@/types/user";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
 interface Role {
   id: number;
@@ -79,7 +80,7 @@ const UserManagementTemplate: React.FC = () => {
   const [currentView, setCurrentView] = useState<"users" | "roles">("users");
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [totalUsers, setTotalUsers] = useState<number | null>(null);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchRole, setSearchRole] = useState("");
@@ -97,6 +98,13 @@ const UserManagementTemplate: React.FC = () => {
     usersState;
   const roles = useSelector((state: RootState) => state.roles.roles);
   const user = useSelector((state: RootState) => state.auth.user);
+  const currentUser = useSelector((state: RootState) => state.auth.user);
+
+  const isAdmin = useCallback(() => {
+    return currentUser?.role === "ADMIN";
+  }, [currentUser]);
+
+  const { totalUserCount } = useWebSocket();
 
   console.log("Current users state:", usersState);
 
@@ -139,8 +147,12 @@ const UserManagementTemplate: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    setTotalUsers(totalCount);
-  }, [totalCount]);
+    if (totalUserCount !== null) {
+      setTotalUsers(totalUserCount);
+    } else if (totalCount !== null) {
+      setTotalUsers(totalCount);
+    }
+  }, [totalUserCount, totalCount]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -246,7 +258,8 @@ const UserManagementTemplate: React.FC = () => {
     console.log("confirmDelete called", userToDelete);
     if (userToDelete) {
       try {
-        await dispatch(deleteUser(userToDelete.id)).unwrap();
+        const result = await dispatch(deleteUser(userToDelete.id)).unwrap();
+        console.log("Delete result:", result);
         toast({
           title: "ユーザーを削除しました",
           description: `${userToDelete.username} の情報が削除されました。`,
@@ -254,11 +267,11 @@ const UserManagementTemplate: React.FC = () => {
           duration: 5000,
           isClosable: true,
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error deleting user:", error);
         toast({
           title: "ユーザーの削除に失敗しました",
-          description: "エラーが発生しました。もう一度お試しください。",
+          description: `エラー: ${error.message || JSON.stringify(error)}`,
           status: "error",
           duration: 5000,
           isClosable: true,
@@ -381,6 +394,10 @@ const UserManagementTemplate: React.FC = () => {
         </Text>
       )}
 
+      <Text>
+        総ユーザー数: {totalUsers !== null ? totalUsers : "読み込み中..."}
+      </Text>
+
       {users && users.length > 0 ? (
         <>
           <Table variant="simple">
@@ -422,13 +439,15 @@ const UserManagementTemplate: React.FC = () => {
                         onClick={() => handleEditUser(user)}>
                         編集
                       </Button>
-                      <Button
-                        size="sm"
-                        leftIcon={<DeleteIcon />}
-                        colorScheme="red"
-                        onClick={() => handleDeleteUser(user)}>
-                        削除
-                      </Button>
+                      {isAdmin() && (
+                        <Button
+                          size="sm"
+                          leftIcon={<DeleteIcon />}
+                          colorScheme="red"
+                          onClick={() => handleDeleteUser(user)}>
+                          削除
+                        </Button>
+                      )}
                     </HStack>
                   </Td>
                 </Tr>
@@ -438,8 +457,10 @@ const UserManagementTemplate: React.FC = () => {
           <Flex justify="center" my={4}>
             <Text color="red">
               {!hasMore
-                ? `すべてのユーザーを表示しました (${totalUsers}名)`
-                : `${users.length}名のユーザーを表示中 (全${totalUsers}名)`}
+                ? `すべてのユーザーを表示しました (${totalUsers ?? 0}名)`
+                : `${users.length}名のユーザーを表示中 (全${
+                    totalUsers ?? 0
+                  }名)`}
             </Text>
           </Flex>
         </>

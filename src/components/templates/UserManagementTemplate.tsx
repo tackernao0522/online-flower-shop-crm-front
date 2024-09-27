@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Flex,
@@ -81,6 +81,7 @@ const UserManagementTemplate: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [, forceUpdate] = useState({});
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchRole, setSearchRole] = useState("");
@@ -90,6 +91,15 @@ const UserManagementTemplate: React.FC = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const toast = useToast();
 
+  const [isUserRegistrationModalOpen, setIsUserRegistrationModalOpen] =
+    useState(false);
+  const [newUserFormData, setNewUserFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    role: "",
+  });
+
   const isSearchTermEmpty = searchTerm.trim() === "";
   const isSearchRoleEmpty = searchRole === "";
 
@@ -97,12 +107,12 @@ const UserManagementTemplate: React.FC = () => {
   const { users, status, error, currentPage, totalPages, totalCount } =
     usersState;
   const roles = useSelector((state: RootState) => state.roles.roles);
-  const user = useSelector((state: RootState) => state.auth.user);
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
-  const isAdmin = useCallback(() => {
-    return currentUser?.role === "ADMIN";
-  }, [currentUser]);
+  const canDeleteUser = useMemo(
+    () => currentUser?.role === "ADMIN",
+    [currentUser]
+  );
 
   const { totalUserCount } = useWebSocket();
 
@@ -126,13 +136,12 @@ const UserManagementTemplate: React.FC = () => {
   const { lastElementRef } = useInfiniteScroll(loadMore);
 
   useEffect(() => {
-    if (user?.role === "STAFF") {
+    if (currentUser?.role === "STAFF") {
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [currentUser, router]);
 
   useEffect(() => {
-    // コンポーネントのマウント時に状態をリセット
     dispatch(resetUsersState());
     dispatch(fetchUsers({ page: 1, search: "", role: "", isNewSearch: true }));
     dispatch(fetchRoles());
@@ -140,11 +149,14 @@ const UserManagementTemplate: React.FC = () => {
     setSearchRole("");
     setLastSearch({ type: "", value: "" });
 
-    // コンポーネントのアンマウント時に状態をリセット
     return () => {
       dispatch(resetUsersState());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    forceUpdate({});
+  }, [currentUser]);
 
   useEffect(() => {
     if (totalUserCount !== null) {
@@ -217,9 +229,7 @@ const UserManagementTemplate: React.FC = () => {
   };
 
   const handleAddUser = () => {
-    setActiveItem(null);
-    setModalMode("add");
-    onOpen();
+    setIsUserRegistrationModalOpen(true);
   };
 
   const handleEditUser = (user: User) => {
@@ -286,6 +296,36 @@ const UserManagementTemplate: React.FC = () => {
     setIsDeleteAlertOpen(false);
     setUserToDelete(null);
   }, []);
+
+  const handleNewUserChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewUserFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleNewUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await dispatch(addUser(newUserFormData)).unwrap();
+      toast({
+        title: "ユーザーが登録されました",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      setIsUserRegistrationModalOpen(false);
+      setNewUserFormData({ username: "", email: "", password: "", role: "" });
+    } catch (error: any) {
+      toast({
+        title: "ユーザー登録に失敗しました",
+        description: error.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
 
   const renderUserForm = () => {
     const userItem = activeItem as User | null;
@@ -439,7 +479,7 @@ const UserManagementTemplate: React.FC = () => {
                         onClick={() => handleEditUser(user)}>
                         編集
                       </Button>
-                      {isAdmin() && (
+                      {canDeleteUser && (
                         <Button
                           size="sm"
                           leftIcon={<DeleteIcon />}
@@ -517,6 +557,71 @@ const UserManagementTemplate: React.FC = () => {
             )}
             <Button variant="ghost" onClick={onClose}>
               閉じる
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={isUserRegistrationModalOpen}
+        onClose={() => setIsUserRegistrationModalOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>新規ユーザー登録</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <form onSubmit={handleNewUserSubmit}>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>ユーザー名</FormLabel>
+                  <Input
+                    name="username"
+                    value={newUserFormData.username}
+                    onChange={handleNewUserChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>メールアドレス</FormLabel>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={newUserFormData.email}
+                    onChange={handleNewUserChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>パスワード</FormLabel>
+                  <Input
+                    name="password"
+                    type="password"
+                    value={newUserFormData.password}
+                    onChange={handleNewUserChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>役割</FormLabel>
+                  <Select
+                    name="role"
+                    value={newUserFormData.role}
+                    onChange={handleNewUserChange}
+                    placeholder="役割を選択">
+                    <option value="ADMIN">管理者</option>
+                    <option value="MANAGER">マネージャー</option>
+                    <option value="STAFF">スタッフ</option>
+                  </Select>
+                </FormControl>
+              </VStack>
+            </form>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={() => setIsUserRegistrationModalOpen(false)}>
+              キャンセル
+            </Button>
+            <Button colorScheme="blue" onClick={handleNewUserSubmit}>
+              登録
             </Button>
           </ModalFooter>
         </ModalContent>

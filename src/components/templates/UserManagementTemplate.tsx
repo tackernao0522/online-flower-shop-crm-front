@@ -58,6 +58,7 @@ import {
   updateRole,
   deleteRole,
 } from "@/features/roles/rolesSlice";
+import { updateUserRole, setUser } from "@/features/auth/authSlice";
 import { User, UserState } from "@/types/user";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
@@ -81,6 +82,7 @@ const UserManagementTemplate: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
+  const [, forceUpdate] = useState({});
 
   const [searchTerm, setSearchTerm] = useState("");
   const [searchRole, setSearchRole] = useState("");
@@ -90,6 +92,25 @@ const UserManagementTemplate: React.FC = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const toast = useToast();
 
+  const [isUserRegistrationModalOpen, setIsUserRegistrationModalOpen] =
+    useState(false);
+
+  const [newUserFormData, setNewUserFormData] = useState<{
+    username: string;
+    email: string;
+    password: string;
+    role: "ADMIN" | "MANAGER" | "STAFF";
+    isActive: boolean;
+  }>({
+    username: "",
+    email: "",
+    password: "",
+    role: "STAFF",
+    isActive: true,
+  });
+
+  const [canDeleteUser, setCanDeleteUser] = useState(false);
+
   const isSearchTermEmpty = searchTerm.trim() === "";
   const isSearchRoleEmpty = searchRole === "";
 
@@ -97,16 +118,26 @@ const UserManagementTemplate: React.FC = () => {
   const { users, status, error, currentPage, totalPages, totalCount } =
     usersState;
   const roles = useSelector((state: RootState) => state.roles.roles);
-  const user = useSelector((state: RootState) => state.auth.user);
   const currentUser = useSelector((state: RootState) => state.auth.user);
-
-  const isAdmin = useCallback(() => {
-    return currentUser?.role === "ADMIN";
-  }, [currentUser]);
 
   const { totalUserCount } = useWebSocket();
 
   console.log("Current users state:", usersState);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      dispatch(setUser(parsedUser));
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    console.log("Current user changed:", currentUser);
+    const newCanDeleteUser = currentUser?.role === "ADMIN";
+    console.log("Setting canDeleteUser to:", newCanDeleteUser);
+    setCanDeleteUser(newCanDeleteUser);
+  }, [currentUser]);
 
   const loadMore = useCallback(() => {
     if (currentPage < totalPages) {
@@ -126,13 +157,12 @@ const UserManagementTemplate: React.FC = () => {
   const { lastElementRef } = useInfiniteScroll(loadMore);
 
   useEffect(() => {
-    if (user?.role === "STAFF") {
+    if (currentUser?.role === "STAFF") {
       router.push("/dashboard");
     }
-  }, [user, router]);
+  }, [currentUser, router]);
 
   useEffect(() => {
-    // コンポーネントのマウント時に状態をリセット
     dispatch(resetUsersState());
     dispatch(fetchUsers({ page: 1, search: "", role: "", isNewSearch: true }));
     dispatch(fetchRoles());
@@ -140,11 +170,14 @@ const UserManagementTemplate: React.FC = () => {
     setSearchRole("");
     setLastSearch({ type: "", value: "" });
 
-    // コンポーネントのアンマウント時に状態をリセット
     return () => {
       dispatch(resetUsersState());
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    forceUpdate({});
+  }, [currentUser]);
 
   useEffect(() => {
     if (totalUserCount !== null) {
@@ -217,9 +250,7 @@ const UserManagementTemplate: React.FC = () => {
   };
 
   const handleAddUser = () => {
-    setActiveItem(null);
-    setModalMode("add");
-    onOpen();
+    setIsUserRegistrationModalOpen(true);
   };
 
   const handleEditUser = (user: User) => {
@@ -255,11 +286,9 @@ const UserManagementTemplate: React.FC = () => {
   }, []);
 
   const confirmDelete = useCallback(async () => {
-    console.log("confirmDelete called", userToDelete);
     if (userToDelete) {
       try {
-        const result = await dispatch(deleteUser(userToDelete.id)).unwrap();
-        console.log("Delete result:", result);
+        await dispatch(deleteUser(userToDelete.id)).unwrap();
         toast({
           title: "ユーザーを削除しました",
           description: `${userToDelete.username} の情報が削除されました。`,
@@ -287,21 +316,137 @@ const UserManagementTemplate: React.FC = () => {
     setUserToDelete(null);
   }, []);
 
+  const handleNewUserChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setNewUserFormData((prev) => ({
+      ...prev,
+      [name]:
+        name === "isActive"
+          ? value === "true"
+          : name === "role"
+          ? (value as "ADMIN" | "MANAGER" | "STAFF")
+          : value,
+    }));
+  };
+
+  const handleNewUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      console.log("Submitting new user data:", newUserFormData);
+      const result = await dispatch(addUser(newUserFormData)).unwrap();
+      console.log("New user added:", result);
+      toast({
+        title: "ユーザーが登録されました",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      setIsUserRegistrationModalOpen(false);
+      setNewUserFormData({
+        username: "",
+        email: "",
+        password: "",
+        role: "STAFF",
+        isActive: true,
+      });
+    } catch (error: any) {
+      console.error("Error in handleNewUserSubmit:", error);
+      toast({
+        title: "ユーザー登録に失敗しました",
+        description: error.message || JSON.stringify(error),
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleEditUserChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setActiveItem((prev) => {
+      if (prev) {
+        // User型かどうかを確認
+        if ("isActive" in prev) {
+          return {
+            ...prev,
+            [name]: name === "isActive" ? value === "true" : value,
+            isActive: name === "isActive" ? value === "true" : prev.isActive,
+          } as User;
+        } else {
+          // Role型の場合
+          return {
+            ...prev,
+            [name]: value,
+          } as Role;
+        }
+      }
+      return prev;
+    });
+  };
+
+  const handleSaveUser = async (updatedUser: User) => {
+    try {
+      console.log("Saving user:", updatedUser);
+      const result = await dispatch(
+        updateUser({ id: updatedUser.id, userData: updatedUser })
+      ).unwrap();
+      console.log("Updated user:", result);
+
+      if (currentUser && currentUser.id === updatedUser.id) {
+        console.log("Updating current user role to:", result.role);
+        dispatch(updateUserRole(result.role as "ADMIN" | "MANAGER" | "STAFF"));
+      }
+
+      toast({
+        title: "ユーザー情報を更新しました",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      onClose();
+    } catch (error: any) {
+      console.error("Error saving user:", error);
+      toast({
+        title: "ユーザー情報の更新に失敗しました",
+        description: error.message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
   const renderUserForm = () => {
     const userItem = activeItem as User | null;
     return (
       <VStack spacing={4} align="stretch">
         <FormControl>
           <FormLabel>ユーザー名</FormLabel>
-          <Input defaultValue={userItem?.username} />
+          <Input
+            name="username"
+            defaultValue={userItem?.username || ""}
+            onChange={handleEditUserChange}
+          />
         </FormControl>
         <FormControl>
           <FormLabel>メールアドレス</FormLabel>
-          <Input type="email" defaultValue={userItem?.email} />
+          <Input
+            name="email"
+            type="email"
+            defaultValue={userItem?.email || ""}
+            onChange={handleEditUserChange}
+          />
         </FormControl>
         <FormControl>
           <FormLabel>役割</FormLabel>
-          <Select defaultValue={userItem?.role}>
+          <Select
+            name="role"
+            defaultValue={userItem?.role || ""}
+            onChange={handleEditUserChange}>
             <option value="ADMIN">管理者</option>
             <option value="MANAGER">マネージャー</option>
             <option value="STAFF">スタッフ</option>
@@ -310,9 +455,11 @@ const UserManagementTemplate: React.FC = () => {
         <FormControl>
           <FormLabel>ステータス</FormLabel>
           <Select
-            defaultValue={userItem?.isActive ? "アクティブ" : "非アクティブ"}>
-            <option value="アクティブ">アクティブ</option>
-            <option value="非アクティブ">非アクティブ</option>
+            name="isActive"
+            value={userItem?.isActive?.toString() || "false"}
+            onChange={handleEditUserChange}>
+            <option value="true">アクティブ</option>
+            <option value="false">非アクティブ</option>
           </Select>
         </FormControl>
       </VStack>
@@ -412,46 +559,56 @@ const UserManagementTemplate: React.FC = () => {
               </Tr>
             </Thead>
             <Tbody>
-              {users.map((user, index) => (
-                <Tr
-                  key={`${user.id}-${index}`}
-                  ref={index === users.length - 1 ? lastElementRef : null}>
-                  <Td>{user.id}</Td>
-                  <Td>{user.username}</Td>
-                  <Td>{user.email}</Td>
-                  <Td>{user.role}</Td>
-                  <Td>
-                    <Badge colorScheme={user.isActive ? "green" : "red"}>
-                      {user.isActive ? "アクティブ" : "非アクティブ"}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <Button
-                        size="sm"
-                        leftIcon={<ViewIcon />}
-                        onClick={() => handleUserClick(user)}>
-                        詳細
-                      </Button>
-                      <Button
-                        size="sm"
-                        leftIcon={<EditIcon />}
-                        onClick={() => handleEditUser(user)}>
-                        編集
-                      </Button>
-                      {isAdmin() && (
+              {users.map((user, index) => {
+                if (process.env.NODE_ENV === "development") {
+                  console.log("Rendering user:", user);
+                }
+                return (
+                  <Tr
+                    key={`${user.id}-${index}`}
+                    ref={index === users.length - 1 ? lastElementRef : null}>
+                    <Td>{user.id}</Td>
+                    <Td>{user.username}</Td>
+                    <Td>{user.email}</Td>
+                    <Td>{user.role}</Td>
+                    <Td>
+                      <Badge
+                        colorScheme={
+                          user.isActive ?? user.is_active ? "green" : "red"
+                        }>
+                        {user.isActive ?? user.is_active
+                          ? "アクティブ"
+                          : "非アクティブ"}
+                      </Badge>
+                    </Td>
+                    <Td>
+                      <HStack spacing={2}>
                         <Button
                           size="sm"
-                          leftIcon={<DeleteIcon />}
-                          colorScheme="red"
-                          onClick={() => handleDeleteUser(user)}>
-                          削除
+                          leftIcon={<ViewIcon />}
+                          onClick={() => handleUserClick(user)}>
+                          詳細
                         </Button>
-                      )}
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
+                        <Button
+                          size="sm"
+                          leftIcon={<EditIcon />}
+                          onClick={() => handleEditUser(user)}>
+                          編集
+                        </Button>
+                        {canDeleteUser && (
+                          <Button
+                            size="sm"
+                            leftIcon={<DeleteIcon />}
+                            colorScheme="red"
+                            onClick={() => handleDeleteUser(user)}>
+                            削除
+                          </Button>
+                        )}
+                      </HStack>
+                    </Td>
+                  </Tr>
+                );
+              })}
             </Tbody>
           </Table>
           <Flex justify="center" my={4}>
@@ -500,9 +657,14 @@ const UserManagementTemplate: React.FC = () => {
                 </Box>
                 <Box>
                   <strong>ステータス:</strong>{" "}
-                  {(activeItem as User)?.isActive
-                    ? "アクティブ"
-                    : "非アクティブ"}
+                  <Badge
+                    colorScheme={
+                      (activeItem as User)?.isActive ? "green" : "red"
+                    }>
+                    {(activeItem as User)?.isActive
+                      ? "アクティブ"
+                      : "非アクティブ"}
+                  </Badge>
                 </Box>
               </VStack>
             ) : (
@@ -511,12 +673,89 @@ const UserManagementTemplate: React.FC = () => {
           </ModalBody>
           <ModalFooter>
             {(modalMode === "add" || modalMode === "edit") && (
-              <Button colorScheme="blue" mr={3}>
+              <Button
+                colorScheme="blue"
+                mr={3}
+                onClick={() => handleSaveUser(activeItem as User)}>
                 保存
               </Button>
             )}
             <Button variant="ghost" onClick={onClose}>
               閉じる
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={isUserRegistrationModalOpen}
+        onClose={() => setIsUserRegistrationModalOpen(false)}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>新規ユーザー登録</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <form onSubmit={handleNewUserSubmit}>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>ユーザー名</FormLabel>
+                  <Input
+                    name="username"
+                    value={newUserFormData.username}
+                    onChange={handleNewUserChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>メールアドレス</FormLabel>
+                  <Input
+                    name="email"
+                    type="email"
+                    value={newUserFormData.email}
+                    onChange={handleNewUserChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>パスワード</FormLabel>
+                  <Input
+                    name="password"
+                    type="password"
+                    value={newUserFormData.password}
+                    onChange={handleNewUserChange}
+                  />
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>役割</FormLabel>
+                  <Select
+                    name="role"
+                    value={newUserFormData.role}
+                    onChange={handleNewUserChange}>
+                    <option value="ADMIN">管理者</option>
+                    <option value="MANAGER">マネージャー</option>
+                    <option value="STAFF">スタッフ</option>
+                  </Select>
+                </FormControl>
+                <FormControl isRequired>
+                  <FormLabel>ステータス</FormLabel>
+                  <Select
+                    name="isActive"
+                    value={newUserFormData.isActive.toString()}
+                    onChange={handleNewUserChange}>
+                    <option value="true">アクティブ</option>
+                    <option value="false">非アクティブ</option>
+                  </Select>
+                </FormControl>
+              </VStack>
+            </form>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={() => setIsUserRegistrationModalOpen(false)}>
+              キャンセル
+            </Button>
+            <Button colorScheme="blue" onClick={handleNewUserSubmit}>
+              登録
             </Button>
           </ModalFooter>
         </ModalContent>

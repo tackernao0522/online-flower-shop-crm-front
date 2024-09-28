@@ -1,15 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { resetUsers, resetUsersState } from "../users/usersSlice";
-
-interface User {
-  id: string;
-  email: string;
-  username: string;
-  role: "ADMIN" | "MANAGER" | "STAFF";
-}
+import { User } from "@/types/user"; // User インターフェースをインポート
 
 export interface AuthState {
-  // ここでエクスポート
   token: string | null;
   user: User | null;
   isAuthenticated: boolean;
@@ -47,14 +40,44 @@ const authSlice = createSlice({
 
       if (typeof window !== "undefined") {
         localStorage.setItem("token", action.payload.token);
-        localStorage.setItem("user", JSON.stringify(action.payload.user));
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...action.payload.user,
+            isActive: action.payload.user.isActive,
+          })
+        );
       }
     },
     setAuthState: (state, action: PayloadAction<boolean>) => {
       state.isAuthenticated = action.payload;
     },
     setUser: (state, action: PayloadAction<User>) => {
+      console.log("Setting user in authSlice:", action.payload);
       state.user = action.payload;
+      state.isAuthenticated = true;
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "user",
+          JSON.stringify({
+            ...action.payload,
+            isActive: action.payload.isActive,
+          })
+        );
+      }
+    },
+    updateUserRole: (
+      state,
+      action: PayloadAction<"ADMIN" | "MANAGER" | "STAFF">
+    ) => {
+      console.log("Updating user role in authSlice:", action.payload);
+      if (state.user) {
+        state.user.role = action.payload;
+        if (typeof window !== "undefined") {
+          localStorage.setItem("user", JSON.stringify(state.user));
+        }
+      }
+      console.log("Updated auth state:", state);
     },
   },
   extraReducers: (builder) => {
@@ -66,7 +89,8 @@ const authSlice = createSlice({
   },
 });
 
-export const { login, setAuthState, setUser } = authSlice.actions;
+export const { login, setAuthState, setUser, updateUserRole } =
+  authSlice.actions;
 export default authSlice.reducer;
 
 export const selectIsAuthenticated = (state: { auth: AuthState }) =>

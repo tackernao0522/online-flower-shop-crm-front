@@ -2,8 +2,10 @@ export interface User {
   id: string;
   username: string;
   email: string;
-  role: "admin" | "staff" | "user";
+  role: "ADMIN" | "MANAGER" | "STAFF";
   isActive: boolean;
+  // is_active プロパティを追加（オプショナルにする）
+  is_active?: boolean;
   createdAt: string;
   updatedAt: string;
 }

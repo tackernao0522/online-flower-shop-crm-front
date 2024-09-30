@@ -31,6 +31,15 @@ import {
   Center,
   IconButton,
   useToast,
+  useBreakpointValue,
+  Stack,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  DrawerFooter,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -121,6 +130,13 @@ const UserManagementTemplate: React.FC = () => {
   const currentUser = useSelector((state: RootState) => state.auth.user);
 
   const { totalUserCount } = useWebSocket();
+
+  // レスポンシブ設定
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as
+    | "column"
+    | "row";
+  const modalSize = useBreakpointValue({ base: "full", md: "xl" });
 
   console.log("Current users state:", usersState);
 
@@ -499,40 +515,81 @@ const UserManagementTemplate: React.FC = () => {
 
   const renderUserManagement = () => (
     <>
-      <Flex mb={5}>
-        <Input
-          placeholder="ユーザー名またはメールアドレスで検索"
-          mr={3}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => handleKeyPress(e, "term")}
-        />
-        <Button
-          onClick={() => handleSearch("term")}
-          isDisabled={isSearchTermEmpty}>
-          名前またはメール検索
-        </Button>
-      </Flex>
-      <Flex mb={5}>
-        <Select
-          placeholder="役割を選択"
-          mr={3}
-          value={searchRole}
-          onChange={(e) => setSearchRole(e.target.value)}
-          onKeyPress={(e) => handleKeyPress(e, "role")}>
-          <option value="ADMIN">管理者</option>
-          <option value="MANAGER">マネージャー</option>
-          <option value="STAFF">スタッフ</option>
-        </Select>
-        <Button
-          onClick={() => handleSearch("role")}
-          isDisabled={isSearchRoleEmpty}>
-          役割検索
-        </Button>
-      </Flex>
-      <Button onClick={handleResetSearch} mb={5}>
-        検索結果をリセット
-      </Button>
+      {isMobile ? (
+        // モバイル版のレイアウト
+        <VStack spacing={4} align="stretch" width="100%">
+          <Input
+            placeholder="ユーザー名またはメールアドレスで検索"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={(e) => handleKeyPress(e, "term")}
+          />
+          <Button
+            onClick={() => handleSearch("term")}
+            isDisabled={isSearchTermEmpty}
+            width="100%">
+            名前またはメール検索
+          </Button>
+          <Box position="relative">
+            <Select
+              placeholder="役割を選択"
+              value={searchRole}
+              onChange={(e) => setSearchRole(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e, "role")}
+              height="50px"
+              fontSize="16px">
+              <option value="ADMIN">管理者</option>
+              <option value="MANAGER">マネージャー</option>
+              <option value="STAFF">スタッフ</option>
+            </Select>
+          </Box>
+          <Button
+            onClick={() => handleSearch("role")}
+            isDisabled={isSearchRoleEmpty}
+            width="100%">
+            役割検索
+          </Button>
+          <Button onClick={handleResetSearch} width="100%">
+            検索結果をリセット
+          </Button>
+        </VStack>
+      ) : (
+        // デスクトップ版のレイアウト（元のまま）
+        <>
+          <Stack direction={flexDirection} mb={5} spacing={3}>
+            <Input
+              placeholder="ユーザー名またはメールアドレスで検索"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e, "term")}
+            />
+            <Button
+              onClick={() => handleSearch("term")}
+              isDisabled={isSearchTermEmpty}>
+              名前またはメール検索
+            </Button>
+          </Stack>
+          <Stack direction={flexDirection} mb={5} spacing={3}>
+            <Select
+              placeholder="役割を選択"
+              value={searchRole}
+              onChange={(e) => setSearchRole(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e, "role")}>
+              <option value="ADMIN">管理者</option>
+              <option value="MANAGER">マネージャー</option>
+              <option value="STAFF">スタッフ</option>
+            </Select>
+            <Button
+              onClick={() => handleSearch("role")}
+              isDisabled={isSearchRoleEmpty}>
+              役割検索
+            </Button>
+          </Stack>
+          <Button onClick={handleResetSearch} mb={5}>
+            検索結果をリセット
+          </Button>
+        </>
+      )}
 
       {lastSearch.value && (
         <Text>
@@ -547,28 +604,33 @@ const UserManagementTemplate: React.FC = () => {
 
       {users && users.length > 0 ? (
         <>
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>ID</Th>
-                <Th>ユーザー名</Th>
-                <Th>メールアドレス</Th>
-                <Th>役割</Th>
-                <Th>ステータス</Th>
-                <Th>アクション</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {users.map((user, index) => {
-                if (process.env.NODE_ENV === "development") {
-                  console.log("Rendering user:", user);
-                }
-                return (
+          <Box overflowX="auto">
+            <Table variant="simple" size={isMobile ? "sm" : "md"}>
+              <Thead>
+                <Tr>
+                  <Th minWidth={isMobile ? "60px" : "auto"}>ID</Th>
+                  <Th minWidth={isMobile ? "100px" : "auto"}>ユーザー名</Th>
+                  <Th minWidth={isMobile ? "150px" : "auto"}>メールアドレス</Th>
+                  <Th minWidth={isMobile ? "80px" : "auto"}>役割</Th>
+                  <Th minWidth={isMobile ? "80px" : "auto"}>ステータス</Th>
+                  <Th minWidth={isMobile ? "120px" : "auto"}>アクション</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {users.map((user, index) => (
                   <Tr
                     key={`${user.id}-${index}`}
                     ref={index === users.length - 1 ? lastElementRef : null}>
                     <Td>{user.id}</Td>
-                    <Td>{user.username}</Td>
+                    <Td>
+                      {isMobile && lastSearch.type === "term" ? (
+                        <Text whiteSpace="normal" wordBreak="break-word">
+                          {user.username}
+                        </Text>
+                      ) : (
+                        <Text whiteSpace="nowrap">{user.username}</Text>
+                      )}
+                    </Td>
                     <Td>{user.email}</Td>
                     <Td>{user.role}</Td>
                     <Td>
@@ -582,17 +644,21 @@ const UserManagementTemplate: React.FC = () => {
                       </Badge>
                     </Td>
                     <Td>
-                      <HStack spacing={2}>
+                      <Stack
+                        direction={isMobile ? "column" : "row"}
+                        spacing={2}>
                         <Button
                           size="sm"
                           leftIcon={<ViewIcon />}
-                          onClick={() => handleUserClick(user)}>
+                          onClick={() => handleUserClick(user)}
+                          width={isMobile ? "100%" : "auto"}>
                           詳細
                         </Button>
                         <Button
                           size="sm"
                           leftIcon={<EditIcon />}
-                          onClick={() => handleEditUser(user)}>
+                          onClick={() => handleEditUser(user)}
+                          width={isMobile ? "100%" : "auto"}>
                           編集
                         </Button>
                         {canDeleteUser && (
@@ -600,17 +666,18 @@ const UserManagementTemplate: React.FC = () => {
                             size="sm"
                             leftIcon={<DeleteIcon />}
                             colorScheme="red"
-                            onClick={() => handleDeleteUser(user)}>
+                            onClick={() => handleDeleteUser(user)}
+                            width={isMobile ? "100%" : "auto"}>
                             削除
                           </Button>
                         )}
-                      </HStack>
+                      </Stack>
                     </Td>
                   </Tr>
-                );
-              })}
-            </Tbody>
-          </Table>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
           <Flex justify="center" my={4}>
             <Text color="red">
               {!hasMore
@@ -632,64 +699,126 @@ const UserManagementTemplate: React.FC = () => {
         </Center>
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {modalMode === "detail"
-              ? "ユーザー詳細"
-              : modalMode === "add"
-              ? "新規ユーザー登録"
-              : "ユーザー編集"}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {modalMode === "detail" ? (
-              <VStack align="stretch" spacing={4}>
-                <Box>
-                  <strong>ユーザー名:</strong> {(activeItem as User)?.username}
-                </Box>
-                <Box>
-                  <strong>メールアドレス:</strong> {(activeItem as User)?.email}
-                </Box>
-                <Box>
-                  <strong>役割:</strong> {(activeItem as User)?.role}
-                </Box>
-                <Box>
-                  <strong>ステータス:</strong>{" "}
-                  <Badge
-                    colorScheme={
-                      (activeItem as User)?.isActive ? "green" : "red"
-                    }>
-                    {(activeItem as User)?.isActive
-                      ? "アクティブ"
-                      : "非アクティブ"}
-                  </Badge>
-                </Box>
-              </VStack>
-            ) : (
-              renderUserForm()
-            )}
-          </ModalBody>
-          <ModalFooter>
-            {(modalMode === "add" || modalMode === "edit") && (
-              <Button
-                colorScheme="blue"
-                mr={3}
-                onClick={() => handleSaveUser(activeItem as User)}>
-                保存
+      {isMobile ? (
+        <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="full">
+          <DrawerOverlay />
+          <DrawerContent>
+            <DrawerCloseButton />
+            <DrawerHeader>
+              {modalMode === "detail"
+                ? "ユーザー詳細"
+                : modalMode === "add"
+                ? "新規ユーザー登録"
+                : "ユーザー編集"}
+            </DrawerHeader>
+            <DrawerBody>
+              {modalMode === "detail" ? (
+                <VStack align="stretch" spacing={4}>
+                  <Box>
+                    <strong>ユーザー名:</strong>{" "}
+                    {(activeItem as User)?.username}
+                  </Box>
+                  <Box>
+                    <strong>メールアドレス:</strong>{" "}
+                    {(activeItem as User)?.email}
+                  </Box>
+                  <Box>
+                    <strong>役割:</strong> {(activeItem as User)?.role}
+                  </Box>
+                  <Box>
+                    <strong>ステータス:</strong>{" "}
+                    <Badge
+                      colorScheme={
+                        (activeItem as User)?.isActive ? "green" : "red"
+                      }>
+                      {(activeItem as User)?.isActive
+                        ? "アクティブ"
+                        : "非アクティブ"}
+                    </Badge>
+                  </Box>
+                </VStack>
+              ) : (
+                renderUserForm()
+              )}
+            </DrawerBody>
+            <DrawerFooter>
+              {(modalMode === "add" || modalMode === "edit") && (
+                <Button
+                  colorScheme="blue"
+                  mr={3}
+                  onClick={() => handleSaveUser(activeItem as User)}>
+                  保存
+                </Button>
+              )}
+              <Button variant="outline" onClick={onClose}>
+                {modalMode === "detail" ? "閉じる" : "キャンセル"}
               </Button>
-            )}
-            <Button variant="ghost" onClick={onClose}>
-              閉じる
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Modal isOpen={isOpen} onClose={onClose} size={modalSize}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>
+              {modalMode === "detail"
+                ? "ユーザー詳細"
+                : modalMode === "add"
+                ? "新規ユーザー登録"
+                : "ユーザー編集"}
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              {modalMode === "detail" ? (
+                <VStack align="stretch" spacing={4}>
+                  <Box>
+                    <strong>ユーザー名:</strong>{" "}
+                    {(activeItem as User)?.username}
+                  </Box>
+                  <Box>
+                    <strong>メールアドレス:</strong>{" "}
+                    {(activeItem as User)?.email}
+                  </Box>
+                  <Box>
+                    <strong>役割:</strong> {(activeItem as User)?.role}
+                  </Box>
+                  <Box>
+                    <strong>ステータス:</strong>{" "}
+                    <Badge
+                      colorScheme={
+                        (activeItem as User)?.isActive ? "green" : "red"
+                      }>
+                      {(activeItem as User)?.isActive
+                        ? "アクティブ"
+                        : "非アクティブ"}
+                    </Badge>
+                  </Box>
+                </VStack>
+              ) : (
+                renderUserForm()
+              )}
+            </ModalBody>
+            <ModalFooter>
+              {(modalMode === "add" || modalMode === "edit") && (
+                <Button
+                  colorScheme="blue"
+                  mr={3}
+                  onClick={() => handleSaveUser(activeItem as User)}>
+                  保存
+                </Button>
+              )}
+              <Button variant="ghost" onClick={onClose}>
+                閉じる
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      )}
 
       <Modal
         isOpen={isUserRegistrationModalOpen}
-        onClose={() => setIsUserRegistrationModalOpen(false)}>
+        onClose={() => setIsUserRegistrationModalOpen(false)}
+        size={modalSize}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>新規ユーザー登録</ModalHeader>
@@ -769,47 +898,69 @@ const UserManagementTemplate: React.FC = () => {
         <Button
           leftIcon={<AddIcon />}
           colorScheme="blue"
-          onClick={handleAddRole}>
+          onClick={handleAddRole}
+          width={isMobile ? "100%" : "auto"}>
           新規ロール追加
         </Button>
       </Flex>
 
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th>ロール名</Th>
-            <Th>説明</Th>
-            <Th>アクション</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {roles.map((role) => (
-            <Tr key={role.id}>
-              <Td>{role.name}</Td>
-              <Td>{role.description}</Td>
-              <Td>
-                <HStack spacing={2}>
-                  <Button
-                    size="sm"
-                    leftIcon={<EditIcon />}
-                    onClick={() => handleEditRole(role)}>
-                    編集
-                  </Button>
-                  <Button
-                    size="sm"
-                    leftIcon={<DeleteIcon />}
-                    colorScheme="red"
-                    onClick={() => handleDeleteRole(role.id)}>
-                    削除
-                  </Button>
-                </HStack>
-              </Td>
+      <Box overflowX="auto">
+        <Table variant="simple" size={isMobile ? "sm" : "md"}>
+          <Thead>
+            <Tr>
+              <Th minWidth={isMobile ? "100px" : "auto"}>ロール名</Th>
+              <Th minWidth={isMobile ? "150px" : "auto"}>説明</Th>
+              <Th minWidth={isMobile ? "100px" : "auto"}>アクション</Th>
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {roles.map((role) => (
+              <Tr key={role.id}>
+                <Td>{role.name}</Td>
+                <Td>{role.description}</Td>
+                <Td>
+                  {isMobile ? (
+                    <Flex>
+                      <IconButton
+                        aria-label="編集"
+                        icon={<EditIcon />}
+                        size="sm"
+                        onClick={() => handleEditRole(role)}
+                        mr={2}
+                      />
+                      <IconButton
+                        aria-label="削除"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() => handleDeleteRole(role.id)}
+                      />
+                    </Flex>
+                  ) : (
+                    <Stack direction="row" spacing={2}>
+                      <Button
+                        size="sm"
+                        leftIcon={<EditIcon />}
+                        onClick={() => handleEditRole(role)}>
+                        編集
+                      </Button>
+                      <Button
+                        size="sm"
+                        leftIcon={<DeleteIcon />}
+                        colorScheme="red"
+                        onClick={() => handleDeleteRole(role.id)}>
+                        削除
+                      </Button>
+                    </Stack>
+                  )}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <Modal isOpen={isOpen} onClose={onClose} size={modalSize}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
@@ -850,23 +1001,32 @@ const UserManagementTemplate: React.FC = () => {
 
   return (
     <Box p={5}>
-      <Flex justifyContent="space-between" alignItems="center" mb={5}>
-        <Heading as="h1" size="xl">
+      <Flex
+        justifyContent="space-between"
+        alignItems="center"
+        mb={5}
+        flexDirection={flexDirection}>
+        <Heading as="h1" size="xl" mb={isMobile ? 4 : 0}>
           {currentView === "users" ? "ユーザー管理" : "ロールと権限管理"}
         </Heading>
-        <HStack>
+        <Stack
+          direction={isMobile ? "column" : "row"}
+          spacing={2}
+          width={isMobile ? "100%" : "auto"}>
           {currentView === "users" && (
             <>
               <Button
                 leftIcon={<AddIcon />}
                 colorScheme="blue"
-                onClick={handleAddUser}>
+                onClick={handleAddUser}
+                width={isMobile ? "100%" : "auto"}>
                 新規ユーザー登録
               </Button>
               <Button
                 leftIcon={<LockIcon />}
                 colorScheme="green"
-                onClick={handleRolesAndPermissions}>
+                onClick={handleRolesAndPermissions}
+                width={isMobile ? "100%" : "auto"}>
                 ロールと権限管理
               </Button>
             </>
@@ -877,12 +1037,13 @@ const UserManagementTemplate: React.FC = () => {
               currentView === "roles"
                 ? setCurrentView("users")
                 : router.push("/dashboard")
-            }>
+            }
+            width={isMobile ? "100%" : "auto"}>
             {currentView === "roles"
               ? "ユーザー管理に戻る"
               : "ダッシュボードへ戻る"}
           </Button>
-        </HStack>
+        </Stack>
       </Flex>
 
       {currentView === "users"

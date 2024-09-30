@@ -1,7 +1,12 @@
 "use client";
 
 import React from "react";
-import { SimpleGrid, Container } from "@chakra-ui/react";
+import {
+  SimpleGrid,
+  Container,
+  Box,
+  useBreakpointValue,
+} from "@chakra-ui/react";
 import DashboardHeader from "../organisms/DashboardHeader";
 import DashboardStats from "../organisms/DashboardStats";
 import RecentOrders from "../molecules/RecentOrders";
@@ -17,28 +22,28 @@ import {
   TableSkeleton,
   ChartSkeleton,
 } from "../atoms/SkeletonComponents";
-import { useLoading } from "../../hooks/useLoading.ts";
+import { useLoading } from "../../hooks/useLoading";
 
 const DashboardTemplate: React.FC = () => {
   const isLoading = useLoading();
+  const columnCount = useBreakpointValue({ base: 1, sm: 2, md: 3, lg: 3 });
 
   return (
     <Container maxW="container.xl" p={{ base: 3, md: 5 }}>
       <DashboardHeader />
-      {isLoading ? (
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing={10} mb={10}>
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-          <StatCardSkeleton />
-        </SimpleGrid>
-      ) : (
-        <DashboardStats />
-      )}
+      <Box mb={10}>
+        {isLoading ? (
+          <SimpleGrid columns={columnCount} spacing={5}>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </SimpleGrid>
+        ) : (
+          <DashboardStats />
+        )}
+      </Box>
 
-      <SimpleGrid
-        columns={{ base: 1, md: 2 }}
-        spacing={{ base: 5, md: 10 }}
-        mb={{ base: 5, md: 10 }}>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={5} mb={10}>
         {isLoading ? (
           <>
             <TableSkeleton />
@@ -52,10 +57,7 @@ const DashboardTemplate: React.FC = () => {
         )}
       </SimpleGrid>
 
-      <SimpleGrid
-        columns={{ base: 1, sm: 2, lg: 3 }}
-        spacing={{ base: 5, md: 10 }}
-        mb={{ base: 5, md: 10 }}>
+      <SimpleGrid columns={columnCount} spacing={5} mb={10}>
         {isLoading ? (
           <>
             <CardSkeleton />
@@ -71,7 +73,7 @@ const DashboardTemplate: React.FC = () => {
         )}
       </SimpleGrid>
 
-      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={{ base: 5, md: 10 }}>
+      <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={5}>
         {isLoading ? (
           <>
             <CardSkeleton />

@@ -74,6 +74,7 @@ import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import UserSearchForm from "../molecules/UserSearchForm";
 import UserManagementTable from "../organisms/UserManagementTable";
+import UserRegistrationModal from "../organisms/UserRegistrationModal";
 
 interface Role {
   id: number;
@@ -746,80 +747,13 @@ const UserManagementTemplate: React.FC = () => {
         </Modal>
       )}
 
-      <Modal
+      <UserRegistrationModal
         isOpen={isUserRegistrationModalOpen}
         onClose={() => setIsUserRegistrationModalOpen(false)}
-        size={modalSize}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>新規ユーザー登録</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <form onSubmit={handleNewUserSubmit}>
-              <VStack spacing={4}>
-                <FormControl isRequired>
-                  <FormLabel>ユーザー名</FormLabel>
-                  <Input
-                    name="username"
-                    value={newUserFormData.username}
-                    onChange={handleNewUserChange}
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>メールアドレス</FormLabel>
-                  <Input
-                    name="email"
-                    type="email"
-                    value={newUserFormData.email}
-                    onChange={handleNewUserChange}
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>パスワード</FormLabel>
-                  <Input
-                    name="password"
-                    type="password"
-                    value={newUserFormData.password}
-                    onChange={handleNewUserChange}
-                  />
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>役割</FormLabel>
-                  <Select
-                    name="role"
-                    value={newUserFormData.role}
-                    onChange={handleNewUserChange}>
-                    <option value="ADMIN">管理者</option>
-                    <option value="MANAGER">マネージャー</option>
-                    <option value="STAFF">スタッフ</option>
-                  </Select>
-                </FormControl>
-                <FormControl isRequired>
-                  <FormLabel>ステータス</FormLabel>
-                  <Select
-                    name="isActive"
-                    value={newUserFormData.isActive.toString()}
-                    onChange={handleNewUserChange}>
-                    <option value="true">アクティブ</option>
-                    <option value="false">非アクティブ</option>
-                  </Select>
-                </FormControl>
-              </VStack>
-            </form>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="ghost"
-              mr={3}
-              onClick={() => setIsUserRegistrationModalOpen(false)}>
-              キャンセル
-            </Button>
-            <Button colorScheme="blue" onClick={handleNewUserSubmit}>
-              登録
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        newUserFormData={newUserFormData}
+        handleNewUserChange={handleNewUserChange}
+        handleNewUserSubmit={handleNewUserSubmit}
+      />
     </>
   );
 

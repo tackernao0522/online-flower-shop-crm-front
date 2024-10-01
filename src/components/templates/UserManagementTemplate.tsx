@@ -72,6 +72,7 @@ import { User, UserState } from "@/types/user";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import UserSearchForm from "../molecules/UserSearchForm";
 
 interface Role {
   id: number;
@@ -518,18 +519,14 @@ const UserManagementTemplate: React.FC = () => {
       {isMobile ? (
         // モバイル版のレイアウト
         <VStack spacing={4} align="stretch" width="100%">
-          <Input
-            placeholder="ユーザー名またはメールアドレスで検索"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyPress={(e) => handleKeyPress(e, "term")}
+          <UserSearchForm
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            handleSearch={handleSearch}
+            handleKeyPress={handleKeyPress}
+            isSearchTermEmpty={isSearchTermEmpty}
+            isMobile={true}
           />
-          <Button
-            onClick={() => handleSearch("term")}
-            isDisabled={isSearchTermEmpty}
-            width="100%">
-            名前またはメール検索
-          </Button>
           <Box position="relative">
             <Select
               placeholder="役割を選択"
@@ -554,20 +551,17 @@ const UserManagementTemplate: React.FC = () => {
           </Button>
         </VStack>
       ) : (
-        // デスクトップ版のレイアウト（元のまま）
+        // デスクトップ版のレイアウト
         <>
           <Stack direction={flexDirection} mb={5} spacing={3}>
-            <Input
-              placeholder="ユーザー名またはメールアドレスで検索"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => handleKeyPress(e, "term")}
+            <UserSearchForm
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              handleSearch={handleSearch}
+              handleKeyPress={handleKeyPress}
+              isSearchTermEmpty={isSearchTermEmpty}
+              isMobile={false}
             />
-            <Button
-              onClick={() => handleSearch("term")}
-              isDisabled={isSearchTermEmpty}>
-              名前またはメール検索
-            </Button>
           </Stack>
           <Stack direction={flexDirection} mb={5} spacing={3}>
             <Select

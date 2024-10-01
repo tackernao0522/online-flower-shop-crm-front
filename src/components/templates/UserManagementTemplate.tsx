@@ -73,6 +73,7 @@ import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import UserSearchForm from "../molecules/UserSearchForm";
+import UserManagementTable from "../organisms/UserManagementTable";
 
 interface Role {
   id: number;
@@ -598,80 +599,16 @@ const UserManagementTemplate: React.FC = () => {
 
       {users && users.length > 0 ? (
         <>
-          <Box overflowX="auto">
-            <Table variant="simple" size={isMobile ? "sm" : "md"}>
-              <Thead>
-                <Tr>
-                  <Th minWidth={isMobile ? "60px" : "auto"}>ID</Th>
-                  <Th minWidth={isMobile ? "100px" : "auto"}>ユーザー名</Th>
-                  <Th minWidth={isMobile ? "150px" : "auto"}>メールアドレス</Th>
-                  <Th minWidth={isMobile ? "80px" : "auto"}>役割</Th>
-                  <Th minWidth={isMobile ? "80px" : "auto"}>ステータス</Th>
-                  <Th minWidth={isMobile ? "120px" : "auto"}>アクション</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {users.map((user, index) => (
-                  <Tr
-                    key={`${user.id}-${index}`}
-                    ref={index === users.length - 1 ? lastElementRef : null}>
-                    <Td>{user.id}</Td>
-                    <Td>
-                      {isMobile && lastSearch.type === "term" ? (
-                        <Text whiteSpace="normal" wordBreak="break-word">
-                          {user.username}
-                        </Text>
-                      ) : (
-                        <Text whiteSpace="nowrap">{user.username}</Text>
-                      )}
-                    </Td>
-                    <Td>{user.email}</Td>
-                    <Td>{user.role}</Td>
-                    <Td>
-                      <Badge
-                        colorScheme={
-                          user.isActive ?? user.is_active ? "green" : "red"
-                        }>
-                        {user.isActive ?? user.is_active
-                          ? "アクティブ"
-                          : "非アクティブ"}
-                      </Badge>
-                    </Td>
-                    <Td>
-                      <Stack
-                        direction={isMobile ? "column" : "row"}
-                        spacing={2}>
-                        <Button
-                          size="sm"
-                          leftIcon={<ViewIcon />}
-                          onClick={() => handleUserClick(user)}
-                          width={isMobile ? "100%" : "auto"}>
-                          詳細
-                        </Button>
-                        <Button
-                          size="sm"
-                          leftIcon={<EditIcon />}
-                          onClick={() => handleEditUser(user)}
-                          width={isMobile ? "100%" : "auto"}>
-                          編集
-                        </Button>
-                        {canDeleteUser && (
-                          <Button
-                            size="sm"
-                            leftIcon={<DeleteIcon />}
-                            colorScheme="red"
-                            onClick={() => handleDeleteUser(user)}
-                            width={isMobile ? "100%" : "auto"}>
-                            削除
-                          </Button>
-                        )}
-                      </Stack>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
+          <UserManagementTable
+            users={users}
+            isMobile={isMobile ?? false}
+            lastSearch={lastSearch}
+            canDeleteUser={canDeleteUser}
+            handleUserClick={handleUserClick}
+            handleEditUser={handleEditUser}
+            handleDeleteUser={handleDeleteUser}
+            lastElementRef={lastElementRef}
+          />
           <Flex justify="center" my={4}>
             <Text color="red">
               {!hasMore

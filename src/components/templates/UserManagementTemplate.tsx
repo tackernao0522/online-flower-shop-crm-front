@@ -33,13 +33,6 @@ import {
   useToast,
   useBreakpointValue,
   Stack,
-  Drawer,
-  DrawerBody,
-  DrawerHeader,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerCloseButton,
-  DrawerFooter,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -75,6 +68,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import UserSearchForm from "../molecules/UserSearchForm";
 import UserManagementTable from "../organisms/UserManagementTable";
 import UserRegistrationModal from "../organisms/UserRegistrationModal";
+import UserEditModal from "../organisms/UserEditModal";
 
 interface Role {
   id: number;
@@ -134,7 +128,6 @@ const UserManagementTemplate: React.FC = () => {
 
   const { totalUserCount } = useWebSocket();
 
-  // レスポンシブ設定
   const isMobile = useBreakpointValue({ base: true, md: false });
   const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as
     | "column"
@@ -388,7 +381,6 @@ const UserManagementTemplate: React.FC = () => {
     const { name, value } = e.target;
     setActiveItem((prev) => {
       if (prev) {
-        // User型かどうかを確認
         if ("isActive" in prev) {
           return {
             ...prev,
@@ -396,7 +388,6 @@ const UserManagementTemplate: React.FC = () => {
             isActive: name === "isActive" ? value === "true" : prev.isActive,
           } as User;
         } else {
-          // Role型の場合
           return {
             ...prev,
             [name]: value,
@@ -439,52 +430,6 @@ const UserManagementTemplate: React.FC = () => {
     }
   };
 
-  const renderUserForm = () => {
-    const userItem = activeItem as User | null;
-    return (
-      <VStack spacing={4} align="stretch">
-        <FormControl>
-          <FormLabel>ユーザー名</FormLabel>
-          <Input
-            name="username"
-            defaultValue={userItem?.username || ""}
-            onChange={handleEditUserChange}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>メールアドレス</FormLabel>
-          <Input
-            name="email"
-            type="email"
-            defaultValue={userItem?.email || ""}
-            onChange={handleEditUserChange}
-          />
-        </FormControl>
-        <FormControl>
-          <FormLabel>役割</FormLabel>
-          <Select
-            name="role"
-            defaultValue={userItem?.role || ""}
-            onChange={handleEditUserChange}>
-            <option value="ADMIN">管理者</option>
-            <option value="MANAGER">マネージャー</option>
-            <option value="STAFF">スタッフ</option>
-          </Select>
-        </FormControl>
-        <FormControl>
-          <FormLabel>ステータス</FormLabel>
-          <Select
-            name="isActive"
-            value={userItem?.isActive?.toString() || "false"}
-            onChange={handleEditUserChange}>
-            <option value="true">アクティブ</option>
-            <option value="false">非アクティブ</option>
-          </Select>
-        </FormControl>
-      </VStack>
-    );
-  };
-
   const renderRoleForm = () => {
     const roleItem = activeItem as Role | null;
     return (
@@ -519,7 +464,6 @@ const UserManagementTemplate: React.FC = () => {
   const renderUserManagement = () => (
     <>
       {isMobile ? (
-        // モバイル版のレイアウト
         <VStack spacing={4} align="stretch" width="100%">
           <UserSearchForm
             searchTerm={searchTerm}
@@ -553,7 +497,6 @@ const UserManagementTemplate: React.FC = () => {
           </Button>
         </VStack>
       ) : (
-        // デスクトップ版のレイアウト
         <>
           <Stack direction={flexDirection} mb={5} spacing={3}>
             <UserSearchForm
@@ -631,121 +574,14 @@ const UserManagementTemplate: React.FC = () => {
         </Center>
       )}
 
-      {isMobile ? (
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="full">
-          <DrawerOverlay />
-          <DrawerContent>
-            <DrawerCloseButton />
-            <DrawerHeader>
-              {modalMode === "detail"
-                ? "ユーザー詳細"
-                : modalMode === "add"
-                ? "新規ユーザー登録"
-                : "ユーザー編集"}
-            </DrawerHeader>
-            <DrawerBody>
-              {modalMode === "detail" ? (
-                <VStack align="stretch" spacing={4}>
-                  <Box>
-                    <strong>ユーザー名:</strong>{" "}
-                    {(activeItem as User)?.username}
-                  </Box>
-                  <Box>
-                    <strong>メールアドレス:</strong>{" "}
-                    {(activeItem as User)?.email}
-                  </Box>
-                  <Box>
-                    <strong>役割:</strong> {(activeItem as User)?.role}
-                  </Box>
-                  <Box>
-                    <strong>ステータス:</strong>{" "}
-                    <Badge
-                      colorScheme={
-                        (activeItem as User)?.isActive ? "green" : "red"
-                      }>
-                      {(activeItem as User)?.isActive
-                        ? "アクティブ"
-                        : "非アクティブ"}
-                    </Badge>
-                  </Box>
-                </VStack>
-              ) : (
-                renderUserForm()
-              )}
-            </DrawerBody>
-            <DrawerFooter>
-              {(modalMode === "add" || modalMode === "edit") && (
-                <Button
-                  colorScheme="blue"
-                  mr={3}
-                  onClick={() => handleSaveUser(activeItem as User)}>
-                  保存
-                </Button>
-              )}
-              <Button variant="outline" onClick={onClose}>
-                {modalMode === "detail" ? "閉じる" : "キャンセル"}
-              </Button>
-            </DrawerFooter>
-          </DrawerContent>
-        </Drawer>
-      ) : (
-        <Modal isOpen={isOpen} onClose={onClose} size={modalSize}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>
-              {modalMode === "detail"
-                ? "ユーザー詳細"
-                : modalMode === "add"
-                ? "新規ユーザー登録"
-                : "ユーザー編集"}
-            </ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              {modalMode === "detail" ? (
-                <VStack align="stretch" spacing={4}>
-                  <Box>
-                    <strong>ユーザー名:</strong>{" "}
-                    {(activeItem as User)?.username}
-                  </Box>
-                  <Box>
-                    <strong>メールアドレス:</strong>{" "}
-                    {(activeItem as User)?.email}
-                  </Box>
-                  <Box>
-                    <strong>役割:</strong> {(activeItem as User)?.role}
-                  </Box>
-                  <Box>
-                    <strong>ステータス:</strong>{" "}
-                    <Badge
-                      colorScheme={
-                        (activeItem as User)?.isActive ? "green" : "red"
-                      }>
-                      {(activeItem as User)?.isActive
-                        ? "アクティブ"
-                        : "非アクティブ"}
-                    </Badge>
-                  </Box>
-                </VStack>
-              ) : (
-                renderUserForm()
-              )}
-            </ModalBody>
-            <ModalFooter>
-              {(modalMode === "add" || modalMode === "edit") && (
-                <Button
-                  colorScheme="blue"
-                  mr={3}
-                  onClick={() => handleSaveUser(activeItem as User)}>
-                  保存
-                </Button>
-              )}
-              <Button variant="ghost" onClick={onClose}>
-                閉じる
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-      )}
+      <UserEditModal
+        isOpen={isOpen}
+        onClose={onClose}
+        modalMode={modalMode}
+        activeItem={activeItem as User}
+        handleEditUserChange={handleEditUserChange}
+        handleSaveUser={handleSaveUser}
+      />
 
       <UserRegistrationModal
         isOpen={isUserRegistrationModalOpen}

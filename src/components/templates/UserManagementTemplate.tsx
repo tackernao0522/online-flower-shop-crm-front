@@ -3,28 +3,13 @@ import {
   Box,
   Flex,
   Heading,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   Button,
   VStack,
   HStack,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   FormControl,
   FormLabel,
   Input,
-  Select,
-  Badge,
   Checkbox,
   Text,
   Spinner,
@@ -36,10 +21,7 @@ import {
 } from "@chakra-ui/react";
 import {
   AddIcon,
-  EditIcon,
-  DeleteIcon,
   ArrowBackIcon,
-  ViewIcon,
   LockIcon,
   ArrowUpIcon,
 } from "@chakra-ui/icons";
@@ -51,15 +33,9 @@ import {
   addUser,
   updateUser,
   deleteUser,
-  resetUsers,
   resetUsersState,
 } from "@/features/users/usersSlice";
-import {
-  fetchRoles,
-  addRole,
-  updateRole,
-  deleteRole,
-} from "@/features/roles/rolesSlice";
+import { fetchRoles, deleteRole } from "@/features/roles/rolesSlice";
 import { updateUserRole, setUser } from "@/features/auth/authSlice";
 import { User, UserState } from "@/types/user";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
@@ -69,12 +45,8 @@ import UserSearchForm from "../molecules/UserSearchForm";
 import UserManagementTable from "../organisms/UserManagementTable";
 import UserRegistrationModal from "../organisms/UserRegistrationModal";
 import UserEditModal from "../organisms/UserEditModal";
-
-interface Role {
-  id: number;
-  name: string;
-  description: string;
-}
+import RoleManagement from "../organisms/RoleManagement";
+import { Role } from "@/types/role";
 
 const UserManagementTemplate: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -543,92 +515,18 @@ const UserManagementTemplate: React.FC = () => {
   );
 
   const renderRoleManagement = () => (
-    <Box>
-      <Flex justifyContent="flex-end" mb={5}>
-        <Button
-          leftIcon={<AddIcon />}
-          colorScheme="blue"
-          onClick={handleAddRole}
-          width={isMobile ? "100%" : "auto"}>
-          新規ロール追加
-        </Button>
-      </Flex>
-
-      <Box overflowX="auto">
-        <Table variant="simple" size={isMobile ? "sm" : "md"}>
-          <Thead>
-            <Tr>
-              <Th minWidth={isMobile ? "100px" : "auto"}>ロール名</Th>
-              <Th minWidth={isMobile ? "150px" : "auto"}>説明</Th>
-              <Th minWidth={isMobile ? "100px" : "auto"}>アクション</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {roles.map((role) => (
-              <Tr key={role.id}>
-                <Td>{role.name}</Td>
-                <Td>{role.description}</Td>
-                <Td>
-                  {isMobile ? (
-                    <Flex>
-                      <IconButton
-                        aria-label="編集"
-                        icon={<EditIcon />}
-                        size="sm"
-                        onClick={() => handleEditRole(role)}
-                        mr={2}
-                      />
-                      <IconButton
-                        aria-label="削除"
-                        icon={<DeleteIcon />}
-                        size="sm"
-                        colorScheme="red"
-                        onClick={() => handleDeleteRole(role.id)}
-                      />
-                    </Flex>
-                  ) : (
-                    <Stack direction="row" spacing={2}>
-                      <Button
-                        size="sm"
-                        leftIcon={<EditIcon />}
-                        onClick={() => handleEditRole(role)}>
-                        編集
-                      </Button>
-                      <Button
-                        size="sm"
-                        leftIcon={<DeleteIcon />}
-                        colorScheme="red"
-                        onClick={() => handleDeleteRole(role.id)}>
-                        削除
-                      </Button>
-                    </Stack>
-                  )}
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Box>
-
-      <Modal isOpen={isOpen} onClose={onClose} size={modalSize}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {modalMode === "add" ? "新規ロール追加" : "ロール編集"}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>{renderRoleForm()}</ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" mr={3}>
-              保存
-            </Button>
-            <Button variant="ghost" onClick={onClose}>
-              キャンセル
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </Box>
+    <RoleManagement
+      roles={roles}
+      isMobile={isMobile ?? false}
+      modalSize={modalSize ?? "md"}
+      isOpen={isOpen}
+      onClose={onClose}
+      modalMode={modalMode}
+      handleAddRole={handleAddRole}
+      handleEditRole={handleEditRole}
+      handleDeleteRole={handleDeleteRole}
+      renderRoleForm={renderRoleForm}
+    />
   );
 
   if (status === "loading" && users.length === 0) {

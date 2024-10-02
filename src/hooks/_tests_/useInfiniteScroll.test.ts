@@ -26,8 +26,8 @@ describe("useInfiniteScroll", () => {
     jest.clearAllMocks();
   });
 
-  it("要素がスクロールしてビューに入るとloadMoreが呼び出される", () => {
-    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore));
+  it("要素がスクロールしてビューに入り、hasMoreがtrueの場合、loadMoreが呼び出される", () => {
+    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore, true));
 
     // モック要素を作成
     const mockNode = document.createElement("div");
@@ -47,8 +47,26 @@ describe("useInfiniteScroll", () => {
     expect(mockLoadMore).toHaveBeenCalled();
   });
 
+  it("要素がスクロールしてビューに入るが、hasMoreがfalseの場合、loadMoreが呼び出されない", () => {
+    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore, false));
+
+    // モック要素を作成
+    const mockNode = document.createElement("div");
+
+    // lastElementRef にノードを渡す
+    result.current.lastElementRef(mockNode);
+
+    // モックで entries が isIntersecting = true を返す
+    intersectionCallback([
+      { isIntersecting: true },
+    ] as IntersectionObserverEntry[]);
+
+    // loadMore が呼び出されていないことを確認
+    expect(mockLoadMore).not.toHaveBeenCalled();
+  });
+
   it("要素がスクロールしてビューに入らない場合はloadMoreが呼び出されない", () => {
-    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore));
+    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore, true));
 
     // モック要素を作成
     const mockNode = document.createElement("div");
@@ -66,7 +84,7 @@ describe("useInfiniteScroll", () => {
   });
 
   it("新しい要素が渡されると、前の IntersectionObserver が解除される", () => {
-    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore));
+    const { result } = renderHook(() => useInfiniteScroll(mockLoadMore, true));
 
     // 最初の要素を作成
     const firstMockNode = document.createElement("div");

@@ -54,7 +54,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
           {users.map((user, index) => (
             <Tr
               key={`${user.id}-${index}`}
-              ref={(node) => lastElementRef(node as HTMLElement | null)}>
+              ref={index === users.length - 1 ? lastElementRef : null}>
               <Td>{user.id}</Td>
               <Td>
                 {isMobile && lastSearch.type === "term" ? (

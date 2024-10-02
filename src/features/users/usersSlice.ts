@@ -56,7 +56,10 @@ export const fetchUsers = createAsyncThunk(
         }
       );
 
-      console.log("Received response:", response.data);
+      console.log("API Response:", response.data);
+      console.log("Total users:", response.data.meta.totalCount);
+      console.log("Current page:", response.data.meta.currentPage);
+      console.log("Total pages:", response.data.meta.totalPages);
 
       // レスポンスデータに `is_active` フィールドが含まれていることを確認
       const users = response.data.data.map((user: any) => ({
@@ -198,7 +201,14 @@ const usersSlice = createSlice({
         if (action.payload.isNewSearch) {
           state.users = action.payload.data;
         } else {
-          state.users = [...state.users, ...action.payload.data];
+          // 重複を排除しながらユーザーを追加
+          const newUsers = action.payload.data.filter(
+            (newUser: User) =>
+              !state.users.some(
+                (existingUser) => existingUser.id === newUser.id
+              )
+          );
+          state.users = [...state.users, ...newUsers];
         }
         state.currentPage = action.payload.meta.currentPage;
         state.totalPages = action.payload.meta.totalPages;

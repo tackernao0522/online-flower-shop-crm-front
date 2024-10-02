@@ -10,7 +10,6 @@ import {
   Th,
   Td,
   Button,
-  Input,
   VStack,
   HStack,
   useDisclosure,
@@ -23,6 +22,7 @@ import {
   ModalCloseButton,
   FormControl,
   FormLabel,
+  Input,
   Select,
   Badge,
   Checkbox,
@@ -134,7 +134,9 @@ const UserManagementTemplate: React.FC = () => {
     | "row";
   const modalSize = useBreakpointValue({ base: "full", md: "xl" });
 
-  console.log("Current users state:", usersState);
+  useEffect(() => {
+    console.log("Current users state:", usersState);
+  }, [usersState]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -152,7 +154,8 @@ const UserManagementTemplate: React.FC = () => {
   }, [currentUser]);
 
   const loadMore = useCallback(() => {
-    if (currentPage < totalPages) {
+    if (currentPage < totalPages && status !== "loading") {
+      console.log("Loading more users...");
       dispatch(
         fetchUsers({
           page: currentPage + 1,
@@ -161,12 +164,10 @@ const UserManagementTemplate: React.FC = () => {
           isNewSearch: false,
         })
       );
-    } else {
-      setHasMore(false);
     }
-  }, [dispatch, currentPage, totalPages, lastSearch]);
+  }, [dispatch, currentPage, totalPages, lastSearch, status]);
 
-  const { lastElementRef } = useInfiniteScroll(loadMore);
+  const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
 
   useEffect(() => {
     if (currentUser?.role === "STAFF") {
@@ -206,6 +207,10 @@ const UserManagementTemplate: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    setHasMore(currentPage < totalPages);
+  }, [currentPage, totalPages]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -463,72 +468,18 @@ const UserManagementTemplate: React.FC = () => {
 
   const renderUserManagement = () => (
     <>
-      {isMobile ? (
-        <VStack spacing={4} align="stretch" width="100%">
-          <UserSearchForm
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            handleSearch={handleSearch}
-            handleKeyPress={handleKeyPress}
-            isSearchTermEmpty={isSearchTermEmpty}
-            isMobile={true}
-          />
-          <Box position="relative">
-            <Select
-              placeholder="役割を選択"
-              value={searchRole}
-              onChange={(e) => setSearchRole(e.target.value)}
-              onKeyPress={(e) => handleKeyPress(e, "role")}
-              height="50px"
-              fontSize="16px">
-              <option value="ADMIN">管理者</option>
-              <option value="MANAGER">マネージャー</option>
-              <option value="STAFF">スタッフ</option>
-            </Select>
-          </Box>
-          <Button
-            onClick={() => handleSearch("role")}
-            isDisabled={isSearchRoleEmpty}
-            width="100%">
-            役割検索
-          </Button>
-          <Button onClick={handleResetSearch} width="100%">
-            検索結果をリセット
-          </Button>
-        </VStack>
-      ) : (
-        <>
-          <Stack direction={flexDirection} mb={5} spacing={3}>
-            <UserSearchForm
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              handleSearch={handleSearch}
-              handleKeyPress={handleKeyPress}
-              isSearchTermEmpty={isSearchTermEmpty}
-              isMobile={false}
-            />
-          </Stack>
-          <Stack direction={flexDirection} mb={5} spacing={3}>
-            <Select
-              placeholder="役割を選択"
-              value={searchRole}
-              onChange={(e) => setSearchRole(e.target.value)}
-              onKeyPress={(e) => handleKeyPress(e, "role")}>
-              <option value="ADMIN">管理者</option>
-              <option value="MANAGER">マネージャー</option>
-              <option value="STAFF">スタッフ</option>
-            </Select>
-            <Button
-              onClick={() => handleSearch("role")}
-              isDisabled={isSearchRoleEmpty}>
-              役割検索
-            </Button>
-          </Stack>
-          <Button onClick={handleResetSearch} mb={5}>
-            検索結果をリセット
-          </Button>
-        </>
-      )}
+      <UserSearchForm
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        searchRole={searchRole}
+        setSearchRole={setSearchRole}
+        handleSearch={handleSearch}
+        handleKeyPress={handleKeyPress}
+        handleResetSearch={handleResetSearch}
+        isSearchTermEmpty={isSearchTermEmpty}
+        isSearchRoleEmpty={isSearchRoleEmpty}
+        isMobile={isMobile ?? false}
+      />
 
       {lastSearch.value && (
         <Text>
@@ -555,11 +506,9 @@ const UserManagementTemplate: React.FC = () => {
           />
           <Flex justify="center" my={4}>
             <Text color="red">
-              {!hasMore
-                ? `すべてのユーザーを表示しました (${totalUsers ?? 0}名)`
-                : `${users.length}名のユーザーを表示中 (全${
-                    totalUsers ?? 0
-                  }名)`}
+              {users.length >= totalCount
+                ? `すべてのユーザーを表示しました (${totalCount}名)`
+                : `${users.length}名のユーザーを表示中 (全${totalCount}名)`}
             </Text>
           </Flex>
         </>

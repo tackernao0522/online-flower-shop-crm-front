@@ -1,8 +1,8 @@
 import React from "react";
 import { render } from "@testing-library/react";
-import MyApp from "../_app";
+import MyApp from "../pages/_app";
 import { ChakraProvider } from "@chakra-ui/react";
-import { Providers } from "../../lib/providers";
+import { Providers } from "../lib/providers";
 
 // モックの設定
 jest.mock("@chakra-ui/react", () => ({
@@ -11,19 +11,19 @@ jest.mock("@chakra-ui/react", () => ({
   )),
 }));
 
-jest.mock("../../lib/providers", () => ({
+jest.mock("../lib/providers", () => ({
   Providers: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="providers">{children}</div>
   ),
 }));
 
-jest.mock("../../lib/redux", () => ({
+jest.mock("../lib/redux", () => ({
   wrapper: {
     withRedux: (component: React.ComponentType) => component,
   },
 }));
 
-jest.mock("../../styles/theme", () => ({}));
+jest.mock("../styles/theme", () => ({}));
 
 describe("MyApp", () => {
   const MockComponent = () => (

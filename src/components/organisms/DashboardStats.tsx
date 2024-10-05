@@ -28,14 +28,7 @@ const DashboardStats = () => {
       <StatCard
         title="顧客数"
         value={totalCount.toLocaleString()}
-        change={changeRate}
-        changeType={
-          changeRate > 0
-            ? "increase"
-            : changeRate < 0
-            ? "decrease"
-            : "no-change"
-        }
+        change={changeRate ?? 0}
       />
       <StatCard title="注文数" value="5,678" change={-1} />
       <StatCard title="売上高" value="¥12,345,678" change={5} />

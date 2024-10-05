@@ -4,12 +4,11 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # パッケージファイルをコピーし、依存関係をインストール
-# package-lock.json がない場合は package*.json のみコピー
-COPY package*.json ./
+COPY ./front/package*.json ./
 RUN npm install
 
 # ソースコードをコピーしてビルド
-COPY . .
+COPY ./front ./
 RUN npm run build
 
 # 実行用の軽量イメージ

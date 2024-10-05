@@ -41,7 +41,7 @@ const menuOptions = [
 
 type MenuOption = (typeof menuOptions)[number];
 
-// ルーティング情報
+// ルーティング情報の定義
 const ROUTES: Partial<Record<MenuOption, string>> = {
   ユーザー管理: "/user-management",
   顧客管理: "/customers",
@@ -87,7 +87,7 @@ const DashboardHeader: React.FC = () => {
   const handleOptionSelect = (option: MenuOption) => {
     const route = ROUTES[option];
     if (route) {
-      console.log(`Navigating to: ${route}`); // デバッグ用のログ
+      console.log(`Navigating to: ${route}`);
       router.push(route);
     } else {
       console.log(`Selected option "${option}" has no route.`);

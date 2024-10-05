@@ -91,13 +91,18 @@ const LoginForm: React.FC = () => {
       } else {
         throw new Error("Unexpected response from server.");
       }
-    } catch (error) {
-      console.error("Login Error:", error);
-      if (axios.isAxiosError(error) && error.response) {
+    } catch (err) {
+      console.error("Login Error:", err);
+
+      // error の型を明示的にキャスト
+      if (axios.isAxiosError(err) && err.response) {
         setError(
-          error.response.data.error?.message || "ログインに失敗しました。"
+          err.response.data.error?.message || "ログインに失敗しました。"
         );
-      } else if (error.message === "Unexpected response from server.") {
+      } else if (
+        err instanceof Error &&
+        err.message === "Unexpected response from server."
+      ) {
         setError("Unexpected response from server.");
       } else {
         setError(

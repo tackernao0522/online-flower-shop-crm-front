@@ -38,12 +38,9 @@ export const useUserOnlineStatus = (userId: string | undefined) => {
     refetchInterval: 5000,
     retry: (failureCount, error) => {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return false; // 認証エラーの場合はリトライしない
+        return false;
       }
       return failureCount < 3;
     },
-    onError: (error) => {
-      console.error("Error in useUserOnlineStatus:", error);
-    },
-  });
+  })
 };

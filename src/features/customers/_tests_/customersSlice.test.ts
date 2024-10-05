@@ -1,24 +1,35 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, Reducer } from "@reduxjs/toolkit";
 import axios from "axios";
 import customersReducer, {
+  CustomersState,
   fetchCustomers,
   addCustomer,
   updateCustomer,
   deleteCustomer,
-} from "../customersSlice.ts";
+} from "../customersSlice";
+
+// storeの型を定義
+const createTestStore = () =>
+  configureStore({
+    reducer: {
+      customers: customersReducer as Reducer<CustomersState>,
+    },
+  });
+
+type TestStore = ReturnType<typeof createTestStore>;
+type RootState = ReturnType<TestStore["getState"]>;
+type AppDispatch = TestStore["dispatch"];
 
 jest.mock("axios");
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe("customersSlice", () => {
-  let store;
+  let store: TestStore;
+  let dispatch: AppDispatch;
 
   beforeEach(() => {
-    store = configureStore({
-      reducer: {
-        customers: customersReducer,
-      },
-    });
+    store = createTestStore();
+    dispatch = store.dispatch;
     localStorage.setItem("token", "test-token");
   });
 
@@ -40,12 +51,23 @@ describe("customersSlice", () => {
 
   test("fetchCustomers: 顧客データの取得が成功する", async () => {
     const mockResponse = {
-      data: [{ id: "1", name: "John Doe" }],
+      data: [
+        {
+          id: "1",
+          name: "John Doe",
+          email: "john@example.com",
+          phoneNumber: "123456789",
+          address: "123 Street",
+          birthDate: "1990-01-01",
+          created_at: "2023-01-01",
+          updated_at: "2023-01-02",
+        },
+      ],
       meta: { currentPage: 1, totalPages: 1, totalCount: 1 },
     };
     mockedAxios.get.mockResolvedValueOnce({ data: mockResponse });
 
-    await store.dispatch(fetchCustomers({ page: 1 }));
+    await dispatch(fetchCustomers({ page: 1 }));
     const state = store.getState().customers;
 
     expect(state.status).toBe("succeeded");
@@ -56,11 +78,22 @@ describe("customersSlice", () => {
   });
 
   test("addCustomer: 新規顧客の追加が成功する", async () => {
-    const newCustomer = { name: "Jane Doe", email: "jane@example.com" };
-    const mockResponse = { id: "2", ...newCustomer };
+    const newCustomer = {
+      name: "Jane Doe",
+      email: "jane@example.com",
+      phoneNumber: "123-456-7890",
+      address: "123 Main St",
+      birthDate: "1990-01-01",
+    };
+    const mockResponse = {
+      id: "2",
+      ...newCustomer,
+      created_at: "2023-01-01",
+      updated_at: "2023-01-02",
+    };
     mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
 
-    await store.dispatch(addCustomer(newCustomer));
+    await dispatch(addCustomer(newCustomer));
     const state = store.getState().customers;
 
     expect(state.customers).toContainEqual(mockResponse);
@@ -68,49 +101,74 @@ describe("customersSlice", () => {
   });
 
   test("updateCustomer: 顧客情報の更新が成功する", async () => {
-    const initialCustomer = { id: "1", name: "John Doe" };
-    store = configureStore({
-      reducer: {
-        customers: customersReducer,
-      },
-      preloadedState: {
-        customers: {
-          customers: [initialCustomer],
-          status: "idle",
-          error: null,
-          currentPage: 1,
-          totalPages: 1,
-          totalCount: 1,
-        },
+    const initialCustomer = {
+      id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      phoneNumber: "123456789",
+      address: "Some Street",
+      birthDate: "1990-01-01",
+      created_at: "2023-01-01",
+      updated_at: "2023-01-02",
+    };
+
+    store = createTestStore();
+    store.dispatch({
+      type: "customers/fetchCustomers/fulfilled",
+      payload: {
+        data: [initialCustomer],
+        meta: { currentPage: 1, totalPages: 1, totalCount: 1 },
       },
     });
 
-    const updatedCustomer = { id: "1", name: "John Updated" };
+    const updatedCustomer = {
+      id: "1",
+      name: "John Updated",
+      email: "john.updated@example.com",
+      phoneNumber: "987654321",
+      address: "New Street",
+      birthDate: "1990-01-01",
+      created_at: "2023-01-01",
+      updated_at: "2023-02-01",
+    };
+
     mockedAxios.put.mockResolvedValueOnce({ data: updatedCustomer });
 
     await store.dispatch(
-      updateCustomer({ id: "1", customerData: { name: "John Updated" } })
+      updateCustomer({
+        id: "1",
+        customerData: {
+          name: "John Updated",
+          email: "john.updated@example.com",
+          phoneNumber: "987654321",
+          address: "New Street",
+        },
+      })
     );
+
     const state = store.getState().customers;
 
     expect(state.customers[0]).toEqual(updatedCustomer);
   });
 
   test("deleteCustomer: 顧客の削除が成功する", async () => {
-    const initialCustomer = { id: "1", name: "John Doe" };
-    store = configureStore({
-      reducer: {
-        customers: customersReducer,
-      },
-      preloadedState: {
-        customers: {
-          customers: [initialCustomer],
-          status: "idle",
-          error: null,
-          currentPage: 1,
-          totalPages: 1,
-          totalCount: 1,
-        },
+    const initialCustomer = {
+      id: "1",
+      name: "John Doe",
+      email: "john@example.com",
+      phoneNumber: "123456789",
+      address: "Some Street",
+      birthDate: "1990-01-01",
+      created_at: "2023-01-01",
+      updated_at: "2023-01-02",
+    };
+
+    store = createTestStore();
+    store.dispatch({
+      type: "customers/fetchCustomers/fulfilled",
+      payload: {
+        data: [initialCustomer],
+        meta: { currentPage: 1, totalPages: 1, totalCount: 1 },
       },
     });
 
@@ -124,18 +182,17 @@ describe("customersSlice", () => {
   });
 
   test("fetchCustomers: エラーハンドリングが正しく機能する", async () => {
-    const errorMessage = "Network Error";
-    mockedAxios.get.mockRejectedValueOnce({ response: { data: errorMessage } });
+    mockedAxios.get.mockRejectedValueOnce(new Error("Network Error"));
 
-    await store.dispatch(fetchCustomers({ page: 1 }));
+    await dispatch(fetchCustomers({ page: 1 }));
     const state = store.getState().customers;
 
     expect(state.status).toBe("failed");
-    expect(state.error).toBe("Rejected");
+    expect(state.error).toBe("An unknown error occurred");
   });
 
   test("Reducer: fetchCustomers.fulfilled で状態が正しく更新される", () => {
-    const initialState = {
+    const initialState: CustomersState = {
       customers: [],
       status: "idle",
       error: null,
@@ -144,7 +201,18 @@ describe("customersSlice", () => {
       totalCount: 0,
     };
     const mockResponse = {
-      data: [{ id: "1", name: "John Doe" }],
+      data: [
+        {
+          id: "1",
+          name: "John Doe",
+          email: "john@example.com",
+          phoneNumber: "123456789",
+          address: "123 Street",
+          birthDate: "1990-01-01",
+          created_at: "2023-01-01",
+          updated_at: "2023-01-02",
+        },
+      ],
       meta: { currentPage: 1, totalPages: 1, totalCount: 1 },
     };
     const action = {

@@ -1,0 +1,6 @@
+node_modules
+npm-debug.log
+yarn-error.log
+**/__tests__/
+**/_tests_/
+**/*.test.js

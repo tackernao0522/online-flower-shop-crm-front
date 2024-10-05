@@ -1,0 +1,27 @@
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# パッケージファイルをコピーし、依存関係をインストール
+COPY package*.json ./
+RUN npm ci
+
+# ソースコードをコピーしてビルド
+COPY . .
+RUN npm run build
+
+# 実行用の軽量イメージ
+FROM node:18-alpine
+
+WORKDIR /app
+
+# ビルド済みのファイルと必要なファイルのみをコピー
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+# 本番環境用の依存関係のみをインストール
+RUN npm ci --only=production
+
+# アプリケーションを起動
+CMD ["npm", "start"]

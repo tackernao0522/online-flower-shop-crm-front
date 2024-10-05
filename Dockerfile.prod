@@ -3,12 +3,18 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 環境変数を設定
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # パッケージファイルをコピーし、依存関係をインストール
 COPY ./front/package*.json ./
 RUN npm install
 
-# ソースコードをコピーしてビルド
+# ソースコードをコピー
 COPY ./front ./
+
+# ビルド
 RUN npm run build
 
 # 実行用の軽量イメージ
@@ -16,10 +22,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# 環境変数を設定
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # ビルド済みのファイルと必要なファイルのみをコピー
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.mjs ./
 
 # 本番環境用の依存関係のみをインストール
 RUN npm install --only=production

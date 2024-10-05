@@ -7,9 +7,10 @@ import axios from "axios";
 import { logout } from "../../features/auth/authSlice";
 import { MenuItem } from "@chakra-ui/react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AppDispatch } from "../../store"; // AppDispatch 型をインポート
 
 const LogoutButton: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch: AppDispatch = useDispatch(); // AppDispatch 型を使用
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -22,6 +23,7 @@ const LogoutButton: React.FC = () => {
     }
 
     try {
+      // ログアウトリクエストを送信
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout`,
         {},
@@ -34,15 +36,18 @@ const LogoutButton: React.FC = () => {
         }
       );
 
+      // Reduxのログアウトアクションをディスパッチ
       dispatch(logout());
 
+      // ローカルストレージのトークンとユーザー情報を削除
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("userId");
 
       // オンラインステータスのキャッシュを無効化
-      queryClient.invalidateQueries(["onlineStatus"]);
+      queryClient.invalidateQueries({ queryKey: ["onlineStatus"] });
 
+      // ログインページにリダイレクト
       router.push("/login");
     } catch (error) {
       console.error("Logout Error:", error);

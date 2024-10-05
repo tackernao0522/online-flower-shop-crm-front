@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 interface PurchaseHistory {
   id: string;
@@ -19,7 +19,7 @@ interface Customer {
   purchaseHistory?: PurchaseHistory[];
 }
 
-interface CustomersState {
+export interface CustomersState {
   customers: Customer[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -53,7 +53,10 @@ export const fetchCustomers = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data || "An error occurred");
+      }
+      return rejectWithValue("An unknown error occurred");
     }
   }
 );
@@ -77,7 +80,10 @@ export const addCustomer = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data);
+      }
+      return rejectWithValue("An unknown error occurred");
     }
   }
 );
@@ -98,7 +104,10 @@ export const updateCustomer = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data);
+      }
+      return rejectWithValue("An unknown error occurred");
     }
   }
 );
@@ -115,7 +124,10 @@ export const deleteCustomer = createAsyncThunk(
       );
       return id;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      if (axios.isAxiosError(error)) {
+        return rejectWithValue(error.response?.data);
+      }
+      return rejectWithValue("An unknown error occurred");
     }
   }
 );
@@ -151,7 +163,7 @@ const customersSlice = createSlice({
       )
       .addCase(fetchCustomers.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.error.message || "An error occurred";
+        state.error = (action.payload as string) || "An unknown error occurred";
       })
       .addCase(
         addCustomer.fulfilled,
@@ -183,4 +195,7 @@ const customersSlice = createSlice({
   },
 });
 
-export default customersSlice.reducer;
+export default customersSlice.reducer as (
+  state: CustomersState | undefined,
+  action: any
+) => CustomersState;

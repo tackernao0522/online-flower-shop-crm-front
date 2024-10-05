@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import LogoutButton from "../LogoutButton";
-import { logout } from "../../../features/auth/authSlice"; // logoutをインポート
+import { logout } from "../../../features/auth/authSlice";
 
 // logoutのモック化
 jest.mock("../../../features/auth/authSlice", () => ({
@@ -60,7 +60,7 @@ describe("LogoutButton", () => {
       writable: true,
     });
 
-    (useDispatch as jest.Mock).mockReturnValue(jest.fn());
+    (useDispatch as unknown as jest.Mock).mockReturnValue(jest.fn());
     (useRouter as jest.Mock).mockReturnValue({ push: jest.fn() });
     (useQueryClient as jest.Mock).mockReturnValue({
       invalidateQueries: jest.fn(),
@@ -75,7 +75,7 @@ describe("LogoutButton", () => {
 
   it("ログアウト処理が正しく実行される", async () => {
     const mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
+    (useDispatch as unknown as jest.Mock).mockReturnValue(mockDispatch);
 
     const mockRouterPush = jest.fn();
     (useRouter as jest.Mock).mockReturnValue({ push: mockRouterPush });
@@ -108,7 +108,9 @@ describe("LogoutButton", () => {
       expect(localStorage.removeItem).toHaveBeenCalledWith("token");
       expect(localStorage.removeItem).toHaveBeenCalledWith("user");
       expect(localStorage.removeItem).toHaveBeenCalledWith("userId");
-      expect(mockInvalidateQueries).toHaveBeenCalledWith(["onlineStatus"]);
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({
+        queryKey: ["onlineStatus"],
+      });
       expect(mockRouterPush).toHaveBeenCalledWith("/login");
     });
   });

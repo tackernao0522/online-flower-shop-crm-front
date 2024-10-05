@@ -72,10 +72,10 @@ export const useCustomerManagement = () => {
           const newCustomers = result.payload.data;
           if (page === 1) return newCustomers;
 
-          // Remove duplicates
+          // Remove duplicates with proper typing for 'item'
           const uniqueCustomers = [...prevCustomers, ...newCustomers].reduce(
-            (acc, current) => {
-              const x = acc.find((item) => item.id === current.id);
+            (acc: Customer[], current: Customer) => {
+              const x = acc.find((item: Customer) => item.id === current.id);
               if (!x) {
                 return acc.concat([current]);
               } else {
@@ -281,10 +281,10 @@ export const useCustomerManagement = () => {
           updateCustomer({ id: activeCustomer.id, customerData: newCustomer })
         );
       }
-
       if (
-        addCustomer.fulfilled.match(resultAction) ||
-        updateCustomer.fulfilled.match(resultAction)
+        resultAction &&
+        (addCustomer.fulfilled.match(resultAction) ||
+          updateCustomer.fulfilled.match(resultAction))
       ) {
         toast({
           title:
@@ -299,7 +299,8 @@ export const useCustomerManagement = () => {
         setPage(1);
         setCustomers([]);
         fetchCustomersData();
-      } else {
+      } else if (resultAction) {
+        // 失敗時の処理
         toast({
           title:
             modalMode === "add"

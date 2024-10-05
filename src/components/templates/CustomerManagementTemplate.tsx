@@ -82,7 +82,7 @@ const CustomerManagementTemplate: React.FC = () => {
     handleDeleteCustomer,
     confirmDelete,
     cancelDelete,
-    handleSearch,
+    handleSearch, // ここではhandleSearchはクリックイベントを受け取るように修正済み
     handleKeyDown,
     handleInputChange,
     handleSubmit,
@@ -294,7 +294,7 @@ const CustomerManagementTemplate: React.FC = () => {
         />
         <Button
           leftIcon={<SearchIcon />}
-          onClick={handleSearch}
+          onClick={() => handleSearch(searchTerm)} // searchTermを引数に
           width={["100%", "auto"]}>
           検索
         </Button>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   ModalOverlay,
@@ -7,12 +7,12 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
+  Button,
 } from "@chakra-ui/react";
 import { Customer } from "@/types/customer";
 import CustomerBasicInfo from "@/components/molecules/CustomerBasicInfo";
@@ -41,6 +41,43 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   onSubmit,
   isMobile,
 }) => {
+  // フォームデータとエラーメッセージの状態を管理
+  const [newCustomer, setNewCustomer] = useState<
+    Omit<Customer, "id" | "created_at" | "updated_at" | "purchaseHistory">
+  >({
+    name: activeCustomer?.name || "",
+    email: activeCustomer?.email || "",
+    phoneNumber: activeCustomer?.phoneNumber || "",
+    address: activeCustomer?.address || "",
+    birthDate: activeCustomer?.birthDate || "",
+  });
+
+  const [formErrors, setFormErrors] = useState<Partial<Customer>>({});
+
+  // フォームの入力変更を処理する関数
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewCustomer((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = () => {
+    // 顧客データが存在しない場合は初期データを使用
+    const customerData = activeCustomer
+      ? {
+          name: activeCustomer.name,
+          email: activeCustomer.email,
+          phoneNumber: activeCustomer.phoneNumber,
+          address: activeCustomer.address,
+          birthDate: activeCustomer.birthDate,
+        }
+      : newCustomer;
+
+    onSubmit(customerData);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size={isMobile ? "full" : "xl"}>
       <ModalOverlay />
@@ -65,7 +102,9 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
                 <CustomerBasicInfo
                   customer={activeCustomer}
                   modalMode={modalMode}
-                  onSubmit={onSubmit}
+                  newCustomer={newCustomer}
+                  formErrors={formErrors}
+                  handleInputChange={handleInputChange}
                 />
               </TabPanel>
               <TabPanel>
@@ -86,10 +125,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
         </ModalBody>
         <ModalFooter>
           {modalMode !== "detail" && (
-            <Button
-              colorScheme="blue"
-              mr={3}
-              onClick={() => onSubmit(activeCustomer as Customer)}>
+            <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
               {modalMode === "add" ? "登録" : "更新"}
             </Button>
           )}

@@ -3,12 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../store";
+import { RootState, AppDispatch } from "../store"; // AppDispatchをインポート
 import { setAuthState, logout } from "../features/auth/authSlice";
 
 const AuthCheck = () => {
   const router = useRouter();
-  const dispatch = useDispatch();
+  const dispatch: AppDispatch = useDispatch(); // AppDispatch 型を適用
   const { isAuthenticated, token, user } = useSelector(
     (state: RootState) => state.auth
   );

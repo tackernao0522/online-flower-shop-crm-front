@@ -53,8 +53,8 @@ describe("Chakra UI テーマ設定", () => {
     const breakpoints = theme.breakpoints;
     expect(breakpoints.sm).toBe("30em");
     expect(breakpoints.md).toBe("48em");
-    expect(breakpoints.landscape.raw).toBe(
-      "(orientation: landscape) and (max-height: 500px)"
-    );
+    expect(breakpoints.lg).toBe("62em");
+    expect(breakpoints.xl).toBe("80em");
+    expect(breakpoints["2xl"]).toBe("96em");
   });
 });

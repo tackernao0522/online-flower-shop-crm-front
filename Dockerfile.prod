@@ -1,10 +1,11 @@
+# front/Dockerfile.prod
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
 # パッケージファイルをコピーし、依存関係をインストール
 COPY package*.json package-lock.json ./
-RUN npm ci
+RUN npm install
 
 # ソースコードをコピーしてビルド
 COPY . .
@@ -16,12 +17,12 @@ FROM node:18-alpine
 WORKDIR /app
 
 # ビルド済みのファイルと必要なファイルのみをコピー
-COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/package*.json package-lock.json ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
 # 本番環境用の依存関係のみをインストール
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # アプリケーションを起動
 CMD ["npm", "start"]

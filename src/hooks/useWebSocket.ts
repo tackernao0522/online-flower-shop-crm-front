@@ -39,6 +39,16 @@ export const useWebSocket = () => {
     const pusherHost = process.env.NEXT_PUBLIC_PUSHER_HOST;
     const pusherPort = process.env.NEXT_PUBLIC_PUSHER_PORT;
     const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_APP_CLUSTER;
+    const pusherScheme =
+      (process.env.NEXT_PUBLIC_PUSHER_SCHEME as "ws" | "wss") || "ws";
+
+    // 本番環境チェック
+    if (process.env.NEXT_PUBLIC_APP_ENV === "production") {
+      console.log(
+        "WebSocket functionality is disabled in production environment"
+      );
+      return; // 本番環境では初期化を行わない
+    }
 
     if (!pusherKey) {
       console.error("Pusher key is not defined");
@@ -51,8 +61,9 @@ export const useWebSocket = () => {
       pusherRef.current = new Pusher.default(pusherKey, {
         wsHost: pusherHost,
         wsPort: pusherPort ? parseInt(pusherPort, 10) : undefined,
-        forceTLS: false,
-        enabledTransports: ["ws", "wss"],
+        wssPort: pusherPort ? parseInt(pusherPort, 10) : undefined,
+        forceTLS: pusherScheme === "wss",
+        enabledTransports: [pusherScheme],
         disableStats: true,
         cluster: pusherCluster || "default-cluster",
       });

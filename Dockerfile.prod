@@ -1,38 +1,40 @@
-# front/Dockerfile.prod
+# ビルドステージ
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# 環境変数を設定
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# パッケージ管理ファイルをコピー
+COPY package*.json ./
 
-# パッケージファイルをコピーし、依存関係をインストール
-COPY ./front/package*.json ./
-RUN npm install
+# 依存関係のインストール
+RUN npm ci
 
-# ソースコードをコピー
-COPY ./front ./
+# ソースコードと設定ファイルをコピー
+COPY . .
 
-# ビルド
-RUN npm run build
+# 本番用環境変数ファイルをコピー（存在する場合）
+COPY .env.production .env.production
 
-# 実行用の軽量イメージ
-FROM node:18-alpine
+# アプリケーションのビルド（本番用）
+RUN npm run build:prod
+
+# 実行ステージ
+FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# 環境変数を設定
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+# 本番環境用の依存関係のみをインストール
+COPY package*.json ./
+RUN npm ci --only=production
 
-# ビルド済みのファイルと必要なファイルのみをコピー
-COPY --from=builder /app/package*.json ./
+# ビルドしたアプリケーションをコピー
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/.env.production ./.env.production
 
-# 本番環境用の依存関係のみをインストール
-RUN npm install --only=production
+# 環境変数の設定
+ENV NODE_ENV production
 
-# アプリケーションを起動
+# アプリケーションの起動
 CMD ["npm", "start"]

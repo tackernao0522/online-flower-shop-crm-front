@@ -1,14 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: process.env.NODE_ENV === "production" ? "export" : undefined,
-  reactStrictMode: false, // 必要に応じて true に変更
+  reactStrictMode: false,
   crossOrigin: "anonymous",
-  serverRuntimeConfig: {
-    // サーバーサイドでのみ利用可能な設定
-    // 例: API_SECRET: process.env.API_SECRET,
-  },
   publicRuntimeConfig: {
-    // クライアントサイドでも利用可能な設定
     API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
   webpack: (config, { isServer }) => {
@@ -24,15 +19,20 @@ const nextConfig = {
     return config;
   },
   images: {
-    domains: ["example.com"], // 必要に応じて調整
+    domains: ["example.com"],
   },
   async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
-      },
-    ];
+    if (process.env.NODE_ENV === "development") {
+      return [
+        {
+          source: "/api/:path*",
+          destination: `${
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+          }/:path*`,
+        },
+      ];
+    }
+    return [];
   },
   swcMinify: true,
 };

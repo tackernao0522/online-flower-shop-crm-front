@@ -13,15 +13,34 @@ COPY package*.json ./
 # 依存関係のインストール
 RUN npm ci
 
+# プロジェクトファイルをコピー
+COPY . .
+
+# ファイル構造の確認（デバッグ用）
+RUN ls -R /app
+
+# アプリケーションのビルド
+RUN npm run build
+
+# ビルド結果の確認（デバッグ用）
+RUN ls -la /app/.next
+
+# 実行ステージ
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# 環境変数の設定
+ENV NODE_ENV=production
+
 # 必要なファイルのみをコピー
-COPY next.config.mjs .
-COPY src ./src
-COPY public ./public
+COPY --from=builder /app/next.config.mjs ./
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/package.json ./package.json
 
-# 本番用環境変数ファイルをコピー（存在する場合）
-COPY .env.production .env.production
-# .env.production が存在しない場合でもエラーにならないようにする
-RUN test -f .env.production || touch .env.production
+# 本番用の依存関係のみをインストール
+RUN npm ci --only=production
 
-# アプリケーションのビルドとエクスポート
-RUN npm run build && npm run export
+# アプリケーションの起動
+CMD ["npm", "start"]

@@ -10,8 +10,8 @@ ENV NODE_ENV=${NODE_ENV}
 # パッケージ管理ファイルをコピー
 COPY package*.json ./
 
-# 依存関係のインストール
-RUN npm ci
+# 依存関係のインストール（開発依存関係も含む）
+RUN npm ci --include=dev
 
 # プロジェクトファイルをコピー
 COPY . .

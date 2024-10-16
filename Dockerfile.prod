@@ -12,29 +12,9 @@ RUN npm ci
 # ソースコードと設定ファイルをコピー
 COPY . .
 
-# 本番用環境変数ファイルをコピー（存在する場合）
+# 本番用環境変数ファイルをコピー
 COPY .env.production .env.production
 
-# アプリケーションのビルド（本番用）
-RUN npm run build:prod
-
-# 実行ステージ
-FROM node:18-alpine AS runner
-
-WORKDIR /app
-
-# 本番環境用の依存関係のみをインストール
-COPY package*.json ./
-RUN npm ci --only=production
-
-# ビルドしたアプリケーションをコピー
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
-COPY --from=builder /app/.env.production ./.env.production
-
-# 環境変数の設定
-ENV NODE_ENV production
-
-# アプリケーションの起動
-CMD ["npm", "start"]
+# アプリケーションのビルドとエクスポート
+RUN npm run build
+RUN npm run export

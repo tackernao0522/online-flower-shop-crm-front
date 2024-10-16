@@ -3,18 +3,25 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 環境変数の設定
+ARG NODE_ENV=production
+ENV NODE_ENV=${NODE_ENV}
+
 # パッケージ管理ファイルをコピー
 COPY package*.json ./
 
 # 依存関係のインストール
 RUN npm ci
 
-# ソースコードと設定ファイルをコピー
-COPY . .
+# 必要なファイルのみをコピー
+COPY next.config.js .
+COPY src ./src
+COPY public ./public
 
-# 本番用環境変数ファイルをコピー
+# 本番用環境変数ファイルをコピー（存在する場合）
 COPY .env.production .env.production
+# .env.production が存在しない場合でもエラーにならないようにする
+RUN test -f .env.production || touch .env.production
 
 # アプリケーションのビルドとエクスポート
-RUN npm run build
-RUN npm run export
+RUN npm run build && npm run export

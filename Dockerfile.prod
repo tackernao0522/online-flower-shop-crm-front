@@ -22,6 +22,9 @@ RUN ls -R /app
 # アプリケーションのビルドと静的エクスポート
 RUN npm run build
 
+# ビルド結果の確認（debug用）
+RUN echo "Checking for /app/out or /app/.next directories" && ls -la /app/out || ls -la /app/.next
+
 # ビルド結果の確認（デバッグ用）
 RUN ls -la /app/out
 

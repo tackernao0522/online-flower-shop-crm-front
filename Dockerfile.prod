@@ -19,29 +19,23 @@ COPY . .
 # ファイル構造の確認（デバッグ用）
 RUN ls -R /app
 
-# アプリケーションのビルド
+# アプリケーションのビルドと静的エクスポート
 RUN npm run build
+RUN npm run export
 
 # ビルド結果の確認（デバッグ用）
-RUN ls -la /app/.next
+RUN ls -la /app/out
 
-# 実行ステージ
-FROM node:18-alpine AS runner
+# 実行ステージ（静的ファイルのみを含む軽量なイメージ）
+FROM nginx:alpine AS runner
 
-WORKDIR /app
+WORKDIR /usr/share/nginx/html
 
-# 環境変数の設定
-ENV NODE_ENV=production
+# 静的ファイルをコピー
+COPY --from=builder /app/out ./
 
-# 必要なファイルのみをコピー
-COPY --from=builder /app/next.config.mjs ./
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+# Nginxの設定ファイルをコピー（必要に応じて）
+# COPY nginx.conf /etc/nginx/nginx.conf
 
-# 本番用の依存関係のみをインストール
-RUN npm ci --omit=dev
-
-# アプリケーションの起動
-CMD ["npm", "start"]
+# コンテナ起動時にNginxを実行
+CMD ["nginx", "-g", "daemon off;"]

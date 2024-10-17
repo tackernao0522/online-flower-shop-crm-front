@@ -22,8 +22,8 @@ RUN ls -R /app
 # アプリケーションのビルドと静的エクスポート
 RUN npm run build
 
-# ビルド結果の確認（debug用）
-RUN echo "Checking for /app directories:" && ls -la /app
+# ビルドの後にディレクトリを確認
+RUN npm run build && ls -la /app || echo "Build output directory not found"
 
 # ビルド結果の確認（デバッグ用）
 RUN ls -la /app/out

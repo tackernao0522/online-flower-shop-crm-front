@@ -21,7 +21,6 @@ RUN ls -R /app
 
 # アプリケーションのビルドと静的エクスポート
 RUN npm run build
-RUN npm run export
 
 # ビルド結果の確認（デバッグ用）
 RUN ls -la /app/out

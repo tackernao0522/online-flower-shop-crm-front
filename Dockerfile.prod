@@ -6,14 +6,27 @@ WORKDIR /app
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
+# パッケージ管理ファイルをコピー
 COPY package*.json ./
-RUN npm ci --include=dev
 
+# 依存関係のインストール（開発依存関係も含む）
+RUN npm ci
+
+# プロジェクトファイルをコピー
 COPY . .
+
+# ビルドプロセスのデバッグ用
+RUN ls -la
+RUN cat next.config.mjs
+
+# アプリケーションのビルド
 RUN npm run build
-RUN npm run export
+
+# ビルド結果の確認（デバッグ用）
+RUN ls -la /app/.next
 
 # 実行ステージ
 FROM nginx:alpine AS runner
-COPY --from=builder /app/out /usr/share/nginx/html
+COPY --from=builder /app/.next /usr/share/nginx/html
+COPY --from=builder /app/public /usr/share/nginx/html/public
 CMD ["nginx", "-g", "daemon off;"]

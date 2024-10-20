@@ -42,14 +42,6 @@ export const useWebSocket = () => {
     const pusherScheme =
       (process.env.NEXT_PUBLIC_PUSHER_SCHEME as "ws" | "wss") || "ws";
 
-    // 本番環境チェック
-    if (process.env.NEXT_PUBLIC_APP_ENV === "production") {
-      console.log(
-        "WebSocket functionality is disabled in production environment"
-      );
-      return; // 本番環境では初期化を行わない
-    }
-
     if (!pusherKey) {
       console.error("Pusher key is not defined");
       return;

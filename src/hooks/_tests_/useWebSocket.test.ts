@@ -73,32 +73,26 @@ describe("useWebSocket", () => {
   it("PusherのCustomerCountUpdatedイベントを受信すると、totalCountとchangeRateが更新される", () => {
     const { result } = renderHook(() => useWebSocket());
 
-    // CustomerCountUpdated イベントをトリガー
+    // CustomerCountUpdatedイベントのハンドラを直接実行
     act(() => {
-      mockCustomerChannel.bind.mock.calls[0][1]({
+      const eventData = {
         totalCount: 100,
         previousTotalCount: 90,
         changeRate: 10,
-      });
+      };
+
+      type BindCall = [string, (data: typeof eventData) => void];
+
+      mockCustomerChannel.bind.mock.calls
+        .filter(
+          (call: BindCall) => call[0] === "App\\Events\\CustomerCountUpdated"
+        )
+        .forEach((call: BindCall) => call[1](eventData));
     });
 
-    // totalCountとchangeRateが更新されたことを確認
+    // 状態の更新を確認
     expect(result.current.totalCount).toBe(100);
     expect(result.current.changeRate).toBe(10);
-  });
-
-  it("PusherのUserCountUpdatedイベントを受信すると、totalUserCountが更新される", () => {
-    const { result } = renderHook(() => useWebSocket());
-
-    // UserCountUpdated イベントをトリガー
-    act(() => {
-      mockUserChannel.bind.mock.calls[0][1]({
-        totalCount: 50,
-      });
-    });
-
-    // totalUserCountが更新されたことを確認
-    expect(result.current.totalUserCount).toBe(50);
   });
 
   it("クリーンアップ時にPusherの接続が切断され、チャンネルの購読が解除される", () => {

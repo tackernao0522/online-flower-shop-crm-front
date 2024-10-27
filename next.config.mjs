@@ -10,13 +10,14 @@ const nextConfig = {
     // クライアントサイドでも利用可能な設定
     API_URL: process.env.NEXT_PUBLIC_API_URL,
   },
-  // Rechartsの警告を抑制
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      config.ignoreWarnings = [{ module: /node_modules\/recharts/ }];
+      config.ignoreWarnings = [
+        { module: /node_modules\/recharts/ },
+        { message: /A listener indicated an asynchronous response/ },
+      ];
     }
 
-    // 正規表現を修正
     config.module.rules.push({
       test: /(_tests_|__tests__|\.test\.(js|jsx|ts|tsx))$/,
       use: "ignore-loader",
@@ -24,7 +25,6 @@ const nextConfig = {
 
     return config;
   },
-  // 画像最適化の設定（必要に応じて）
   images: {
     domains: ["example.com"],
   },

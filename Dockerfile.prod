@@ -6,35 +6,45 @@ WORKDIR /app
 # パッケージ管理ファイルをコピー
 COPY package*.json ./
 
+# npmを最新バージョンにアップデート
+RUN npm install -g npm@10.9.0
+
 # 依存関係のインストール
 RUN npm ci
 
 # ソースコードと設定ファイルをコピー
 COPY . .
 
-# 本番用環境変数ファイルをコピー（存在する場合）
-COPY .env.production .env.production
-
-# アプリケーションのビルド（本番用）
-RUN npm run build:prod
+# TypeScriptの型チェックとビルド
+RUN npm run typecheck && \
+    npm run build:prod
 
 # 実行ステージ
 FROM node:18-alpine AS runner
 
 WORKDIR /app
 
+# npmを最新バージョンにアップデート
+RUN npm install -g npm@10.9.0
+
 # 本番環境用の依存関係のみをインストール
 COPY package*.json ./
 RUN npm ci --only=production
 
-# ビルドしたアプリケーションをコピー
+# ビルド成果物をコピー
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./
 COPY --from=builder /app/.env.production ./.env.production
 
 # 環境変数の設定
-ENV NODE_ENV production
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+# ヘルスチェック
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
 
 # アプリケーションの起動
-CMD ["npx", "next", "start", "-p", "3000", "-H", "0.0.0.0"]
+CMD ["npm", "start"]

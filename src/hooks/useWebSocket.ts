@@ -8,29 +8,37 @@ export const useWebSocket = () => {
   const pusherRef = useRef<Pusher.default | null>(null);
   const customerChannelRef = useRef<Pusher.Channel | null>(null);
   const userChannelRef = useRef<Pusher.Channel | null>(null);
+  const isUnmountingRef = useRef(false);
 
   const cleanupPusher = useCallback(() => {
-    if (customerChannelRef.current) {
-      customerChannelRef.current.unbind_all();
+    try {
+      // チャンネルの購読解除
+      if (customerChannelRef.current) {
+        customerChannelRef.current.unbind_all();
+        if (pusherRef.current) {
+          pusherRef.current.unsubscribe("customer-stats");
+        }
+        customerChannelRef.current = null;
+      }
+
+      if (userChannelRef.current) {
+        userChannelRef.current.unbind_all();
+        if (pusherRef.current) {
+          pusherRef.current.unsubscribe("user-stats");
+        }
+        userChannelRef.current = null;
+      }
+
+      // Pusher接続の切断
       if (pusherRef.current) {
-        pusherRef.current.unsubscribe("customer-stats");
+        pusherRef.current.disconnect();
+        pusherRef.current = null;
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.debug("WebSocket cleanup (safe to ignore):", error);
       }
     }
-    if (userChannelRef.current) {
-      userChannelRef.current.unbind_all();
-      if (pusherRef.current) {
-        pusherRef.current.unsubscribe("user-stats");
-      }
-    }
-    if (
-      pusherRef.current &&
-      pusherRef.current.connection.state !== "disconnected"
-    ) {
-      pusherRef.current.disconnect();
-    }
-    customerChannelRef.current = null;
-    userChannelRef.current = null;
-    pusherRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -51,6 +59,8 @@ export const useWebSocket = () => {
       try {
         cleanupPusher();
 
+        if (isUnmountingRef.current) return;
+
         console.log("Initializing Pusher with config:", {
           env,
           key: pusherKey,
@@ -62,15 +72,15 @@ export const useWebSocket = () => {
         });
 
         const pusherConfig: Pusher.Options = {
-          cluster: pusherCluster || "mt1", // デフォルト値を設定
+          cluster: pusherCluster || "mt1",
           forceTLS: forceTLS || false,
+          enabledTransports: env === "development" ? ["ws"] : ["ws", "wss"],
         };
 
         if (env === "development") {
           Object.assign(pusherConfig, {
             wsHost: pusherHost,
             wsPort: parseInt(pusherPort || "6001", 10),
-            enabledTransports: ["ws"],
             disableStats: true,
           });
         }
@@ -80,15 +90,19 @@ export const useWebSocket = () => {
         pusherRef.current.connection.bind(
           "state_change",
           (states: { current: string; previous: string }) => {
-            console.log("Pusher connection state:", {
-              previous: states.previous,
-              current: states.current,
-            });
+            if (!isUnmountingRef.current) {
+              console.log("Pusher connection state:", {
+                previous: states.previous,
+                current: states.current,
+              });
+            }
           }
         );
 
         pusherRef.current.connection.bind("error", (err: any) => {
-          console.error("Pusher connection error:", err);
+          if (!isUnmountingRef.current) {
+            console.error("Pusher connection error:", err);
+          }
         });
 
         customerChannelRef.current =
@@ -96,16 +110,20 @@ export const useWebSocket = () => {
         userChannelRef.current = pusherRef.current.subscribe("user-stats");
 
         customerChannelRef.current.bind("pusher:subscription_succeeded", () => {
-          console.log("Successfully subscribed to customer-stats channel");
+          if (!isUnmountingRef.current) {
+            console.log("Successfully subscribed to customer-stats channel");
+          }
         });
 
         customerChannelRef.current.bind(
           "pusher:subscription_error",
           (error: any) => {
-            console.error(
-              "Failed to subscribe to customer-stats channel:",
-              error
-            );
+            if (!isUnmountingRef.current) {
+              console.error(
+                "Failed to subscribe to customer-stats channel:",
+                error
+              );
+            }
           }
         );
 
@@ -116,17 +134,21 @@ export const useWebSocket = () => {
             previousTotalCount: number;
             changeRate: number;
           }) => {
-            console.log("Received customer count update:", data);
-            setTotalCount(data.totalCount);
-            setChangeRate(data.changeRate);
+            if (!isUnmountingRef.current) {
+              console.log("Received customer count update:", data);
+              setTotalCount(data.totalCount);
+              setChangeRate(data.changeRate);
+            }
           }
         );
 
         userChannelRef.current.bind(
           "App\\Events\\UserCountUpdated",
           (data: { totalCount: number }) => {
-            console.log("Received user count update:", data);
-            setTotalUserCount(data.totalCount);
+            if (!isUnmountingRef.current) {
+              console.log("Received user count update:", data);
+              setTotalUserCount(data.totalCount);
+            }
           }
         );
       } catch (error) {
@@ -134,10 +156,12 @@ export const useWebSocket = () => {
       }
     };
 
+    isUnmountingRef.current = false;
     initializePusher();
 
     return () => {
-      cleanupPusher();
+      isUnmountingRef.current = true;
+      cleanupPusher(); // setTimeoutを削除
     };
   }, [cleanupPusher]);
 

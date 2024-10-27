@@ -11,33 +11,53 @@ export const useWebSocket = () => {
   const isUnmountingRef = useRef(false);
 
   const cleanupPusher = useCallback(() => {
-    try {
-      // チャンネルの購読解除
-      if (customerChannelRef.current) {
-        customerChannelRef.current.unbind_all();
-        if (pusherRef.current) {
-          pusherRef.current.unsubscribe("customer-stats");
+    const cleanup = async () => {
+      try {
+        // チャンネルのunbind
+        if (customerChannelRef.current) {
+          customerChannelRef.current.unbind_all();
         }
+        if (userChannelRef.current) {
+          userChannelRef.current.unbind_all();
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 100)); // 少し待機
+
+        // Pusherインスタンスのクリーンアップ
+        if (pusherRef.current) {
+          if (pusherRef.current.connection.state === "connected") {
+            // チャンネルの購読解除
+            if (customerChannelRef.current) {
+              pusherRef.current.unsubscribe("customer-stats");
+            }
+            if (userChannelRef.current) {
+              pusherRef.current.unsubscribe("user-stats");
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 100)); // 少し待機
+
+            // 接続を切断
+            pusherRef.current.disconnect();
+          }
+        }
+
+        // 参照をクリア
         customerChannelRef.current = null;
-      }
-
-      if (userChannelRef.current) {
-        userChannelRef.current.unbind_all();
-        if (pusherRef.current) {
-          pusherRef.current.unsubscribe("user-stats");
-        }
         userChannelRef.current = null;
-      }
-
-      // Pusher接続の切断
-      if (pusherRef.current) {
-        pusherRef.current.disconnect();
         pusherRef.current = null;
+      } catch (error) {
+        if (process.env.NODE_ENV === "development") {
+          console.debug("WebSocket cleanup (safe to ignore):", error);
+        }
       }
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.debug("WebSocket cleanup (safe to ignore):", error);
-      }
+    };
+
+    if (process.env.NODE_ENV === "test") {
+      cleanup();
+    } else {
+      cleanup().catch((error) => {
+        console.debug("Async cleanup error (safe to ignore):", error);
+      });
     }
   }, []);
 
@@ -57,8 +77,6 @@ export const useWebSocket = () => {
 
     const initializePusher = () => {
       try {
-        cleanupPusher();
-
         if (isUnmountingRef.current) return;
 
         console.log("Initializing Pusher with config:", {
@@ -160,8 +178,8 @@ export const useWebSocket = () => {
     initializePusher();
 
     return () => {
+      cleanupPusher();
       isUnmountingRef.current = true;
-      cleanupPusher(); // setTimeoutを削除
     };
   }, [cleanupPusher]);
 

@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/react";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import * as Pusher from "pusher-js";
 
@@ -95,20 +95,22 @@ describe("useWebSocket", () => {
     expect(result.current.changeRate).toBe(10);
   });
 
-  it("クリーンアップ時にPusherの接続が切断され、チャンネルの購読が解除される", () => {
+  it("クリーンアップ時にPusherの接続が切断され、チャンネルの購読が解除される", async () => {
     const { unmount } = renderHook(() => useWebSocket());
 
     // フックのクリーンアップ
     unmount();
 
-    // チャンネルの購読解除とPusherの切断が呼ばれていることを確認
-    expect(mockCustomerChannel.unbind_all).toHaveBeenCalled();
-    expect(mockUserChannel.unbind_all).toHaveBeenCalled();
-    expect(mockPusherInstance.unsubscribe).toHaveBeenCalledWith(
-      "customer-stats"
-    );
-    expect(mockPusherInstance.unsubscribe).toHaveBeenCalledWith("user-stats");
-    expect(mockPusherInstance.disconnect).toHaveBeenCalled();
+    // クリーンアップ処理を待つ
+    await waitFor(() => {
+      expect(mockCustomerChannel.unbind_all).toHaveBeenCalled();
+      expect(mockUserChannel.unbind_all).toHaveBeenCalled();
+      expect(mockPusherInstance.unsubscribe).toHaveBeenCalledWith(
+        "customer-stats"
+      );
+      expect(mockPusherInstance.unsubscribe).toHaveBeenCalledWith("user-stats");
+      expect(mockPusherInstance.disconnect).toHaveBeenCalled();
+    });
   });
 
   it("Pusherのキーが定義されていない場合にエラーを出力する", () => {

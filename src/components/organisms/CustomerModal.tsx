@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Modal,
   ModalOverlay,
@@ -7,130 +7,110 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   Button,
+  VStack,
+  FormControl,
+  FormLabel,
+  Input,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { Customer } from "@/types/customer";
-import CustomerBasicInfo from "@/components/molecules/CustomerBasicInfo";
-import CustomerPurchaseHistory from "@/components/molecules/CustomerPurchaseHistory";
-import CustomerNotes from "@/components/molecules/CustomerNotes";
 
 interface CustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  modalMode: "detail" | "add" | "edit";
-  activeCustomer: Customer | null;
-  onSubmit: (
-    customerData: Omit<
-      Customer,
-      "id" | "created_at" | "updated_at" | "purchaseHistory"
-    >
-  ) => void;
-  isMobile: boolean;
+  newCustomer: Omit<
+    Customer,
+    "id" | "created_at" | "updated_at" | "purchaseHistory"
+  >;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleSubmit: (e: React.FormEvent) => void;
 }
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
   isOpen,
   onClose,
-  modalMode,
-  activeCustomer,
-  onSubmit,
-  isMobile,
+  newCustomer,
+  handleInputChange,
+  handleSubmit,
 }) => {
-  // フォームデータとエラーメッセージの状態を管理
-  const [newCustomer, setNewCustomer] = useState<
-    Omit<Customer, "id" | "created_at" | "updated_at" | "purchaseHistory">
-  >({
-    name: activeCustomer?.name || "",
-    email: activeCustomer?.email || "",
-    phoneNumber: activeCustomer?.phoneNumber || "",
-    address: activeCustomer?.address || "",
-    birthDate: activeCustomer?.birthDate || "",
-  });
+  const modalSize = useBreakpointValue({ base: "full", md: "xl" });
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
-  const [formErrors, setFormErrors] = useState<Partial<Customer>>({});
-
-  // フォームの入力変更を処理する関数
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewCustomer((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = () => {
-    // 顧客データが存在しない場合は初期データを使用
-    const customerData = activeCustomer
-      ? {
-          name: activeCustomer.name,
-          email: activeCustomer.email,
-          phoneNumber: activeCustomer.phoneNumber,
-          address: activeCustomer.address,
-          birthDate: activeCustomer.birthDate,
-        }
-      : newCustomer;
-
-    onSubmit(customerData);
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSubmit(e);
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size={isMobile ? "full" : "xl"}>
+    <Modal isOpen={isOpen} onClose={onClose} size={modalSize}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>
-          {modalMode === "detail"
-            ? "顧客詳細"
-            : modalMode === "add"
-            ? "新規顧客登録"
-            : "顧客情報編集"}
-        </ModalHeader>
+        <ModalHeader>新規顧客登録</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Tabs>
-            <TabList>
-              <Tab>基本情報</Tab>
-              <Tab>購入履歴</Tab>
-              <Tab>メモ</Tab>
-            </TabList>
-            <TabPanels>
-              <TabPanel>
-                <CustomerBasicInfo
-                  customer={activeCustomer}
-                  modalMode={modalMode}
-                  newCustomer={newCustomer}
-                  formErrors={formErrors}
-                  handleInputChange={handleInputChange}
+          <form onSubmit={onSubmit} id="customer-form">
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>名前</FormLabel>
+                <Input
+                  name="name"
+                  value={newCustomer.name}
+                  onChange={handleInputChange}
                 />
-              </TabPanel>
-              <TabPanel>
-                <CustomerPurchaseHistory
-                  customer={activeCustomer}
-                  modalMode={modalMode}
-                  isMobile={isMobile}
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>メールアドレス</FormLabel>
+                <Input
+                  name="email"
+                  type="email"
+                  value={newCustomer.email}
+                  onChange={handleInputChange}
                 />
-              </TabPanel>
-              <TabPanel>
-                <CustomerNotes
-                  customer={activeCustomer}
-                  modalMode={modalMode}
+              </FormControl>
+              <FormControl>
+                <FormLabel>電話番号</FormLabel>
+                <Input
+                  name="phoneNumber"
+                  type="tel"
+                  value={newCustomer.phoneNumber}
+                  onChange={handleInputChange}
                 />
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
+              </FormControl>
+              <FormControl>
+                <FormLabel>住所</FormLabel>
+                <Input
+                  name="address"
+                  value={newCustomer.address}
+                  onChange={handleInputChange}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>生年月日</FormLabel>
+                <Input
+                  name="birthDate"
+                  type="date"
+                  value={newCustomer.birthDate}
+                  onChange={handleInputChange}
+                />
+              </FormControl>
+            </VStack>
+          </form>
         </ModalBody>
         <ModalFooter>
-          {modalMode !== "detail" && (
-            <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
-              {modalMode === "add" ? "登録" : "更新"}
-            </Button>
-          )}
-          <Button variant="ghost" onClick={onClose}>
-            閉じる
+          <Button
+            variant="ghost"
+            mr={3}
+            onClick={onClose}
+            width={isMobile ? "100%" : "auto"}>
+            キャンセル
+          </Button>
+          <Button
+            colorScheme="blue"
+            type="submit"
+            form="customer-form"
+            width={isMobile ? "100%" : "auto"}>
+            登録
           </Button>
         </ModalFooter>
       </ModalContent>

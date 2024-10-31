@@ -25,6 +25,7 @@ interface CustomerModalProps {
   >;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
+  modalMode: "detail" | "add" | "edit"; // modalModeを追加
 }
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -33,6 +34,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   newCustomer,
   handleInputChange,
   handleSubmit,
+  modalMode,
 }) => {
   const modalSize = useBreakpointValue({ base: "full", md: "xl" });
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -42,11 +44,24 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
     handleSubmit(e);
   };
 
+  const getModalTitle = () => {
+    switch (modalMode) {
+      case "add":
+        return "新規顧客登録";
+      case "edit":
+        return "顧客情報編集";
+      case "detail":
+        return "顧客詳細";
+      default:
+        return "新規顧客登録";
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size={modalSize}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>新規顧客登録</ModalHeader>
+        <ModalHeader>{getModalTitle()}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <form onSubmit={onSubmit} id="customer-form">

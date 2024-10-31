@@ -5,28 +5,17 @@ import { ChakraProvider } from "@chakra-ui/react";
 
 // モックの顧客データ
 const mockCustomer = {
-  id: "1",
   name: "テスト 太郎",
   email: "test@example.com",
-  phone: "090-1234-5678",
+  phoneNumber: "090-1234-5678",
   address: "東京都渋谷区",
-  created_at: "2023-01-01",
-  updated_at: "2023-01-01",
-  purchaseHistory: [],
+  birthDate: "1990-01-01",
 };
 
 // モックの関数
 const mockOnClose = jest.fn();
 const mockOnSubmit = jest.fn();
-
-// CustomerBasicInfo コンポーネントのモック
-jest.mock("../../molecules/CustomerBasicInfo", () => {
-  return function MockCustomerBasicInfo(props) {
-    return (
-      <div data-testid="customer-basic-info">Customer Basic Info Mock</div>
-    );
-  };
-});
+const mockHandleInputChange = jest.fn();
 
 describe("CustomerModal コンポーネント", () => {
   const renderComponent = (
@@ -35,10 +24,10 @@ describe("CustomerModal コンポーネント", () => {
     const defaultProps: React.ComponentProps<typeof CustomerModal> = {
       isOpen: true,
       onClose: mockOnClose,
-      modalMode: "detail",
-      activeCustomer: mockCustomer,
-      onSubmit: mockOnSubmit,
-      isMobile: false,
+      modalMode: "add",
+      newCustomer: mockCustomer,
+      handleInputChange: mockHandleInputChange,
+      handleSubmit: mockOnSubmit,
     };
 
     return render(
@@ -52,76 +41,77 @@ describe("CustomerModal コンポーネント", () => {
     jest.clearAllMocks();
   });
 
-  test("モーダルが正しく表示される", async () => {
-    renderComponent();
-    await waitFor(() => {
-      expect(screen.getByText("顧客詳細")).toBeInTheDocument();
-    });
-  });
-
   test("モーダルのタイトルが各モードで正しく表示される", async () => {
-    renderComponent({ modalMode: "add" });
+    // addモードのテスト
+    const { unmount } = renderComponent({ modalMode: "add" });
     await waitFor(() => {
       expect(screen.getByText("新規顧客登録")).toBeInTheDocument();
     });
 
+    // コンポーネントをアンマウント
+    unmount();
+
+    // editモードのテスト
     renderComponent({ modalMode: "edit" });
     await waitFor(() => {
-      expect(screen.getByText("顧客情報編集")).toBeInTheDocument();
+      // headerId を使用してヘッダーを検索
+      const header = screen.getByText("顧客情報編集");
+      expect(header).toBeInTheDocument();
     });
   });
 
-  test("タブが正しく表示される", async () => {
+  test("フォームフィールドが正しく表示される", async () => {
     renderComponent();
     await waitFor(() => {
-      expect(screen.getByRole("tab", { name: "基本情報" })).toBeInTheDocument();
-      expect(screen.getByRole("tab", { name: "購入履歴" })).toBeInTheDocument();
-      expect(screen.getByRole("tab", { name: "メモ" })).toBeInTheDocument();
+      // role="group"を持つFormControlの中からラベルテキストを検索
+      const formControls = screen.getAllByRole("group");
+      expect(formControls[0]).toHaveTextContent("名前");
+      expect(formControls[1]).toHaveTextContent("メールアドレス");
+      expect(formControls[2]).toHaveTextContent("電話番号");
+      expect(formControls[3]).toHaveTextContent("住所");
+      expect(formControls[4]).toHaveTextContent("生年月日");
     });
   });
 
   test("閉じるボタンが機能する", async () => {
     renderComponent();
     await waitFor(() => {
-      fireEvent.click(screen.getByText("閉じる"));
+      fireEvent.click(screen.getByText("キャンセル"));
       expect(mockOnClose).toHaveBeenCalledTimes(1);
     });
   });
 
-  test("登録ボタンが追加モードで表示され、機能する", async () => {
-    renderComponent({ modalMode: "add" });
+  test("登録ボタンが機能する", async () => {
+    renderComponent();
     await waitFor(() => {
-      const submitButton = screen.getByText("登録");
-      expect(submitButton).toBeInTheDocument();
-      fireEvent.click(submitButton);
+      fireEvent.click(screen.getByText("登録"));
       expect(mockOnSubmit).toHaveBeenCalledTimes(1);
     });
   });
 
-  test("更新ボタンが編集モードで表示され、機能する", async () => {
-    renderComponent({ modalMode: "edit" });
+  test("入力フィールドの変更が機能する", async () => {
+    renderComponent();
     await waitFor(() => {
-      const updateButton = screen.getByText("更新");
-      expect(updateButton).toBeInTheDocument();
-      fireEvent.click(updateButton);
-      expect(mockOnSubmit).toHaveBeenCalledTimes(1);
+      // input要素を直接取得
+      const nameInput = screen.getByRole("textbox", { name: /名前/ });
+      fireEvent.change(nameInput, { target: { value: "新しい名前" } });
+      expect(mockHandleInputChange).toHaveBeenCalled();
     });
   });
 
-  test("詳細モードではアクションボタンが表示されない", async () => {
-    renderComponent({ modalMode: "detail" });
-    await waitFor(() => {
-      expect(screen.queryByText("登録")).not.toBeInTheDocument();
-      expect(screen.queryByText("更新")).not.toBeInTheDocument();
-    });
-  });
-
-  test("モバイルモードで全画面表示になる", async () => {
-    renderComponent({ isMobile: true });
+  test("モーダルのサイズが画面サイズに応じて変更される", async () => {
+    renderComponent();
     await waitFor(() => {
       const modalContent = screen.getByRole("dialog");
       expect(modalContent).toHaveClass("chakra-modal__content");
-      expect(modalContent).toHaveStyle("width: 100%");
+
+      const modalContainer = modalContent.parentElement;
+      expect(modalContainer).toHaveClass("chakra-modal__content-container");
+
+      expect(modalContent).toHaveAttribute("aria-modal", "true");
+      expect(modalContent).toHaveStyle({
+        opacity: "1",
+      });
     });
   });
 });

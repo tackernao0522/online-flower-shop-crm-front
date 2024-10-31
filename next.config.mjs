@@ -4,11 +4,12 @@ const nextConfig = {
   crossOrigin: "anonymous",
   serverRuntimeConfig: {
     // サーバーサイドでのみ利用可能な設定
-    // 例: API_SECRET: process.env.API_SECRET,
   },
   publicRuntimeConfig: {
     // クライアントサイドでも利用可能な設定
     API_URL: process.env.NEXT_PUBLIC_API_URL,
+    BASIC_AUTH_USER: process.env.BASIC_AUTH_USER,
+    BASIC_AUTH_PASS: process.env.BASIC_AUTH_PASS,
   },
   // Rechartsの警告を抑制とMessageChannelの警告を抑制
   webpack: (config, { isServer }) => {

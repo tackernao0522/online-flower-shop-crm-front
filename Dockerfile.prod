@@ -3,6 +3,13 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
+# 環境変数のチェックを追加
+COPY .env.production ./
+RUN if [ -z "$(grep BASIC_AUTH_USER .env.production)" ] || [ -z "$(grep BASIC_AUTH_PASS .env.production)" ]; then \
+    echo "Error: BASIC_AUTH_USER and BASIC_AUTH_PASS must be set in .env.production" && \
+    exit 1; \
+    fi
+
 # パッケージ管理ファイルをコピー
 COPY package*.json ./
 
@@ -24,8 +31,9 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# npmを最新バージョンにアップデート
-RUN npm install -g npm@10.9.0
+# npmを最新バージョンにアップデートとwgetをインストール
+RUN apk add --no-cache wget && \
+    npm install -g npm@10.9.0
 
 # 本番環境用の依存関係のみをインストール
 COPY package*.json ./

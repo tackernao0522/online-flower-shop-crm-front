@@ -1,6 +1,6 @@
 "use client";
+
 import React, { useState } from "react";
-import { Order } from "@/types/order";
 import {
   Box,
   Flex,
@@ -16,22 +16,15 @@ import {
   VStack,
   HStack,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  FormControl,
-  FormLabel,
-  Select,
+  Badge,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
-  Badge,
+  FormControl,
+  FormLabel,
+  Select,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -41,12 +34,15 @@ import {
   ViewIcon,
 } from "@chakra-ui/icons";
 import { useRouter } from "next/navigation";
+import CustomModal from "@/components/molecules/CustomModal";
+import { Order } from "@/types/order";
 
 const OrdersPage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [modalMode, setModalMode] = useState("detail"); // 'detail', 'add', 'edit'
-
+  const [modalMode, setModalMode] = useState<"detail" | "add" | "edit">(
+    "detail"
+  );
   const router = useRouter();
 
   const orders: Order[] = [
@@ -130,11 +126,6 @@ const OrdersPage = () => {
         </HStack>
       </Flex>
 
-      <Flex mb={5}>
-        <Input placeholder="注文IDまたは顧客名で検索" mr={3} />
-        <Button>検索</Button>
-      </Flex>
-
       <Table variant="simple">
         <Thead>
           <Tr>
@@ -183,70 +174,63 @@ const OrdersPage = () => {
         </Tbody>
       </Table>
 
-      <Modal isOpen={isOpen} onClose={onClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            {modalMode === "detail"
-              ? "注文詳細"
-              : modalMode === "add"
-              ? "新規注文作成"
-              : "注文編集"}
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Tabs>
-              <TabList>
-                <Tab>注文情報</Tab>
-                <Tab>顧客情報</Tab>
-                <Tab>配送情報</Tab>
-              </TabList>
-              <TabPanels>
-                <TabPanel>
-                  {modalMode === "detail" ? (
-                    <VStack align="stretch" spacing={4}>
-                      <Box>
-                        <strong>注文ID:</strong> {activeOrder?.id}
-                      </Box>
-                      <Box>
-                        <strong>顧客名:</strong> {activeOrder?.customerName}
-                      </Box>
-                      <Box>
-                        <strong>注文日:</strong> {activeOrder?.date}
-                      </Box>
-                      <Box>
-                        <strong>金額:</strong> ¥
-                        {activeOrder?.amount.toLocaleString()}
-                      </Box>
-                      <Box>
-                        <strong>状態:</strong> {activeOrder?.status}
-                      </Box>
-                    </VStack>
-                  ) : (
-                    renderOrderForm()
-                  )}
-                </TabPanel>
-                <TabPanel>
-                  <p>顧客情報をここに表示</p>
-                </TabPanel>
-                <TabPanel>
-                  <p>配送情報をここに表示</p>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </ModalBody>
-          <ModalFooter>
-            {modalMode !== "detail" && (
-              <Button colorScheme="blue" mr={3}>
-                保存
-              </Button>
-            )}
-            <Button variant="ghost" onClick={onClose}>
-              閉じる
+      <CustomModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={
+          modalMode === "detail"
+            ? "注文詳細"
+            : modalMode === "add"
+            ? "新規注文作成"
+            : "注文編集"
+        }
+        footer={
+          modalMode !== "detail" && (
+            <Button colorScheme="blue" mr={3}>
+              保存
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          )
+        }>
+        <Tabs>
+          <TabList>
+            <Tab>注文情報</Tab>
+            <Tab>顧客情報</Tab>
+            <Tab>配送情報</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              {modalMode === "detail" ? (
+                <VStack align="stretch" spacing={4}>
+                  <Box>
+                    <strong>注文ID:</strong> {activeOrder?.id}
+                  </Box>
+                  <Box>
+                    <strong>顧客名:</strong> {activeOrder?.customerName}
+                  </Box>
+                  <Box>
+                    <strong>注文日:</strong> {activeOrder?.date}
+                  </Box>
+                  <Box>
+                    <strong>金額:</strong> ¥
+                    {activeOrder?.amount.toLocaleString()}
+                  </Box>
+                  <Box>
+                    <strong>状態:</strong> {activeOrder?.status}
+                  </Box>
+                </VStack>
+              ) : (
+                renderOrderForm()
+              )}
+            </TabPanel>
+            <TabPanel>
+              <p>顧客情報をここに表示</p>
+            </TabPanel>
+            <TabPanel>
+              <p>配送情報をここに表示</p>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+      </CustomModal>
     </Box>
   );
 };

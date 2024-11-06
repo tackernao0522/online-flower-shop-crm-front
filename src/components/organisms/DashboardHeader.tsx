@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 const menuOptions = [
   "ユーザー管理",
   "顧客管理",
+  "注文管理",
   "配送管理",
   "顧客対応履歴",
   "キャンペーン管理",
@@ -45,6 +46,7 @@ type MenuOption = (typeof menuOptions)[number];
 const ROUTES: Partial<Record<MenuOption, string>> = {
   ユーザー管理: "/user-management",
   顧客管理: "/customers",
+  注文管理: "/orders",
   // 他のルートも必要に応じて追加
 };
 

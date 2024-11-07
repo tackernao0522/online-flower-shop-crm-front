@@ -135,7 +135,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
                 colorScheme="blue"
                 mr={3}
                 onClick={() => handleSaveUser(activeItem as User)}>
-                保存
+                更新
               </Button>
             )}
             <Button variant="outline" onClick={onClose}>
@@ -166,7 +166,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
               colorScheme="blue"
               mr={3}
               onClick={() => handleSaveUser(activeItem as User)}>
-              保存
+              更新
             </Button>
           )}
           <Button variant="ghost" onClick={onClose}>

@@ -93,7 +93,7 @@ describe("UserEditModalのテスト", () => {
   test("保存ボタンをクリックするとユーザーが保存される", () => {
     renderWithChakra({ ...defaultProps, modalMode: "edit" });
 
-    const saveButton = screen.getByText("保存");
+    const saveButton = screen.getByText("更新");
     fireEvent.click(saveButton);
 
     // 修正点: id は string 型 (uuid)

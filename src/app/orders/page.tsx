@@ -386,6 +386,10 @@ const OrdersPage = () => {
               顧客情報
             </Text>
             <Box>
+              <Text fontWeight="semibold">顧客ID</Text>
+              <Text>{activeOrder.customer.id}</Text>
+            </Box>
+            <Box>
               <Text fontWeight="semibold">名前</Text>
               <Text>{activeOrder.customer.name}</Text>
             </Box>

@@ -71,6 +71,7 @@ import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useOrderManagement } from "@/hooks/useOrderManagement";
 import { OrderStatus } from "@/types/order";
+import { formatDate } from "@/utils/dateFormatter";
 
 const OrdersPage = () => {
   const router = useRouter();
@@ -479,7 +480,7 @@ const OrdersPage = () => {
               <Tr key={order.id}>
                 <Td>{order.orderNumber}</Td>
                 <Td>{order.customer.name}</Td>
-                <Td>{format(new Date(order.orderDate), "yyyy/MM/dd")}</Td>
+                <Td>{formatDate(order.orderDate)}</Td>
                 <Td>¥{order.totalAmount.toLocaleString()}</Td>
                 <Td>
                   <Badge colorScheme={statusColorScheme[order.status]}>

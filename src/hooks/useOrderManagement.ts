@@ -305,7 +305,7 @@ export const useOrderManagement = () => {
       let response: AxiosResponse<Order>;
 
       if (modalMode === "add") {
-        response = await axios.put<Order>(
+        response = await axios.post<Order>(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
           newOrder,
           {

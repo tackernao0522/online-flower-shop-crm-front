@@ -1,10 +1,13 @@
-import { AppProps } from "next/app";
+import type { AppProps } from "next/app";
 import { ChakraProvider } from "@chakra-ui/react";
-import { wrapper } from "../lib/redux";
 import theme from "../styles/theme";
 import { Providers } from "../lib/providers";
 
-function MyApp({ Component, pageProps }: AppProps) {
+type CustomAppProps = Omit<AppProps, "router"> & {
+  router?: AppProps["router"];
+};
+
+function MyApp({ Component, pageProps }: CustomAppProps): JSX.Element {
   return (
     <Providers>
       <ChakraProvider theme={theme}>
@@ -14,4 +17,4 @@ function MyApp({ Component, pageProps }: AppProps) {
   );
 }
 
-export default wrapper.withRedux(MyApp);
+export default MyApp;

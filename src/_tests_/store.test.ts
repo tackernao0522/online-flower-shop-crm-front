@@ -1,5 +1,5 @@
-import { store } from "../store";
-import authReducer, { login, logout } from "../features/auth/authSlice";
+import store from "../store";
+import { login, logout } from "../features/auth/authSlice";
 import { waitFor } from "@testing-library/react"; // 追加
 
 describe("Reduxストアのテスト", () => {

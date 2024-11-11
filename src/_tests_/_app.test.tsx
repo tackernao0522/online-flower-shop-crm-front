@@ -2,7 +2,7 @@ import React from "react";
 import { render } from "@testing-library/react";
 import MyApp from "../pages/_app";
 import { ChakraProvider } from "@chakra-ui/react";
-import { Providers } from "../lib/providers";
+import type { Router } from "next/router";
 
 // モックの設定
 jest.mock("@chakra-ui/react", () => ({
@@ -17,13 +17,45 @@ jest.mock("../lib/providers", () => ({
   ),
 }));
 
-jest.mock("../lib/redux", () => ({
-  wrapper: {
-    withRedux: (component: React.ComponentType) => component,
-  },
-}));
-
 jest.mock("../styles/theme", () => ({}));
+
+// BeforePopStateCallbackの型定義
+type BeforePopStateCallback = (state: any) => boolean;
+
+// モックルーターの作成
+const mockRouter: Partial<Router> = {
+  basePath: "",
+  pathname: "/",
+  route: "/",
+  asPath: "/",
+  query: {},
+  push: jest.fn(),
+  replace: jest.fn(),
+  reload: jest.fn(),
+  back: jest.fn(),
+  prefetch: jest.fn(),
+  beforePopState: jest.fn(),
+  events: {
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  },
+  isFallback: false,
+  isReady: true,
+  isPreview: false,
+  isLocaleDomain: false,
+  components: {},
+  sdc: {},
+  sbc: {},
+  sub: jest.fn(),
+  clc: jest.fn(),
+  _bps: jest.fn(() => true) as BeforePopStateCallback,
+  _wrapApp: jest.fn(),
+  locale: "ja",
+  defaultLocale: "ja",
+  domainLocales: [],
+  locales: ["ja"],
+};
 
 describe("MyApp", () => {
   const MockComponent = () => (
@@ -37,7 +69,11 @@ describe("MyApp", () => {
 
   it("正しくコンポーネントをラップすること", () => {
     const { getByTestId } = render(
-      <MyApp Component={MockComponent} pageProps={mockPageProps} />
+      <MyApp
+        Component={MockComponent}
+        pageProps={mockPageProps}
+        router={mockRouter as Router}
+      />
     );
 
     expect(getByTestId("providers")).toBeInTheDocument();
@@ -52,7 +88,11 @@ describe("MyApp", () => {
     const testPageProps = { testProp: "test value" };
 
     const { getByTestId } = render(
-      <MyApp Component={TestComponent} pageProps={testPageProps} />
+      <MyApp
+        Component={TestComponent}
+        pageProps={testPageProps}
+        router={mockRouter as Router}
+      />
     );
 
     const renderedProps = JSON.parse(
@@ -62,7 +102,13 @@ describe("MyApp", () => {
   });
 
   it("theme が ChakraProvider に渡されること", () => {
-    render(<MyApp Component={MockComponent} pageProps={mockPageProps} />);
+    render(
+      <MyApp
+        Component={MockComponent}
+        pageProps={mockPageProps}
+        router={mockRouter as Router}
+      />
+    );
 
     expect(ChakraProvider).toHaveBeenCalledWith(
       expect.objectContaining({

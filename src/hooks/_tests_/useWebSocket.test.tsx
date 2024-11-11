@@ -1,8 +1,40 @@
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useWebSocket } from "../../hooks/useWebSocket";
 import * as Pusher from "pusher-js";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
+import ordersReducer from "../../features/orders/ordersSlice";
+import customersReducer from "../../features/customers/customersSlice";
+import authReducer from "../../features/auth/authSlice";
+import { ChakraProvider } from "@chakra-ui/react";
+import React from "react";
 
 jest.mock("pusher-js");
+
+function createTestStore() {
+  return configureStore({
+    reducer: {
+      orders: ordersReducer,
+      customers: customersReducer,
+      auth: authReducer,
+    },
+    middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware({
+        serializableCheck: false,
+      }),
+  });
+}
+
+function createWrapper() {
+  const store = createTestStore();
+  return function TestWrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <Provider store={store}>
+        <ChakraProvider>{children}</ChakraProvider>
+      </Provider>
+    );
+  };
+}
 
 describe("useWebSocket", () => {
   let mockPusherInstance: any;
@@ -37,7 +69,6 @@ describe("useWebSocket", () => {
       disconnect: jest.fn(),
     };
 
-    // 環境変数をモック
     process.env.NEXT_PUBLIC_PUSHER_APP_KEY = "test-key";
     process.env.NEXT_PUBLIC_PUSHER_HOST = "test-host";
     process.env.NEXT_PUBLIC_PUSHER_PORT = "6001";
@@ -53,15 +84,15 @@ describe("useWebSocket", () => {
   });
 
   it("Pusherインスタンスが初期化されると、顧客とユーザーチャンネルがサブスクライブされる", () => {
-    renderHook(() => useWebSocket());
+    renderHook(() => useWebSocket(), { wrapper: createWrapper() });
 
-    // 顧客とユーザーチャンネルのサブスクライブが呼ばれていることを確認
+    // チャンネルのサブスクライブを確認
     expect(mockPusherInstance.subscribe).toHaveBeenCalledWith("customer-stats");
     expect(mockPusherInstance.subscribe).toHaveBeenCalledWith("user-stats");
 
-    // 接続状態とエラーバインドが呼ばれていることを確認
+    // connection.bindの呼び出しを確認
     expect(mockPusherInstance.connection.bind).toHaveBeenCalledWith(
-      "state_change",
+      "connected",
       expect.any(Function)
     );
     expect(mockPusherInstance.connection.bind).toHaveBeenCalledWith(
@@ -71,9 +102,10 @@ describe("useWebSocket", () => {
   });
 
   it("PusherのCustomerCountUpdatedイベントを受信すると、totalCountとchangeRateが更新される", () => {
-    const { result } = renderHook(() => useWebSocket());
+    const { result } = renderHook(() => useWebSocket(), {
+      wrapper: createWrapper(),
+    });
 
-    // CustomerCountUpdatedイベントのハンドラを直接実行
     act(() => {
       const eventData = {
         totalCount: 100,
@@ -90,18 +122,17 @@ describe("useWebSocket", () => {
         .forEach((call: BindCall) => call[1](eventData));
     });
 
-    // 状態の更新を確認
     expect(result.current.totalCount).toBe(100);
     expect(result.current.changeRate).toBe(10);
   });
 
   it("クリーンアップ時にPusherの接続が切断され、チャンネルの購読が解除される", async () => {
-    const { unmount } = renderHook(() => useWebSocket());
+    const { unmount } = renderHook(() => useWebSocket(), {
+      wrapper: createWrapper(),
+    });
 
-    // フックのクリーンアップ
     unmount();
 
-    // クリーンアップ処理を待つ
     await waitFor(() => {
       expect(mockCustomerChannel.unbind_all).toHaveBeenCalled();
       expect(mockUserChannel.unbind_all).toHaveBeenCalled();
@@ -115,11 +146,9 @@ describe("useWebSocket", () => {
 
   it("Pusherのキーが定義されていない場合にエラーを出力する", () => {
     const spy = jest.spyOn(console, "error").mockImplementation(() => {});
-
-    // Pusherキーを未定義に設定
     process.env.NEXT_PUBLIC_PUSHER_APP_KEY = "";
 
-    renderHook(() => useWebSocket());
+    renderHook(() => useWebSocket(), { wrapper: createWrapper() });
 
     expect(console.error).toHaveBeenCalledWith("Pusher key is not defined");
 

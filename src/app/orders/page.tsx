@@ -56,6 +56,7 @@ import {
   Tooltip,
   DrawerProps,
   ModalProps,
+  Divider,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -295,7 +296,12 @@ const OrdersPage = () => {
 
   const renderOrderDetails = () => (
     <VStack align="stretch" spacing={6} py={2}>
-      <Box borderWidth="1px" borderRadius="lg" p={4}>
+      <Box
+        borderWidth="1px"
+        borderRadius="lg"
+        p={4}
+        maxH="300px"
+        overflowY="auto">
         <VStack align="stretch" spacing={4}>
           <Flex justifyContent="space-between" alignItems="center">
             <Text fontWeight="bold" fontSize="lg">
@@ -319,6 +325,22 @@ const OrdersPage = () => {
             <Text>{activeOrder?.orderNumber}</Text>
           </Box>
           <Box>
+            <Text fontWeight="semibold">商品ID</Text>
+            <VStack
+              align="stretch"
+              spacing={2}
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="md"
+              p={2}
+              maxH="100px"
+              overflowY="auto">
+              {activeOrder?.orderItems.map((item) => (
+                <Text key={item.id}>{item.product.id}</Text>
+              ))}
+            </VStack>
+          </Box>
+          <Box>
             <Text fontWeight="semibold">注文日時</Text>
             <Text>
               {activeOrder?.orderDate &&
@@ -338,7 +360,14 @@ const OrdersPage = () => {
         </VStack>
       </Box>
 
-      <Box borderWidth="1px" borderRadius="lg" p={4}>
+      {/* 注文商品テーブル */}
+      <Box
+        borderWidth="1px"
+        borderRadius="lg"
+        p={4}
+        overflowX="auto"
+        maxHeight="300px"
+        overflowY="auto">
         <Text fontWeight="bold" fontSize="lg" mb={4}>
           注文商品
         </Text>
@@ -346,18 +375,24 @@ const OrdersPage = () => {
           <Thead>
             <Tr>
               <Th>商品名</Th>
-              <Th>数量</Th>
-              <Th>単価</Th>
-              <Th isNumeric>小計</Th>
+              <Th width="80px" textAlign="center">
+                数量
+              </Th>
+              <Th width="100px" textAlign="center">
+                単価
+              </Th>
+              <Th width="100px" textAlign="right">
+                小計
+              </Th>
             </Tr>
           </Thead>
           <Tbody>
             {activeOrder?.orderItems.map((item) => (
               <Tr key={item.id}>
-                <Td>{item.product.name}</Td>
-                <Td>{item.quantity}</Td>
-                <Td>¥{item.unitPrice.toLocaleString()}</Td>
-                <Td isNumeric>
+                <Td whiteSpace="normal">{item.product.name}</Td>
+                <Td textAlign="center">{item.quantity}</Td>
+                <Td textAlign="center">¥{item.unitPrice.toLocaleString()}</Td>
+                <Td textAlign="right">
                   ¥{(item.quantity * item.unitPrice).toLocaleString()}
                 </Td>
               </Tr>

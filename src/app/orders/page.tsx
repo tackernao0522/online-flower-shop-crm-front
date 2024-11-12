@@ -57,6 +57,11 @@ import {
   DrawerProps,
   ModalProps,
   Divider,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
 } from "@chakra-ui/react";
 import {
   AddIcon,
@@ -230,7 +235,7 @@ const OrdersPage = () => {
         <FormLabel>注文商品</FormLabel>
         <VStack spacing={4} align="stretch">
           {newOrder.orderItems.map((item, index) => (
-            <HStack key={index} spacing={4}>
+            <HStack key={`new-order-item-${index}`} spacing={4}>
               <FormControl isRequired>
                 <Input
                   name={`orderItems.${index}.productId`}
@@ -242,20 +247,21 @@ const OrdersPage = () => {
                 />
               </FormControl>
               <FormControl isRequired>
-                <Input
-                  name={`orderItems.${index}.quantity`}
-                  type="number"
-                  placeholder="数量"
-                  value={item.quantity}
-                  onChange={(e) =>
-                    handleOrderItemChange(
-                      index,
-                      "quantity",
-                      parseInt(e.target.value)
-                    )
-                  }
+                <NumberInput
                   min={1}
-                />
+                  value={item.quantity}
+                  onChange={(valueString, valueNumber) =>
+                    handleOrderItemChange(index, "quantity", valueNumber || 1)
+                  }>
+                  <NumberInputField
+                    name={`orderItems.${index}.quantity`}
+                    placeholder="数量"
+                  />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
               </FormControl>
               <IconButton
                 aria-label="商品を削除"
@@ -284,7 +290,7 @@ const OrdersPage = () => {
             value={newOrder.status}
             onChange={handleInputChange}>
             {Object.entries(statusDisplayText).map(([value, label]) => (
-              <option key={value} value={value}>
+              <option key={`status-${value}`} value={value}>
                 {label}
               </option>
             ))}
@@ -294,114 +300,134 @@ const OrdersPage = () => {
     </VStack>
   );
 
-  const renderOrderDetails = () => (
-    <VStack align="stretch" spacing={6} py={2}>
-      <Box
-        borderWidth="1px"
-        borderRadius="lg"
-        p={4}
-        maxH="300px"
-        overflowY="auto">
-        <VStack align="stretch" spacing={4}>
-          <Flex justifyContent="space-between" alignItems="center">
-            <Text fontWeight="bold" fontSize="lg">
-              基本情報
-            </Text>
-            <Badge
-              colorScheme={
-                statusColorScheme[
-                  activeOrder?.status || ("PENDING" as OrderStatus)
-                ]
-              }>
-              {
-                statusDisplayText[
-                  activeOrder?.status || ("PENDING" as OrderStatus)
-                ]
-              }
-            </Badge>
-          </Flex>
-          <Box>
-            <Text fontWeight="semibold">注文番号</Text>
-            <Text>{activeOrder?.orderNumber}</Text>
-          </Box>
-          <Box>
-            <Text fontWeight="semibold">商品ID</Text>
-            <VStack
-              align="stretch"
-              spacing={2}
-              border="1px solid"
-              borderColor="gray.200"
-              borderRadius="md"
-              p={2}
-              maxH="100px"
-              overflowY="auto">
-              {activeOrder?.orderItems.map((item) => (
-                <Text key={item.id}>{item.product.id}</Text>
-              ))}
-            </VStack>
-          </Box>
-          <Box>
-            <Text fontWeight="semibold">注文日時</Text>
-            <Text>
-              {activeOrder?.orderDate &&
-                format(new Date(activeOrder.orderDate), "yyyy/MM/dd HH:mm")}
-            </Text>
-          </Box>
-          <Box>
-            <Text fontWeight="semibold">合計金額</Text>
-            <Text>¥{activeOrder?.totalAmount?.toLocaleString()}</Text>
-          </Box>
-          {activeOrder?.discountApplied && activeOrder.discountApplied > 0 && (
-            <Box>
-              <Text fontWeight="semibold">適用割引</Text>
-              <Text>¥{activeOrder.discountApplied.toLocaleString()}</Text>
-            </Box>
-          )}
-        </VStack>
-      </Box>
+  const renderOrderDetails = () => {
+    if (!activeOrder || !activeOrder.orderItems) {
+      return (
+        <Alert status="info">
+          <AlertIcon />
+          注文情報を読み込んでいます...
+        </Alert>
+      );
+    }
 
-      {/* 注文商品テーブル */}
-      <Box
-        borderWidth="1px"
-        borderRadius="lg"
-        p={4}
-        overflowX="auto"
-        maxHeight="300px"
-        overflowY="auto">
-        <Text fontWeight="bold" fontSize="lg" mb={4}>
-          注文商品
-        </Text>
-        <Table variant="simple" size="sm">
-          <Thead>
-            <Tr>
-              <Th>商品名</Th>
-              <Th width="80px" textAlign="center">
-                数量
-              </Th>
-              <Th width="100px" textAlign="center">
-                単価
-              </Th>
-              <Th width="100px" textAlign="right">
-                小計
-              </Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {activeOrder?.orderItems.map((item) => (
-              <Tr key={item.id}>
-                <Td whiteSpace="normal">{item.product.name}</Td>
-                <Td textAlign="center">{item.quantity}</Td>
-                <Td textAlign="center">¥{item.unitPrice.toLocaleString()}</Td>
-                <Td textAlign="right">
-                  ¥{(item.quantity * item.unitPrice).toLocaleString()}
-                </Td>
-              </Tr>
+    const basicInfoItems = [
+      { id: "orderNumber", label: "注文番号", value: activeOrder.orderNumber },
+      {
+        id: "productIds",
+        label: "商品ID",
+        value: (
+          <VStack
+            align="stretch"
+            spacing={2}
+            border="1px solid"
+            borderColor="gray.200"
+            borderRadius="md"
+            p={2}
+            maxH="100px"
+            overflowY="auto">
+            {activeOrder.orderItems.map((item, index) => (
+              <Text key={`product-id-${item.id || index}`}>
+                {item.product.id}
+              </Text>
             ))}
-          </Tbody>
-        </Table>
-      </Box>
-    </VStack>
-  );
+          </VStack>
+        ),
+      },
+      {
+        id: "orderDate",
+        label: "注文日時",
+        value:
+          activeOrder.orderDate &&
+          format(new Date(activeOrder.orderDate), "yyyy/MM/dd HH:mm"),
+      },
+      {
+        id: "totalAmount",
+        label: "合計金額",
+        value: `¥${activeOrder.totalAmount.toLocaleString()}`,
+      },
+      ...(activeOrder.discountApplied > 0
+        ? [
+            {
+              id: "discount",
+              label: "適用割引",
+              value: `¥${activeOrder.discountApplied.toLocaleString()}`,
+            },
+          ]
+        : []),
+    ];
+
+    return (
+      <VStack align="stretch" spacing={6} py={2}>
+        <Box
+          borderWidth="1px"
+          borderRadius="lg"
+          p={4}
+          maxH="300px"
+          overflowY="auto">
+          <VStack align="stretch" spacing={4}>
+            <Flex justifyContent="space-between" alignItems="center">
+              <Text key="basic-info-title" fontWeight="bold" fontSize="lg">
+                基本情報
+              </Text>
+              <Badge colorScheme={statusColorScheme[activeOrder.status]}>
+                {statusDisplayText[activeOrder.status]}
+              </Badge>
+            </Flex>
+            {basicInfoItems.map((item) => (
+              <Box key={`basicInfo-${item.id}`}>
+                <Text fontWeight="semibold">{item.label}</Text>
+                {typeof item.value === "string" ? (
+                  <Text>{item.value}</Text>
+                ) : (
+                  item.value
+                )}
+              </Box>
+            ))}
+          </VStack>
+        </Box>
+
+        <Box
+          borderWidth="1px"
+          borderRadius="lg"
+          p={4}
+          overflowX="auto"
+          maxHeight="300px"
+          overflowY="auto">
+          <Text key="order-items-title" fontWeight="bold" fontSize="lg" mb={4}>
+            注文商品
+          </Text>
+          <Table variant="simple" size="sm">
+            <Thead>
+              <Tr>
+                <Th>商品名</Th>
+                <Th width="80px" textAlign="center">
+                  数量
+                </Th>
+                <Th width="100px" textAlign="center">
+                  単価
+                </Th>
+                <Th width="100px" textAlign="right">
+                  小計
+                </Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {activeOrder.orderItems.map((item, index) => (
+                <Tr key={`detail-order-item-${item.id || index}`}>
+                  <Td whiteSpace="normal">{item.product.name}</Td>
+                  <Td textAlign="center">{item.quantity}</Td>
+                  <Td textAlign="center">¥{item.unitPrice.toLocaleString()}</Td>
+                  <Td textAlign="right">
+                    ¥{(item.quantity * item.unitPrice).toLocaleString()}
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+      </VStack>
+    );
+  };
 
   const renderCustomerInfo = () => {
     if (!activeOrder?.customer) {
@@ -413,33 +439,35 @@ const OrdersPage = () => {
       );
     }
 
+    const customerInfoItems = [
+      { id: "customerId", label: "顧客ID", value: activeOrder.customer.id },
+      { id: "name", label: "名前", value: activeOrder.customer.name },
+      {
+        id: "email",
+        label: "メールアドレス",
+        value: activeOrder.customer.email,
+      },
+      {
+        id: "phone",
+        label: "電話番号",
+        value: activeOrder.customer.phoneNumber,
+      },
+      { id: "address", label: "住所", value: activeOrder.customer.address },
+    ];
+
     return (
       <VStack align="stretch" spacing={4} py={2}>
         <Box borderWidth="1px" borderRadius="lg" p={4}>
           <VStack align="stretch" spacing={4}>
-            <Text fontWeight="bold" fontSize="lg">
+            <Text key="customer-info-title" fontWeight="bold" fontSize="lg">
               顧客情報
             </Text>
-            <Box>
-              <Text fontWeight="semibold">顧客ID</Text>
-              <Text>{activeOrder.customer.id}</Text>
-            </Box>
-            <Box>
-              <Text fontWeight="semibold">名前</Text>
-              <Text>{activeOrder.customer.name}</Text>
-            </Box>
-            <Box>
-              <Text fontWeight="semibold">メールアドレス</Text>
-              <Text>{activeOrder.customer.email}</Text>
-            </Box>
-            <Box>
-              <Text fontWeight="semibold">電話番号</Text>
-              <Text>{activeOrder.customer.phoneNumber}</Text>
-            </Box>
-            <Box>
-              <Text fontWeight="semibold">住所</Text>
-              <Text>{activeOrder.customer.address}</Text>
-            </Box>
+            {customerInfoItems.map((item) => (
+              <Box key={`customerInfo-${item.id}`}>
+                <Text fontWeight="semibold">{item.label}</Text>
+                <Text>{item.value}</Text>
+              </Box>
+            ))}
           </VStack>
         </Box>
       </VStack>
@@ -516,7 +544,7 @@ const OrdersPage = () => {
           </Thead>
           <Tbody>
             {orders.map((order) => (
-              <Tr key={order.id}>
+              <Tr key={`order-row-${order.id}`}>
                 <Td>{order.orderNumber}</Td>
                 <Td>{order.customer.name}</Td>
                 <Td>{formatDate(order.orderDate)}</Td>
@@ -588,6 +616,7 @@ const OrdersPage = () => {
           </Tbody>
         </Table>
       </Box>
+
       <ModalComponent {...ModalProps}>
         {isMobile && <DrawerOverlay />}
         {!isMobile && <ModalOverlay />}

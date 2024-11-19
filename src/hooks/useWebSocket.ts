@@ -3,8 +3,8 @@ import * as Pusher from "pusher-js";
 import { useDispatch } from "react-redux";
 import { useToast } from "@chakra-ui/react";
 import { setOrderStats } from "@/features/orders/ordersSlice";
+import { setSalesStats } from "@/features/stats/statsSlice";
 
-// 型定義
 type ConnectionStatus = "connecting" | "connected" | "disconnected" | "error";
 type PusherData = {
   totalCount: number;
@@ -13,6 +13,11 @@ type PusherData = {
 };
 type UserData = {
   totalCount: number;
+};
+type SalesData = {
+  totalSales: number;
+  previousSales: number;
+  changeRate: number;
 };
 
 export const useWebSocket = () => {
@@ -32,9 +37,17 @@ export const useWebSocket = () => {
   const customerChannelRef = useRef<Pusher.Channel | null>(null);
   const userChannelRef = useRef<Pusher.Channel | null>(null);
   const orderChannelRef = useRef<Pusher.Channel | null>(null);
+  const salesChannelRef = useRef<Pusher.Channel | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isUnmountingRef = useRef(false);
   const handleConnectionErrorRef = useRef<(error: unknown) => void>();
+  // 最新の売上データを保持するref
+  const latestSalesDataRef = useRef<{ totalSales: number; changeRate: number }>(
+    {
+      totalSales: 0,
+      changeRate: 0,
+    }
+  );
 
   // Cleanup function
   const cleanupPusher = useCallback(async () => {
@@ -47,6 +60,9 @@ export const useWebSocket = () => {
       }
       if (orderChannelRef.current) {
         orderChannelRef.current.unbind_all();
+      }
+      if (salesChannelRef.current) {
+        salesChannelRef.current.unbind_all();
       }
 
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -62,7 +78,9 @@ export const useWebSocket = () => {
           if (orderChannelRef.current) {
             pusherRef.current.unsubscribe("order-stats");
           }
-
+          if (salesChannelRef.current) {
+            pusherRef.current.unsubscribe("sales-stats");
+          }
           await new Promise((resolve) => setTimeout(resolve, 100));
 
           pusherRef.current.disconnect();
@@ -72,6 +90,7 @@ export const useWebSocket = () => {
       customerChannelRef.current = null;
       userChannelRef.current = null;
       orderChannelRef.current = null;
+      salesChannelRef.current = null;
       pusherRef.current = null;
     } catch (error) {
       console.warn("WebSocket cleanup error:", error);
@@ -113,7 +132,6 @@ export const useWebSocket = () => {
 
       pusherRef.current = new Pusher.default(pusherKey, pusherConfig);
 
-      // 接続状態の監視
       pusherRef.current.connection.bind("connected", () => {
         setConnectionStatus("connected");
         if (process.env.NODE_ENV === "development") {
@@ -123,13 +141,12 @@ export const useWebSocket = () => {
 
       pusherRef.current.connection.bind("error", handleConnectionError);
 
-      // チャンネルの購読
       customerChannelRef.current =
         pusherRef.current.subscribe("customer-stats");
       userChannelRef.current = pusherRef.current.subscribe("user-stats");
       orderChannelRef.current = pusherRef.current.subscribe("order-stats");
+      salesChannelRef.current = pusherRef.current.subscribe("sales-stats");
 
-      // イベントハンドラーの設定
       customerChannelRef.current.bind(
         "App\\Events\\CustomerCountUpdated",
         (data: PusherData) => {
@@ -151,15 +168,41 @@ export const useWebSocket = () => {
 
       orderChannelRef.current.bind(
         "App\\Events\\OrderCountUpdated",
-        (data: PusherData) => {
+        (data: {
+          totalCount: number;
+          previousCount: number;
+          changeRate: number;
+        }) => {
           if (!isUnmountingRef.current) {
-            console.log("Received order count update:", data);
             dispatch(
               setOrderStats({
                 totalCount: data.totalCount,
+                previousCount: data.previousCount,
                 changeRate: data.changeRate,
               })
             );
+          }
+        }
+      );
+
+      salesChannelRef.current.bind(
+        "App\\Events\\SalesUpdated",
+        (data: SalesData) => {
+          if (!isUnmountingRef.current) {
+            console.log("Received sales update:", data);
+            // ここで明示的に型を指定し、salesChangeRateを使用
+            const salesData = {
+              totalSales: Number(data.totalSales),
+              changeRate: data.changeRate,
+            };
+
+            // Reduxストアを更新
+            dispatch(setSalesStats(salesData));
+
+            // 最新の値を更新（必要に応じて）
+            if (latestSalesDataRef.current) {
+              latestSalesDataRef.current = salesData;
+            }
           }
         }
       );

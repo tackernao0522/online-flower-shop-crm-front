@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Flex,
@@ -76,7 +76,7 @@ import {
 import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import { useOrderManagement } from "@/hooks/useOrderManagement";
-import { OrderStatus } from "@/types/order";
+import { Order, OrderStatus, OrderForm, OrderFormItem } from "@/types/order";
 import { formatDate } from "@/utils/dateFormatter";
 
 const OrdersPage = () => {
@@ -116,6 +116,24 @@ const OrdersPage = () => {
     handleOrderItemChange,
     clearFilters,
   } = useOrderManagement();
+
+  useEffect(() => {
+    if (isOpen && activeOrder) {
+      console.log("モーダルに表示する注文:", activeOrder);
+
+      // order_itemsのみを参照するように修正
+      if (!activeOrder.order_items) {
+        console.warn(
+          "注文商品情報が見つかりません:",
+          JSON.stringify(activeOrder, null, 2)
+        );
+      } else {
+        console.log("注文商品:", activeOrder.order_items);
+      }
+    }
+  }, [isOpen, activeOrder]);
+
+  console.log("Orders in OrdersPage:", orders);
 
   const statusColorScheme: Record<OrderStatus, string> = {
     PENDING: "yellow",
@@ -301,7 +319,7 @@ const OrdersPage = () => {
   );
 
   const renderOrderDetails = () => {
-    if (!activeOrder || !activeOrder.orderItems) {
+    if (!activeOrder) {
       return (
         <Alert status="info">
           <AlertIcon />
@@ -310,29 +328,45 @@ const OrdersPage = () => {
       );
     }
 
-    const basicInfoItems = [
-      { id: "orderNumber", label: "注文番号", value: activeOrder.orderNumber },
-      {
-        id: "productIds",
-        label: "商品ID",
-        value: (
-          <VStack
-            align="stretch"
-            spacing={2}
-            border="1px solid"
-            borderColor="gray.200"
-            borderRadius="md"
-            p={2}
-            maxH="100px"
-            overflowY="auto">
-            {activeOrder.orderItems.map((item, index) => (
-              <Text key={`product-id-${item.id || index}`}>
-                {item.product.id}
-              </Text>
-            ))}
-          </VStack>
-        ),
-      },
+    const items = activeOrder.order_items;
+
+    if (items.length === 0) {
+      return (
+        <Alert status="warning">
+          <AlertIcon />
+          注文商品情報が見つかりません
+        </Alert>
+      );
+    }
+
+const basicInfoItems = [
+    {
+      id: "userName",
+      label: "担当者",
+      value: activeOrder.user?.username || "未割り当て",
+    },
+    { id: "orderNumber", label: "注文番号", value: activeOrder.orderNumber },
+    {
+      id: "productIds",
+      label: "商品ID",
+      value: (
+        <VStack
+          align="stretch"
+          spacing={2}
+          border="1px solid"
+          borderColor="gray.200"
+          borderRadius="md"
+          p={2}
+          maxH="100px"
+          overflowY="auto">
+          {items.map((item, index) => (
+            <Text key={`product-id-${item.id || index}`}>
+              {item.product.id}
+            </Text>
+          ))}
+        </VStack>
+      ),
+    },
       {
         id: "orderDate",
         label: "注文日時",
@@ -366,7 +400,7 @@ const OrdersPage = () => {
           overflowY="auto">
           <VStack align="stretch" spacing={4}>
             <Flex justifyContent="space-between" alignItems="center">
-              <Text key="basic-info-title" fontWeight="bold" fontSize="lg">
+              <Text fontWeight="bold" fontSize="lg">
                 基本情報
               </Text>
               <Badge colorScheme={statusColorScheme[activeOrder.status]}>
@@ -393,7 +427,7 @@ const OrdersPage = () => {
           overflowX="auto"
           maxHeight="300px"
           overflowY="auto">
-          <Text key="order-items-title" fontWeight="bold" fontSize="lg" mb={4}>
+          <Text fontWeight="bold" fontSize="lg" mb={4}>
             注文商品
           </Text>
           <Table variant="simple" size="sm">
@@ -412,7 +446,7 @@ const OrdersPage = () => {
               </Tr>
             </Thead>
             <Tbody>
-              {activeOrder.orderItems.map((item, index) => (
+              {items.map((item, index) => (
                 <Tr key={`detail-order-item-${item.id || index}`}>
                   <Td whiteSpace="normal">{item.product.name}</Td>
                   <Td textAlign="center">{item.quantity}</Td>

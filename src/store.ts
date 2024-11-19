@@ -5,6 +5,7 @@ import customersReducer from "./features/customers/customersSlice";
 import rolesReducer from "./features/roles/rolesSlice";
 import usersReducer from "./features/users/usersSlice";
 import ordersReducer from "./features/orders/ordersSlice";
+import statsReducer from "./features/stats/statsSlice";
 
 // デバッグ用のカスタムミドルウェア
 const loggerMiddleware = (store: any) => (next: any) => (action: any) => {
@@ -21,6 +22,7 @@ export interface RootState {
   roles: ReturnType<typeof rolesReducer>;
   users: ReturnType<typeof usersReducer>;
   orders: ReturnType<typeof ordersReducer>;
+  stats: ReturnType<typeof statsReducer>;
 }
 
 // Store作成関数
@@ -31,7 +33,8 @@ export const makeStore = () => {
     customers: customersReducer,
     roles: rolesReducer,
     users: usersReducer,
-    orders: ordersReducer, // ordersReducerを確実に追加
+    orders: ordersReducer,
+    stats: statsReducer,
   };
 
   // storeの作成

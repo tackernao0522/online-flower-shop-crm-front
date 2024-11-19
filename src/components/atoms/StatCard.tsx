@@ -8,26 +8,29 @@ import {
   HStack,
   ScaleFade,
   BoxProps,
-  forwardRef,
+  Tooltip,
+  VStack,
 } from "@chakra-ui/react";
 import { ArrowUpIcon, ArrowDownIcon } from "@chakra-ui/icons";
 import {
   motion,
   HTMLMotionProps,
   isValidMotionProp,
-  Variant,
+  Transition,
 } from "framer-motion";
+import { formatDistance } from "date-fns";
+import { ja } from "date-fns/locale";
 
-// 基本的な型定義
+// 型定義
 type Merge<P, T> = Omit<P, keyof T> & T;
 type MotionBoxProps = Merge<BoxProps, HTMLMotionProps<"div">>;
 
-// ChakraとMotionを組み合わせた新しいコンポーネントの定義
+// ChakraとMotionを組み合わせたコンポーネント
 const ChakraBox = chakra(motion.div, {
   shouldComponentUpdate: true,
   baseStyle: {},
   shouldForwardProp: (prop) => isValidMotionProp(prop) || prop === "children",
-}) as React.ForwardRefExoticComponent<Merge<BoxProps, HTMLMotionProps<"div">>>;
+}) as React.ForwardRefExoticComponent<MotionBoxProps>;
 
 interface StatCardProps {
   title: string;
@@ -35,6 +38,8 @@ interface StatCardProps {
   change: number;
   isLoading?: boolean;
   hasError?: boolean;
+  lastUpdated?: string;
+  format?: "default" | "currency";
 }
 
 const StatCard: React.FC<StatCardProps> = ({
@@ -43,6 +48,8 @@ const StatCard: React.FC<StatCardProps> = ({
   change,
   isLoading = false,
   hasError = false,
+  lastUpdated,
+  format = "default",
 }) => {
   // アニメーション設定
   const variants = {
@@ -53,6 +60,20 @@ const StatCard: React.FC<StatCardProps> = ({
       transition: { duration: 0.3 },
     },
   };
+
+  const transition: Transition = {
+    type: "spring",
+    stiffness: 200,
+    damping: 20,
+  };
+
+  // 最終更新時刻のフォーマット
+  const formattedLastUpdated = lastUpdated
+    ? formatDistance(new Date(lastUpdated), new Date(), {
+        locale: ja,
+        addSuffix: true,
+      })
+    : undefined;
 
   return (
     <ScaleFade in={!isLoading} initialScale={0.9}>
@@ -65,12 +86,10 @@ const StatCard: React.FC<StatCardProps> = ({
         animate="visible"
         variants={variants}
         whileHover={{ scale: 1.02 }}
+        transition={transition}
         _hover={{ cursor: "pointer" }}
         position="relative"
-        role="group"
-        sx={{
-          transition: "0.3s",
-        }}>
+        role="group">
         {/* エラー表示用のオーバーレイ */}
         {hasError && (
           <Box
@@ -90,33 +109,51 @@ const StatCard: React.FC<StatCardProps> = ({
           </Box>
         )}
 
-        {/* 通常のコンテンツ */}
-        <Box opacity={hasError ? 0.5 : 1}>
-          <Text fontSize="lg" mb={2} color="gray.600">
+        {/* メインコンテンツ */}
+        <VStack spacing={3} align="stretch" opacity={hasError ? 0.5 : 1}>
+          <Text fontSize="lg" color="gray.600">
             {title}
           </Text>
-          <ChakraBox animate="update" variants={variants} key={value}>
-            <Text fontSize="3xl" fontWeight="bold" mb={2}>
+
+          <ChakraBox
+            animate="update"
+            variants={variants}
+            key={value}
+            transition={transition}>
+            <Text fontSize="3xl" fontWeight="bold">
               {value}
             </Text>
           </ChakraBox>
-          <HStack spacing={2}>
-            {change > 0 ? (
-              <ArrowUpIcon color="green.500" data-testid="arrow-up" />
-            ) : (
-              <ArrowDownIcon color="red.500" data-testid="arrow-down" />
+
+          <HStack spacing={2} align="center">
+            <Tooltip
+              label={`${Math.abs(change)}% ${change >= 0 ? "増加" : "減少"}`}
+              placement="bottom">
+              <HStack spacing={1}>
+                {change > 0 ? (
+                  <ArrowUpIcon color="green.500" data-testid="arrow-up" />
+                ) : (
+                  <ArrowDownIcon color="red.500" data-testid="arrow-down" />
+                )}
+                <Text
+                  color={change > 0 ? "green.500" : "red.500"}
+                  fontSize="sm"
+                  fontWeight="medium">
+                  {Math.abs(change)}%
+                </Text>
+              </HStack>
+            </Tooltip>
+
+            {formattedLastUpdated && (
+              <Text fontSize="xs" color="gray.500" ml="auto">
+                {formattedLastUpdated}
+              </Text>
             )}
-            <Text
-              color={change > 0 ? "green.500" : "red.500"}
-              fontSize="sm"
-              fontWeight="medium">
-              {Math.abs(change)}%
-            </Text>
           </HStack>
-        </Box>
+        </VStack>
       </ChakraBox>
     </ScaleFade>
   );
 };
 
-export default StatCard;
+export default React.memo(StatCard);

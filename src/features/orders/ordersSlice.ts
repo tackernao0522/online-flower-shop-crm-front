@@ -1,14 +1,36 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  PayloadAction,
+  createSelector,
+} from "@reduxjs/toolkit";
 import axios from "axios";
+import { RootState } from "@/store";
 import { Order } from "@/types/order";
 
-// State type
+// State types
+export interface OrderStats {
+  totalCount: number | null;
+  previousCount: number | null;
+  changeRate: number | null;
+  lastUpdatedAt?: string;
+}
+
 export interface OrdersState {
   orders: Order[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
-  totalCount: number;
-  changeRate: number;
+  stats: OrderStats;
+  statsStatus: "idle" | "loading" | "succeeded" | "failed";
+  statsError: string | null;
+  currentPage: number;
+  totalPages: number;
+  filterParams: {
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    searchTerm?: string;
+  };
 }
 
 // Initial state
@@ -16,32 +38,55 @@ const initialState: OrdersState = {
   orders: [],
   status: "idle",
   error: null,
-  totalCount: 0,
-  changeRate: 0,
+  stats: {
+    totalCount: null,
+    previousCount: null,
+    changeRate: null,
+    lastUpdatedAt: undefined,
+  },
+  statsStatus: "idle",
+  statsError: null,
+  currentPage: 1,
+  totalPages: 1,
+  filterParams: {},
 };
 
-// Async thunk for fetching orders
+// Async thunks
 export const fetchOrders = createAsyncThunk(
   "orders/fetchOrders",
-  async (_, { rejectWithValue }) => {
+  async (
+    params: {
+      page?: number;
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+      searchTerm?: string;
+    },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          params: {
+            ...params,
+            per_page: 15,
+          },
         }
       );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data || "An error occurred");
+        return rejectWithValue(
+          error.response?.data?.message || "注文データの取得に失敗しました"
+        );
       }
-      return rejectWithValue("An unknown error occurred");
+      return rejectWithValue("予期せぬエラーが発生しました");
     }
   }
 );
 
-// Async thunk for fetching initial stats
 export const fetchOrderStats = createAsyncThunk(
   "orders/fetchOrderStats",
   async (_, { rejectWithValue }) => {
@@ -56,12 +101,19 @@ export const fetchOrderStats = createAsyncThunk(
           },
         }
       );
+
+      if (!response.data.stats) {
+        throw new Error("統計データが見つかりません");
+      }
+
       return response.data.stats;
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        return rejectWithValue(error.response?.data || "An error occurred");
+        return rejectWithValue(
+          error.response?.data?.message || "統計データの取得に失敗しました"
+        );
       }
-      return rejectWithValue("An unknown error occurred");
+      return rejectWithValue("予期せぬエラーが発生しました");
     }
   }
 );
@@ -74,64 +126,198 @@ const ordersSlice = createSlice({
     setOrderStats: {
       reducer: (
         state,
-        action: PayloadAction<{ totalCount: number; changeRate: number }>
+        action: PayloadAction<{
+          totalCount: number;
+          previousCount: number;
+          changeRate: number;
+        }>
       ) => {
-        console.log("Reducer executing with payload:", action.payload);
-        console.log("Previous state:", { ...state });
-        state.totalCount = action.payload.totalCount;
-        state.changeRate = action.payload.changeRate;
-        console.log("Updated state:", { ...state });
+        if (
+          state.stats.totalCount === null ||
+          state.stats.previousCount === null ||
+          state.stats.changeRate === null
+        ) {
+          state.stats = {
+            totalCount: action.payload.totalCount,
+            previousCount: action.payload.totalCount,
+            changeRate: 0,
+            lastUpdatedAt: new Date().toISOString(),
+          };
+        } else {
+          state.stats = {
+            ...action.payload,
+            lastUpdatedAt: new Date().toISOString(),
+          };
+        }
+        state.statsStatus = "succeeded";
+        state.statsError = null;
       },
-      prepare: (payload: { totalCount: number; changeRate: number }) => {
-        console.log("Action preparation:", payload);
+      prepare: (payload: {
+        totalCount: number;
+        previousCount: number;
+        changeRate: number;
+      }) => {
         return { payload };
       },
     },
+    setStatsLoading: (state) => {
+      state.statsStatus = "loading";
+      state.statsError = null;
+    },
+    setStatsError: (state, action: PayloadAction<string>) => {
+      state.statsStatus = "failed";
+      state.statsError = action.payload;
+    },
+    clearOrderStats: (state) => {
+      state.stats = { ...initialState.stats };
+      state.statsStatus = "idle";
+      state.statsError = null;
+    },
+    setFilterParams: (
+      state,
+      action: PayloadAction<OrdersState["filterParams"]>
+    ) => {
+      state.filterParams = action.payload;
+    },
+    clearFilters: (state) => {
+      state.filterParams = {};
+    },
+    resetOrderState: () => initialState,
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchOrders.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
+        console.log("Fetch Orders Response:", action.payload);
         state.status = "succeeded";
-        state.orders = action.payload.data;
+        state.orders = action.payload.data.data;
+        state.currentPage = action.payload.meta.current_page;
+        state.totalPages = action.payload.meta.total_pages;
+
         if (action.payload.stats) {
-          state.totalCount = action.payload.stats.totalCount;
-          state.changeRate = action.payload.stats.changeRate;
+          if (state.stats.totalCount === null) {
+            state.stats = {
+              totalCount: action.payload.stats.totalCount,
+              previousCount: action.payload.stats.totalCount,
+              changeRate: 0,
+              lastUpdatedAt: new Date().toISOString(),
+            };
+          } else {
+            state.stats = {
+              totalCount: action.payload.stats.totalCount,
+              previousCount: action.payload.stats.previousCount,
+              changeRate: action.payload.stats.changeRate,
+              lastUpdatedAt: new Date().toISOString(),
+            };
+          }
         }
       })
       .addCase(fetchOrders.rejected, (state, action) => {
         state.status = "failed";
-        state.error = (action.payload as string) || "An unknown error occurred";
+        state.error = action.payload as string;
       })
       .addCase(fetchOrderStats.pending, (state) => {
-        state.status = "loading";
+        state.statsStatus = "loading";
+        state.statsError = null;
       })
       .addCase(fetchOrderStats.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        if (action.payload) {
-          console.log("Updating state with stats:", action.payload);
-          state.totalCount = action.payload.totalCount;
-          state.changeRate = action.payload.changeRate;
+        state.statsStatus = "succeeded";
+        if (state.stats.totalCount === null) {
+          state.stats = {
+            totalCount: action.payload.totalCount,
+            previousCount: action.payload.totalCount,
+            changeRate: 0,
+            lastUpdatedAt: new Date().toISOString(),
+          };
+        } else {
+          state.stats = {
+            totalCount: action.payload.totalCount,
+            previousCount: action.payload.previousCount,
+            changeRate: action.payload.changeRate,
+            lastUpdatedAt: new Date().toISOString(),
+          };
         }
       })
       .addCase(fetchOrderStats.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = (action.payload as string) || "An unknown error occurred";
+        state.statsStatus = "failed";
+        state.statsError = action.payload as string;
       });
   },
 });
 
-// Selectors
-export const selectOrders = (state: { orders: OrdersState }) => state.orders;
-export const selectOrderStats = (state: { orders: OrdersState }) => ({
-  totalCount: state.orders.totalCount,
-  changeRate: state.orders.changeRate,
-});
+// Base selector
+const selectOrdersState = (state: RootState) => state.orders;
+
+// Memoized selectors
+export const selectOrders = createSelector(
+  [selectOrdersState],
+  (state) => state.orders
+);
+
+export const selectOrdersStatus = createSelector(
+  [selectOrdersState],
+  (state) => state.status
+);
+
+export const selectOrdersError = createSelector(
+  [selectOrdersState],
+  (state) => state.error
+);
+
+export const selectOrderStats = createSelector(
+  [selectOrdersState],
+  (state) => state.stats
+);
+
+export const selectOrderStatsStatus = createSelector(
+  [selectOrdersState],
+  (state) => state.statsStatus
+);
+
+export const selectOrderStatsError = createSelector(
+  [selectOrdersState],
+  (state) => state.statsError
+);
+
+export const selectOrdersCurrentPage = createSelector(
+  [selectOrdersState],
+  (state) => state.currentPage
+);
+
+export const selectOrdersTotalPages = createSelector(
+  [selectOrdersState],
+  (state) => state.totalPages
+);
+
+export const selectOrdersFilterParams = createSelector(
+  [selectOrdersState],
+  (state) => state.filterParams
+);
+
+// Additional composed selectors
+export const selectOrdersWithStatus = createSelector(
+  [selectOrders, selectOrdersStatus],
+  (orders, status) => ({ orders, status })
+);
+
+export const selectOrderStatsWithStatus = createSelector(
+  [selectOrderStats, selectOrderStatsStatus],
+  (stats, status) => ({ stats, status })
+);
 
 // Actions
-export const { setOrderStats } = ordersSlice.actions;
+export const {
+  setOrderStats,
+  setStatsLoading,
+  setStatsError,
+  clearOrderStats,
+  setFilterParams,
+  clearFilters,
+  resetOrderState,
+} = ordersSlice.actions;
 
 // Reducer
 export default ordersSlice.reducer;

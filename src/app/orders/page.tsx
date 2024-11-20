@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
+import React, { useEffect } from 'react';
 import {
   Box,
   Flex,
@@ -62,7 +62,8 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-} from "@chakra-ui/react";
+  InputRightElement,
+} from '@chakra-ui/react';
 import {
   AddIcon,
   EditIcon,
@@ -72,18 +73,18 @@ import {
   SearchIcon,
   ChevronDownIcon,
   WarningIcon,
-} from "@chakra-ui/icons";
-import { format } from "date-fns";
-import { useRouter } from "next/navigation";
-import { useOrderManagement } from "@/hooks/useOrderManagement";
-import { Order, OrderStatus, OrderForm, OrderFormItem } from "@/types/order";
-import { formatDate } from "@/utils/dateFormatter";
+} from '@chakra-ui/icons';
+import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
+import { useOrderManagement } from '@/hooks/useOrderManagement';
+import { Order, OrderStatus, OrderForm, OrderFormItem } from '@/types/order';
+import { formatDate } from '@/utils/dateFormatter';
 
 const OrdersPage = () => {
   const router = useRouter();
   const toast = useToast();
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const modalSize = useBreakpointValue({ base: "full", md: "4xl" });
+  const modalSize = useBreakpointValue({ base: 'full', md: '4xl' });
 
   const {
     orders,
@@ -100,6 +101,7 @@ const OrdersPage = () => {
     onOpen,
     onClose,
     handleSearchChange,
+    handleSearchSubmit,
     handleOrderClick,
     handleAddOrder,
     handleEditOrder,
@@ -110,7 +112,6 @@ const OrdersPage = () => {
     handleSubmit,
     handleStatusFilter,
     handleDateRangeFilter,
-    handleSearchSubmit,
     handleAddOrderItem,
     handleRemoveOrderItem,
     handleOrderItemChange,
@@ -119,38 +120,38 @@ const OrdersPage = () => {
 
   useEffect(() => {
     if (isOpen && activeOrder) {
-      console.log("モーダルに表示する注文:", activeOrder);
+      console.log('モーダルに表示する注文:', activeOrder);
 
       // order_itemsのみを参照するように修正
       if (!activeOrder.order_items) {
         console.warn(
-          "注文商品情報が見つかりません:",
-          JSON.stringify(activeOrder, null, 2)
+          '注文商品情報が見つかりません:',
+          JSON.stringify(activeOrder, null, 2),
         );
       } else {
-        console.log("注文商品:", activeOrder.order_items);
+        console.log('注文商品:', activeOrder.order_items);
       }
     }
   }, [isOpen, activeOrder]);
 
-  console.log("Orders in OrdersPage:", orders);
+  console.log('Orders in OrdersPage:', orders);
 
   const statusColorScheme: Record<OrderStatus, string> = {
-    PENDING: "yellow",
-    PROCESSING: "blue",
-    CONFIRMED: "purple",
-    SHIPPED: "cyan",
-    DELIVERED: "green",
-    CANCELLED: "red",
+    PENDING: 'yellow',
+    PROCESSING: 'blue',
+    CONFIRMED: 'purple',
+    SHIPPED: 'cyan',
+    DELIVERED: 'green',
+    CANCELLED: 'red',
   } as const;
 
   const statusDisplayText: Record<OrderStatus, string> = {
-    PENDING: "保留中",
-    PROCESSING: "処理中",
-    CONFIRMED: "確認済",
-    SHIPPED: "発送済",
-    DELIVERED: "配達完了",
-    CANCELLED: "キャンセル済",
+    PENDING: '保留中',
+    PROCESSING: '処理中',
+    CONFIRMED: '確認済',
+    SHIPPED: '発送済',
+    DELIVERED: '配達完了',
+    CANCELLED: 'キャンセル済',
   } as const;
 
   type ModalComponentProps = {
@@ -158,11 +159,11 @@ const OrdersPage = () => {
     onClose: () => void;
   } & (
     | {
-        placement: DrawerProps["placement"];
-        size: DrawerProps["size"];
+        placement: DrawerProps['placement'];
+        size: DrawerProps['size'];
       }
     | {
-        size: ModalProps["size"];
+        size: ModalProps['size'];
       }
   );
 
@@ -171,8 +172,8 @@ const OrdersPage = () => {
     ? {
         isOpen,
         onClose,
-        placement: "right",
-        size: "full",
+        placement: 'right',
+        size: 'full',
       }
     : {
         isOpen,
@@ -183,7 +184,7 @@ const OrdersPage = () => {
   const renderSearchAndFilter = () => (
     <VStack spacing={4} w="full" mb={6}>
       <Flex w="full" gap={2} flexWrap="wrap">
-        <InputGroup flex={1} minW={{ base: "full", md: "320px" }}>
+        <InputGroup flex={1} minW={{ base: 'full', md: '320px' }}>
           <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.300" />
           </InputLeftElement>
@@ -191,8 +192,21 @@ const OrdersPage = () => {
             placeholder="注文番号、顧客名で検索..."
             value={searchTerm}
             onChange={handleSearchChange}
-            onKeyPress={(e) => e.key === "Enter" && handleSearchSubmit()}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                handleSearchSubmit();
+              }
+            }}
           />
+          <InputRightElement width="4.5rem">
+            <Button
+              h="1.75rem"
+              size="sm"
+              onClick={handleSearchSubmit}
+              isLoading={status === 'loading'}>
+              検索
+            </Button>
+          </InputRightElement>
         </InputGroup>
         <Menu>
           <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
@@ -218,16 +232,16 @@ const OrdersPage = () => {
             期間
           </MenuButton>
           <MenuList>
-            <MenuItem onClick={() => handleDateRangeFilter("today")}>
+            <MenuItem onClick={() => handleDateRangeFilter('today')}>
               本日
             </MenuItem>
-            <MenuItem onClick={() => handleDateRangeFilter("week")}>
+            <MenuItem onClick={() => handleDateRangeFilter('week')}>
               今週
             </MenuItem>
-            <MenuItem onClick={() => handleDateRangeFilter("month")}>
+            <MenuItem onClick={() => handleDateRangeFilter('month')}>
               今月
             </MenuItem>
-            <MenuItem onClick={() => handleDateRangeFilter("custom")}>
+            <MenuItem onClick={() => handleDateRangeFilter('custom')}>
               期間を指定...
             </MenuItem>
           </MenuList>
@@ -259,8 +273,8 @@ const OrdersPage = () => {
                   name={`orderItems.${index}.productId`}
                   placeholder="商品ID"
                   value={item.productId}
-                  onChange={(e) =>
-                    handleOrderItemChange(index, "productId", e.target.value)
+                  onChange={e =>
+                    handleOrderItemChange(index, 'productId', e.target.value)
                   }
                 />
               </FormControl>
@@ -269,7 +283,7 @@ const OrdersPage = () => {
                   min={1}
                   value={item.quantity}
                   onChange={(valueString, valueNumber) =>
-                    handleOrderItemChange(index, "quantity", valueNumber || 1)
+                    handleOrderItemChange(index, 'quantity', valueNumber || 1)
                   }>
                   <NumberInputField
                     name={`orderItems.${index}.quantity`}
@@ -300,7 +314,7 @@ const OrdersPage = () => {
         <FormErrorMessage>{formErrors.orderItems}</FormErrorMessage>
       </FormControl>
 
-      {modalMode === "edit" && (
+      {modalMode === 'edit' && (
         <FormControl>
           <FormLabel>ステータス</FormLabel>
           <Select
@@ -339,51 +353,51 @@ const OrdersPage = () => {
       );
     }
 
-const basicInfoItems = [
-    {
-      id: "userName",
-      label: "担当者",
-      value: activeOrder.user?.username || "未割り当て",
-    },
-    { id: "orderNumber", label: "注文番号", value: activeOrder.orderNumber },
-    {
-      id: "productIds",
-      label: "商品ID",
-      value: (
-        <VStack
-          align="stretch"
-          spacing={2}
-          border="1px solid"
-          borderColor="gray.200"
-          borderRadius="md"
-          p={2}
-          maxH="100px"
-          overflowY="auto">
-          {items.map((item, index) => (
-            <Text key={`product-id-${item.id || index}`}>
-              {item.product.id}
-            </Text>
-          ))}
-        </VStack>
-      ),
-    },
+    const basicInfoItems = [
       {
-        id: "orderDate",
-        label: "注文日時",
-        value:
-          activeOrder.orderDate &&
-          format(new Date(activeOrder.orderDate), "yyyy/MM/dd HH:mm"),
+        id: 'userName',
+        label: '担当者',
+        value: activeOrder.user?.username || '未割り当て',
+      },
+      { id: 'orderNumber', label: '注文番号', value: activeOrder.orderNumber },
+      {
+        id: 'productIds',
+        label: '商品ID',
+        value: (
+          <VStack
+            align="stretch"
+            spacing={2}
+            border="1px solid"
+            borderColor="gray.200"
+            borderRadius="md"
+            p={2}
+            maxH="100px"
+            overflowY="auto">
+            {items.map((item, index) => (
+              <Text key={`product-id-${item.id || index}`}>
+                {item.product.id}
+              </Text>
+            ))}
+          </VStack>
+        ),
       },
       {
-        id: "totalAmount",
-        label: "合計金額",
+        id: 'orderDate',
+        label: '注文日時',
+        value:
+          activeOrder.orderDate &&
+          format(new Date(activeOrder.orderDate), 'yyyy/MM/dd HH:mm'),
+      },
+      {
+        id: 'totalAmount',
+        label: '合計金額',
         value: `¥${activeOrder.totalAmount.toLocaleString()}`,
       },
       ...(activeOrder.discountApplied > 0
         ? [
             {
-              id: "discount",
-              label: "適用割引",
+              id: 'discount',
+              label: '適用割引',
               value: `¥${activeOrder.discountApplied.toLocaleString()}`,
             },
           ]
@@ -407,10 +421,10 @@ const basicInfoItems = [
                 {statusDisplayText[activeOrder.status]}
               </Badge>
             </Flex>
-            {basicInfoItems.map((item) => (
+            {basicInfoItems.map(item => (
               <Box key={`basicInfo-${item.id}`}>
                 <Text fontWeight="semibold">{item.label}</Text>
-                {typeof item.value === "string" ? (
+                {typeof item.value === 'string' ? (
                   <Text>{item.value}</Text>
                 ) : (
                   item.value
@@ -474,19 +488,19 @@ const basicInfoItems = [
     }
 
     const customerInfoItems = [
-      { id: "customerId", label: "顧客ID", value: activeOrder.customer.id },
-      { id: "name", label: "名前", value: activeOrder.customer.name },
+      { id: 'customerId', label: '顧客ID', value: activeOrder.customer.id },
+      { id: 'name', label: '名前', value: activeOrder.customer.name },
       {
-        id: "email",
-        label: "メールアドレス",
+        id: 'email',
+        label: 'メールアドレス',
         value: activeOrder.customer.email,
       },
       {
-        id: "phone",
-        label: "電話番号",
+        id: 'phone',
+        label: '電話番号',
         value: activeOrder.customer.phoneNumber,
       },
-      { id: "address", label: "住所", value: activeOrder.customer.address },
+      { id: 'address', label: '住所', value: activeOrder.customer.address },
     ];
 
     return (
@@ -496,7 +510,7 @@ const basicInfoItems = [
             <Text key="customer-info-title" fontWeight="bold" fontSize="lg">
               顧客情報
             </Text>
-            {customerInfoItems.map((item) => (
+            {customerInfoItems.map(item => (
               <Box key={`customerInfo-${item.id}`}>
                 <Text fontWeight="semibold">{item.label}</Text>
                 <Text>{item.value}</Text>
@@ -517,7 +531,7 @@ const basicInfoItems = [
     );
   };
 
-  if (status === "loading" && orders.length === 0) {
+  if (status === 'loading' && orders.length === 0) {
     return (
       <Flex justify="center" align="center" height="200px">
         <Spinner size="xl" />
@@ -525,7 +539,7 @@ const basicInfoItems = [
     );
   }
 
-  if (status === "failed") {
+  if (status === 'failed') {
     return (
       <Alert status="error">
         <AlertIcon />
@@ -540,7 +554,7 @@ const basicInfoItems = [
         justifyContent="space-between"
         alignItems="center"
         mb={5}
-        flexDirection={{ base: "column", md: "row" }}
+        flexDirection={{ base: 'column', md: 'row' }}
         gap={4}>
         <Heading as="h1" size="xl">
           注文管理
@@ -550,13 +564,13 @@ const basicInfoItems = [
             leftIcon={<AddIcon />}
             colorScheme="blue"
             onClick={handleAddOrder}
-            w={{ base: "full", md: "auto" }}>
+            w={{ base: 'full', md: 'auto' }}>
             新規注文作成
           </Button>
           <Button
             leftIcon={<ArrowBackIcon />}
-            onClick={() => router.push("/dashboard")}
-            w={{ base: "full", md: "auto" }}>
+            onClick={() => router.push('/dashboard')}
+            w={{ base: 'full', md: 'auto' }}>
             ダッシュボードへ戻る
           </Button>
         </HStack>
@@ -577,7 +591,7 @@ const basicInfoItems = [
             </Tr>
           </Thead>
           <Tbody>
-            {orders.map((order) => (
+            {orders.map(order => (
               <Tr key={`order-row-${order.id}`}>
                 <Td>{order.orderNumber}</Td>
                 <Td>{order.customer.name}</Td>
@@ -602,8 +616,8 @@ const basicInfoItems = [
                         icon={<EditIcon />}
                         size="sm"
                         isDisabled={
-                          order.status === "DELIVERED" ||
-                          order.status === "CANCELLED"
+                          order.status === 'DELIVERED' ||
+                          order.status === 'CANCELLED'
                         }
                         onClick={() => handleEditOrder(order)}
                       />
@@ -612,7 +626,7 @@ const basicInfoItems = [
                         icon={<DeleteIcon />}
                         size="sm"
                         colorScheme="red"
-                        isDisabled={order.status === "DELIVERED"}
+                        isDisabled={order.status === 'DELIVERED'}
                         onClick={() => handleDeleteOrder(order)}
                       />
                     </HStack>
@@ -628,8 +642,8 @@ const basicInfoItems = [
                         size="sm"
                         leftIcon={<EditIcon />}
                         isDisabled={
-                          order.status === "DELIVERED" ||
-                          order.status === "CANCELLED"
+                          order.status === 'DELIVERED' ||
+                          order.status === 'CANCELLED'
                         }
                         onClick={() => handleEditOrder(order)}>
                         編集
@@ -638,7 +652,7 @@ const basicInfoItems = [
                         size="sm"
                         leftIcon={<DeleteIcon />}
                         colorScheme="red"
-                        isDisabled={order.status === "DELIVERED"}
+                        isDisabled={order.status === 'DELIVERED'}
                         onClick={() => handleDeleteOrder(order)}>
                         削除
                       </Button>
@@ -658,11 +672,11 @@ const basicInfoItems = [
           <DrawerContent>
             <DrawerCloseButton />
             <DrawerHeader>
-              {modalMode === "detail"
-                ? "注文詳細"
-                : modalMode === "add"
-                ? "新規注文作成"
-                : "注文編集"}
+              {modalMode === 'detail'
+                ? '注文詳細'
+                : modalMode === 'add'
+                  ? '新規注文作成'
+                  : '注文編集'}
             </DrawerHeader>
             <DrawerBody>
               <Tabs isLazy>
@@ -673,7 +687,7 @@ const basicInfoItems = [
                 </TabList>
                 <TabPanels>
                   <TabPanel>
-                    {modalMode === "detail"
+                    {modalMode === 'detail'
                       ? renderOrderDetails()
                       : renderOrderForm()}
                   </TabPanel>
@@ -683,9 +697,9 @@ const basicInfoItems = [
               </Tabs>
             </DrawerBody>
             <DrawerFooter>
-              {modalMode !== "detail" && (
+              {modalMode !== 'detail' && (
                 <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
-                  {modalMode === "add" ? "作成" : "更新"}
+                  {modalMode === 'add' ? '作成' : '更新'}
                 </Button>
               )}
               <Button variant="ghost" onClick={onClose}>
@@ -697,11 +711,11 @@ const basicInfoItems = [
           <ModalContent>
             <ModalCloseButton />
             <ModalHeader>
-              {modalMode === "detail"
-                ? "注文詳細"
-                : modalMode === "add"
-                ? "新規注文作成"
-                : "注文編集"}
+              {modalMode === 'detail'
+                ? '注文詳細'
+                : modalMode === 'add'
+                  ? '新規注文作成'
+                  : '注文編集'}
             </ModalHeader>
             <ModalBody>
               <Tabs isLazy>
@@ -712,7 +726,7 @@ const basicInfoItems = [
                 </TabList>
                 <TabPanels>
                   <TabPanel>
-                    {modalMode === "detail"
+                    {modalMode === 'detail'
                       ? renderOrderDetails()
                       : renderOrderForm()}
                   </TabPanel>
@@ -722,9 +736,9 @@ const basicInfoItems = [
               </Tabs>
             </ModalBody>
             <ModalFooter>
-              {modalMode !== "detail" && (
+              {modalMode !== 'detail' && (
                 <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
-                  {modalMode === "add" ? "作成" : "更新"}
+                  {modalMode === 'add' ? '作成' : '更新'}
                 </Button>
               )}
               <Button variant="ghost" onClick={onClose}>
@@ -752,7 +766,7 @@ const basicInfoItems = [
                 <Text>この操作は取り消せません。</Text>
               </HStack>
               <Text>
-                注文番号: {orderToDelete?.orderNumber}{" "}
+                注文番号: {orderToDelete?.orderNumber}{' '}
                 を削除してもよろしいですか？
               </Text>
             </VStack>

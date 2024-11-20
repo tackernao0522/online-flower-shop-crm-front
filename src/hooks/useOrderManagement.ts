@@ -39,6 +39,7 @@ export const useOrderManagement = () => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
@@ -116,8 +117,16 @@ export const useOrderManagement = () => {
 
   // 検索実行処理
   const handleSearchSubmit = useCallback(async () => {
-    executeSearch();
-  }, [executeSearch]);
+    setIsSearching(true);
+    try {
+      dispatch(setFilterParams({ searchTerm }));
+      await fetchOrders();
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [dispatch, fetchOrders, searchTerm]);
 
   const fetchOrderDetails = useCallback(async (orderId: string) => {
     try {
@@ -467,6 +476,7 @@ export const useOrderManagement = () => {
 
     // アクション
     handleSearchChange,
+    isSearching,
     handleSearchSubmit,
     handleStatusFilter,
     handleDateRangeFilter,

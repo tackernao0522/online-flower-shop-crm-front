@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useLoading } from '@/hooks/useLoading';
 import {
   Box,
   Flex,
@@ -116,7 +117,10 @@ const OrdersPage = () => {
     handleRemoveOrderItem,
     handleOrderItemChange,
     clearFilters,
+    isSearching,
   } = useOrderManagement();
+
+  const isLoadingVisible = useLoading(2000);
 
   useEffect(() => {
     if (isOpen && activeOrder) {
@@ -203,7 +207,10 @@ const OrdersPage = () => {
               h="1.75rem"
               size="sm"
               onClick={handleSearchSubmit}
-              isLoading={status === 'loading'}>
+              isLoading={
+                isSearching || (status === 'loading' && isLoadingVisible)
+              }
+              loadingText="検索中">
               検索
             </Button>
           </InputRightElement>

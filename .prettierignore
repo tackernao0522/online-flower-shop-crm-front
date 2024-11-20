@@ -1,0 +1,10 @@
+node_modules/
+.next/
+build/
+dist/
+coverage/
+public/
+.git/
+.vscode/
+yarn.lock
+package-lock.json

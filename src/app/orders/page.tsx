@@ -106,6 +106,7 @@ const OrdersPage = () => {
     onClose,
     handleSearchChange,
     handleSearchSubmit,
+    handleSearchKeyDown,
     handleOrderClick,
     handleAddOrder,
     handleEditOrder,
@@ -213,11 +214,7 @@ const OrdersPage = () => {
             placeholder="注文番号、顧客名で検索..."
             value={searchTerm}
             onChange={handleSearchChange}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                handleSearchSubmit();
-              }
-            }}
+            onKeyDown={handleSearchKeyDown}
           />
           <InputRightElement width="4.5rem">
             <Button
@@ -620,7 +617,7 @@ const OrdersPage = () => {
           <Tbody>
             {orders.map((order, index) => (
               <Tr
-                key={`order-row-${order.id}`}
+                key={`${order.id}-${order.orderNumber}-${index}`}
                 ref={index === orders.length - 1 ? lastElementRef : undefined}>
                 <Td>{order.orderNumber}</Td>
                 <Td>{order.customer.name}</Td>

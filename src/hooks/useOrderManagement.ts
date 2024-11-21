@@ -424,6 +424,9 @@ export const useOrderManagement = () => {
             },
           },
         );
+
+        // 総数をインクリメントする
+        setTotalCount(prevCount => (prevCount !== null ? prevCount + 1 : 1));
       } else if (modalMode === 'edit' && activeOrder) {
         // 編集の場合、注文アイテムとステータスの両方を更新
         await Promise.all([
@@ -450,7 +453,7 @@ export const useOrderManagement = () => {
         ]);
       }
 
-      await fetchOrders(1); // ページをリセットして最初から取得
+      await fetchOrders(1);
       toast({
         title:
           modalMode === 'add' ? '注文を作成しました' : '注文を更新しました',
@@ -501,7 +504,7 @@ export const useOrderManagement = () => {
       }
     };
     initialFetch();
-  }, [dispatch, statusFilter, dateRange, totalCount, setTotalCount]); // 依存配列に追加
+  }, [dispatch, statusFilter, dateRange, totalCount, setTotalCount]);
 
   return {
     // 状態

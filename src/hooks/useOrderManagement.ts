@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useToast, useDisclosure } from '@chakra-ui/react';
 import axios, { AxiosError } from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
@@ -23,7 +23,8 @@ import type { ApiErrorResponse } from '@/types/api';
 export const useOrderManagement = () => {
   // Redux
   const dispatch = useDispatch<AppDispatch>();
-  const orders = useSelector(selectOrders) || [];
+  const reduxOrders = useSelector(selectOrders);
+  const orders = useMemo(() => reduxOrders || [], [reduxOrders]);
   const reduxStatus = useSelector(selectOrdersStatus);
   const reduxError = useSelector(selectOrdersError);
 
@@ -39,8 +40,10 @@ export const useOrderManagement = () => {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchProcessing, setIsSearchProcessing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
     start: null,
@@ -50,7 +53,7 @@ export const useOrderManagement = () => {
   // Pagination State
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [localOrders, setLocalOrders] = useState<Order[]>([]);
+  const [localOrders, setLocalOrders] = useState<Order[]>(orders);
   const [totalCount, setTotalCount] = useState<number | null>(null);
 
   // Hooks
@@ -84,7 +87,7 @@ export const useOrderManagement = () => {
     async (pageNum = page) => {
       try {
         setStatus('loading');
-        const params: Record<string, any> = {
+        const params = {
           page: pageNum,
           per_page: 15,
           search: searchTerm || undefined,
@@ -93,7 +96,10 @@ export const useOrderManagement = () => {
           end_date: dateRange.end?.toISOString() || undefined,
         };
 
+        console.log('Fetching orders with params:', params);
+
         const response = await dispatch(fetchOrdersAction(params)).unwrap();
+        console.log('API Response:', response);
 
         if (pageNum === 1) {
           setLocalOrders(response.data.data);
@@ -120,35 +126,127 @@ export const useOrderManagement = () => {
     [dispatch, searchTerm, statusFilter, dateRange, page],
   );
 
-  // 追加ロード用の関数
   const loadMore = useCallback(() => {
     if (!isSearching && status !== 'loading' && hasMore) {
       fetchOrders(page + 1);
     }
   }, [fetchOrders, page, isSearching, status, hasMore]);
 
+  const clearFilters = useCallback(() => {
+    searchStateRef.current.currentSearchTerm = '';
+    setSearchTerm('');
+    setStatusFilter(null);
+    setDateRange({ start: null, end: null });
+    setPage(1);
+
+    // filterParamsとデータ取得を一括で実行
+    Promise.all([
+      dispatch(setFilterParams({})),
+      dispatch(
+        fetchOrdersAction({
+          page: 1,
+          per_page: 15,
+        }),
+      ).unwrap(),
+    ]).then(([_, response]) => {
+      setLocalOrders(response.data.data);
+      setTotalCount(response.meta.total);
+      setHasMore(response.data.data.length === 15);
+    });
+  }, [dispatch]);
+
   // 検索入力のハンドラー
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchTerm(e.target.value);
+      const value = e.target.value;
+      setSearchTerm(value);
+
+      // 検索文字列が空の場合のみclearFiltersを実行
+      if (!value) {
+        searchStateRef.current.isProcessing = true; // 一時的に処理中フラグを立てる
+        clearFilters();
+        setTimeout(() => {
+          searchStateRef.current.isProcessing = false;
+        }, 300);
+      }
     },
-    [],
+    [clearFilters],
   );
+
+  const searchStateRef = useRef({
+    isProcessing: false,
+    currentSearchTerm: '',
+  });
+
+  useEffect(() => {
+    if (searchStateRef.current.isProcessing) {
+      return;
+    }
+
+    if (orders && orders.length > 0 && page === 1) {
+      if (searchStateRef.current.currentSearchTerm === searchTerm) {
+        console.log('Setting local orders:', orders);
+        setLocalOrders(orders);
+      }
+    }
+  }, [orders, page, searchTerm]);
 
   // 検索実行処理
   const handleSearchSubmit = useCallback(async () => {
+    if (searchStateRef.current.isProcessing) return;
+
+    console.log('Starting search with term:', searchTerm);
+    searchStateRef.current.isProcessing = true;
+    searchStateRef.current.currentSearchTerm = searchTerm;
     setIsSearching(true);
     setPage(1);
+
     try {
-      dispatch(setFilterParams({ searchTerm }));
-      const response = await fetchOrders(1);
-      setTotalCount(response.meta.total); // 検索時にも総数を更新
+      const searchParams = {
+        page: 1,
+        per_page: 15,
+        search: searchTerm || undefined,
+        status: statusFilter || undefined,
+        start_date: dateRange.start?.toISOString() || undefined,
+        end_date: dateRange.end?.toISOString() || undefined,
+      };
+
+      // フィルターパラメータを更新
+      dispatch(setFilterParams({ searchTerm: searchTerm }));
+
+      console.log('Search params:', searchParams);
+      const response = await dispatch(fetchOrdersAction(searchParams)).unwrap();
+      console.log('Search response data:', response.data.data);
+
+      // 検索結果を直接設定
+      setLocalOrders(response.data.data);
+      setTotalCount(response.meta.total);
+      setHasMore(response.data.data.length === 15);
     } catch (error) {
       console.error('Search error:', error);
+      toast({
+        title: '検索中にエラーが発生しました',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
     } finally {
-      setIsSearching(false);
+      setTimeout(() => {
+        searchStateRef.current.isProcessing = false;
+        setIsSearching(false);
+      }, 300);
     }
-  }, [dispatch, fetchOrders, searchTerm]);
+  }, [dispatch, searchTerm, statusFilter, dateRange, toast]);
+
+  const handleSearchKeyDown = useCallback(
+    async (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        await handleSearchSubmit();
+      }
+    },
+    [handleSearchSubmit],
+  );
 
   const fetchOrderDetails = useCallback(async (orderId: string) => {
     try {
@@ -233,18 +331,17 @@ export const useOrderManagement = () => {
         },
       );
 
-      // 削除後に最新データを取得
       const response = await dispatch(
         fetchOrdersAction({
           page: 1,
           per_page: 15,
+          search: searchTerm || undefined,
           status: statusFilter || undefined,
           start_date: dateRange.start?.toISOString() || undefined,
           end_date: dateRange.end?.toISOString() || undefined,
         }),
       ).unwrap();
 
-      // ローカルの注文リストと総数を更新
       setLocalOrders(response.data.data);
       setTotalCount(response.meta.total);
 
@@ -270,7 +367,7 @@ export const useOrderManagement = () => {
         position: 'top',
       });
     }
-  }, [orderToDelete, toast, dispatch, statusFilter, dateRange]);
+  }, [orderToDelete, toast, dispatch, statusFilter, dateRange, searchTerm]);
 
   const cancelDelete = useCallback(() => {
     setIsDeleteAlertOpen(false);
@@ -321,15 +418,6 @@ export const useOrderManagement = () => {
     },
     [dispatch, fetchOrders],
   );
-
-  const clearFilters = useCallback(() => {
-    setSearchTerm('');
-    setStatusFilter(null);
-    setDateRange({ start: null, end: null });
-    setPage(1); // ページをリセット
-    dispatch(setFilterParams({}));
-    fetchOrders(1);
-  }, [dispatch, fetchOrders]);
 
   // 注文アイテムの処理
   const handleOrderItemChange = useCallback(
@@ -485,7 +573,7 @@ export const useOrderManagement = () => {
     const initialFetch = async () => {
       try {
         setStatus('loading');
-        const params: Record<string, any> = {
+        const params = {
           page: 1,
           per_page: 15,
           status: statusFilter || undefined,
@@ -498,13 +586,16 @@ export const useOrderManagement = () => {
           setTotalCount(response.meta.total);
         }
         setStatus('succeeded');
+        setIsInitialLoad(false); // 初期ロード完了
       } catch (error) {
         setStatus('failed');
         setError('注文データの取得に失敗しました');
       }
     };
-    initialFetch();
-  }, [dispatch, statusFilter, dateRange, totalCount, setTotalCount]);
+    if (isInitialLoad) {
+      initialFetch();
+    }
+  }, [dispatch, statusFilter, dateRange, totalCount, isInitialLoad]);
 
   return {
     // 状態
@@ -539,6 +630,7 @@ export const useOrderManagement = () => {
     cancelDelete,
     handleInputChange,
     handleSubmit,
+    handleSearchKeyDown,
     handleAddOrderItem,
     handleRemoveOrderItem,
     handleOrderItemChange,

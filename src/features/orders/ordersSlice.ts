@@ -39,7 +39,7 @@ interface FetchOrdersParams {
   status?: string;
   startDate?: string;
   endDate?: string;
-  searchTerm?: string;
+  search?: string;
   start_date?: string;
   end_date?: string;
 }

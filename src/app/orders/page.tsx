@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLoading } from '@/hooks/useLoading';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import {
@@ -75,6 +75,7 @@ import {
   SearchIcon,
   ChevronDownIcon,
   WarningIcon,
+  ArrowUpIcon,
 } from '@chakra-ui/icons';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
@@ -126,6 +127,20 @@ const OrdersPage = () => {
 
   const isLoadingVisible = useLoading(2000);
   const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
+
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.pageYOffset > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (isOpen && activeOrder) {
@@ -693,6 +708,18 @@ const OrdersPage = () => {
         <Flex justify="center" py={4}>
           <Spinner />
         </Flex>
+      )}
+
+      {showScrollTop && (
+        <IconButton
+          icon={<ArrowUpIcon />}
+          position="fixed"
+          bottom="50px"
+          right="50px"
+          colorScheme="blue"
+          onClick={scrollToTop}
+          aria-label="トップに戻る"
+        />
       )}
 
       <ModalComponent {...ModalProps}>

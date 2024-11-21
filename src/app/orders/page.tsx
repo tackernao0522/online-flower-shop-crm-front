@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useLoading } from '@/hooks/useLoading';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import {
   Box,
   Flex,
@@ -41,6 +42,7 @@ import {
   Container,
   InputGroup,
   InputLeftElement,
+  InputRightElement,
   Menu,
   MenuButton,
   MenuList,
@@ -63,7 +65,6 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  InputRightElement,
 } from '@chakra-ui/react';
 import {
   AddIcon,
@@ -89,6 +90,7 @@ const OrdersPage = () => {
 
   const {
     orders,
+    totalCount,
     status,
     error,
     activeOrder,
@@ -118,15 +120,17 @@ const OrdersPage = () => {
     handleOrderItemChange,
     clearFilters,
     isSearching,
+    hasMore,
+    loadMore,
   } = useOrderManagement();
 
   const isLoadingVisible = useLoading(2000);
+  const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
 
   useEffect(() => {
     if (isOpen && activeOrder) {
       console.log('モーダルに表示する注文:', activeOrder);
 
-      // order_itemsのみを参照するように修正
       if (!activeOrder.order_items) {
         console.warn(
           '注文商品情報が見つかりません:',
@@ -137,8 +141,6 @@ const OrdersPage = () => {
       }
     }
   }, [isOpen, activeOrder]);
-
-  console.log('Orders in OrdersPage:', orders);
 
   const statusColorScheme: Record<OrderStatus, string> = {
     PENDING: 'yellow',
@@ -537,7 +539,6 @@ const OrdersPage = () => {
       </Alert>
     );
   };
-
   if (status === 'loading' && orders.length === 0) {
     return (
       <Flex justify="center" align="center" height="200px">
@@ -585,6 +586,10 @@ const OrdersPage = () => {
 
       {renderSearchAndFilter()}
 
+      <Text mb={4} color="gray.600">
+        総注文リスト数: {totalCount > 0 ? totalCount : '読込中...'}
+      </Text>
+
       <Box overflowX="auto">
         <Table variant="simple">
           <Thead>
@@ -598,8 +603,10 @@ const OrdersPage = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {orders.map(order => (
-              <Tr key={`order-row-${order.id}`}>
+            {orders.map((order, index) => (
+              <Tr
+                key={`order-row-${order.id}`}
+                ref={index === orders.length - 1 ? lastElementRef : undefined}>
                 <Td>{order.orderNumber}</Td>
                 <Td>{order.customer.name}</Td>
                 <Td>{formatDate(order.orderDate)}</Td>
@@ -671,6 +678,13 @@ const OrdersPage = () => {
           </Tbody>
         </Table>
       </Box>
+
+      {/* ローディングインジケーター */}
+      {(status === 'loading' || isSearching) && (
+        <Flex justify="center" py={4}>
+          <Spinner />
+        </Flex>
+      )}
 
       <ModalComponent {...ModalProps}>
         {isMobile && <DrawerOverlay />}

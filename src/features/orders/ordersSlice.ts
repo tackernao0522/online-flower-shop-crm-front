@@ -3,10 +3,10 @@ import {
   createAsyncThunk,
   PayloadAction,
   createSelector,
-} from "@reduxjs/toolkit";
-import axios from "axios";
-import { RootState } from "@/store";
-import { Order } from "@/types/order";
+} from '@reduxjs/toolkit';
+import axios from 'axios';
+import { RootState } from '@/store';
+import { Order } from '@/types/order';
 
 // State types
 export interface OrderStats {
@@ -18,10 +18,10 @@ export interface OrderStats {
 
 export interface OrdersState {
   orders: Order[];
-  status: "idle" | "loading" | "succeeded" | "failed";
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
   stats: OrderStats;
-  statsStatus: "idle" | "loading" | "succeeded" | "failed";
+  statsStatus: 'idle' | 'loading' | 'succeeded' | 'failed';
   statsError: string | null;
   currentPage: number;
   totalPages: number;
@@ -33,10 +33,21 @@ export interface OrdersState {
   };
 }
 
+interface FetchOrdersParams {
+  page?: number;
+  per_page?: number;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  searchTerm?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
 // Initial state
 const initialState: OrdersState = {
   orders: [],
-  status: "idle",
+  status: 'idle',
   error: null,
   stats: {
     totalCount: null,
@@ -44,7 +55,7 @@ const initialState: OrdersState = {
     changeRate: null,
     lastUpdatedAt: undefined,
   },
-  statsStatus: "idle",
+  statsStatus: 'idle',
   statsError: null,
   currentPage: 1,
   totalPages: 1,
@@ -53,74 +64,65 @@ const initialState: OrdersState = {
 
 // Async thunks
 export const fetchOrders = createAsyncThunk(
-  "orders/fetchOrders",
-  async (
-    params: {
-      page?: number;
-      status?: string;
-      startDate?: string;
-      endDate?: string;
-      searchTerm?: string;
-    },
-    { rejectWithValue }
-  ) => {
+  'orders/fetchOrders',
+  async (params: FetchOrdersParams, { rejectWithValue }) => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           params: {
             ...params,
-            per_page: 15,
+            per_page: params.per_page || 15,
           },
-        }
+        },
       );
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(
-          error.response?.data?.message || "注文データの取得に失敗しました"
+          error.response?.data?.message || '注文データの取得に失敗しました',
         );
       }
-      return rejectWithValue("予期せぬエラーが発生しました");
+      return rejectWithValue('予期せぬエラーが発生しました');
     }
-  }
+  },
 );
 
 export const fetchOrderStats = createAsyncThunk(
-  "orders/fetchOrderStats",
+  'orders/fetchOrderStats',
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
           params: {
             page: 1,
             per_page: 1,
           },
-        }
+        },
       );
 
       if (!response.data.stats) {
-        throw new Error("統計データが見つかりません");
+        throw new Error('統計データが見つかりません');
       }
 
       return response.data.stats;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         return rejectWithValue(
-          error.response?.data?.message || "統計データの取得に失敗しました"
+          error.response?.data?.message || '統計データの取得に失敗しました',
         );
       }
-      return rejectWithValue("予期せぬエラーが発生しました");
+      return rejectWithValue('予期せぬエラーが発生しました');
     }
-  }
+  },
 );
 
 // Slice
 const ordersSlice = createSlice({
-  name: "orders",
+  name: 'orders',
   initialState,
   reducers: {
     setOrderStats: {
@@ -130,7 +132,7 @@ const ordersSlice = createSlice({
           totalCount: number;
           previousCount: number;
           changeRate: number;
-        }>
+        }>,
       ) => {
         if (
           state.stats.totalCount === null ||
@@ -149,7 +151,7 @@ const ordersSlice = createSlice({
             lastUpdatedAt: new Date().toISOString(),
           };
         }
-        state.statsStatus = "succeeded";
+        state.statsStatus = 'succeeded';
         state.statsError = null;
       },
       prepare: (payload: {
@@ -160,39 +162,39 @@ const ordersSlice = createSlice({
         return { payload };
       },
     },
-    setStatsLoading: (state) => {
-      state.statsStatus = "loading";
+    setStatsLoading: state => {
+      state.statsStatus = 'loading';
       state.statsError = null;
     },
     setStatsError: (state, action: PayloadAction<string>) => {
-      state.statsStatus = "failed";
+      state.statsStatus = 'failed';
       state.statsError = action.payload;
     },
-    clearOrderStats: (state) => {
+    clearOrderStats: state => {
       state.stats = { ...initialState.stats };
-      state.statsStatus = "idle";
+      state.statsStatus = 'idle';
       state.statsError = null;
     },
     setFilterParams: (
       state,
-      action: PayloadAction<OrdersState["filterParams"]>
+      action: PayloadAction<OrdersState['filterParams']>,
     ) => {
       state.filterParams = action.payload;
     },
-    clearFilters: (state) => {
+    clearFilters: state => {
       state.filterParams = {};
     },
     resetOrderState: () => initialState,
   },
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(fetchOrders.pending, (state) => {
-        state.status = "loading";
+      .addCase(fetchOrders.pending, state => {
+        state.status = 'loading';
         state.error = null;
       })
       .addCase(fetchOrders.fulfilled, (state, action) => {
-        console.log("Fetch Orders Response:", action.payload);
-        state.status = "succeeded";
+        console.log('Fetch Orders Response:', action.payload);
+        state.status = 'succeeded';
         state.orders = action.payload.data.data;
         state.currentPage = action.payload.meta.current_page;
         state.totalPages = action.payload.meta.total_pages;
@@ -216,15 +218,15 @@ const ordersSlice = createSlice({
         }
       })
       .addCase(fetchOrders.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = 'failed';
         state.error = action.payload as string;
       })
-      .addCase(fetchOrderStats.pending, (state) => {
-        state.statsStatus = "loading";
+      .addCase(fetchOrderStats.pending, state => {
+        state.statsStatus = 'loading';
         state.statsError = null;
       })
       .addCase(fetchOrderStats.fulfilled, (state, action) => {
-        state.statsStatus = "succeeded";
+        state.statsStatus = 'succeeded';
         if (state.stats.totalCount === null) {
           state.stats = {
             totalCount: action.payload.totalCount,
@@ -242,7 +244,7 @@ const ordersSlice = createSlice({
         }
       })
       .addCase(fetchOrderStats.rejected, (state, action) => {
-        state.statsStatus = "failed";
+        state.statsStatus = 'failed';
         state.statsError = action.payload as string;
       });
   },
@@ -254,58 +256,58 @@ const selectOrdersState = (state: RootState) => state.orders;
 // Memoized selectors
 export const selectOrders = createSelector(
   [selectOrdersState],
-  (state) => state.orders
+  state => state.orders,
 );
 
 export const selectOrdersStatus = createSelector(
   [selectOrdersState],
-  (state) => state.status
+  state => state.status,
 );
 
 export const selectOrdersError = createSelector(
   [selectOrdersState],
-  (state) => state.error
+  state => state.error,
 );
 
 export const selectOrderStats = createSelector(
   [selectOrdersState],
-  (state) => state.stats
+  state => state.stats,
 );
 
 export const selectOrderStatsStatus = createSelector(
   [selectOrdersState],
-  (state) => state.statsStatus
+  state => state.statsStatus,
 );
 
 export const selectOrderStatsError = createSelector(
   [selectOrdersState],
-  (state) => state.statsError
+  state => state.statsError,
 );
 
 export const selectOrdersCurrentPage = createSelector(
   [selectOrdersState],
-  (state) => state.currentPage
+  state => state.currentPage,
 );
 
 export const selectOrdersTotalPages = createSelector(
   [selectOrdersState],
-  (state) => state.totalPages
+  state => state.totalPages,
 );
 
 export const selectOrdersFilterParams = createSelector(
   [selectOrdersState],
-  (state) => state.filterParams
+  state => state.filterParams,
 );
 
 // Additional composed selectors
 export const selectOrdersWithStatus = createSelector(
   [selectOrders, selectOrdersStatus],
-  (orders, status) => ({ orders, status })
+  (orders, status) => ({ orders, status }),
 );
 
 export const selectOrderStatsWithStatus = createSelector(
   [selectOrderStats, selectOrderStatsStatus],
-  (stats, status) => ({ stats, status })
+  (stats, status) => ({ stats, status }),
 );
 
 // Actions

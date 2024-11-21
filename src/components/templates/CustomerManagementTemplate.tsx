@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Flex,
@@ -41,7 +41,7 @@ import {
   AlertDialogOverlay,
   FormErrorMessage,
   useBreakpointValue,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
 import {
   AddIcon,
   EditIcon,
@@ -49,12 +49,12 @@ import {
   ArrowBackIcon,
   SearchIcon,
   ArrowUpIcon,
-} from "@chakra-ui/icons";
-import { useRouter } from "next/navigation";
-import { format, parseISO } from "date-fns";
-import { useCustomerManagement } from "@/hooks/useCustomerManagement";
-import CustomerBasicInfo from "@/components/molecules/CustomerBasicInfo";
-import { Customer } from "@/types/customer";
+} from '@chakra-ui/icons';
+import { useRouter } from 'next/navigation';
+import { format, parseISO } from 'date-fns';
+import { useCustomerManagement } from '@/hooks/useCustomerManagement';
+import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
+import { Customer } from '@/types/customer';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -82,7 +82,7 @@ const CustomerManagementTemplate: React.FC = () => {
     handleDeleteCustomer,
     confirmDelete,
     cancelDelete,
-    handleSearch, // ここではhandleSearchはクリックイベントを受け取るように修正済み
+    handleSearch,
     handleKeyDown,
     handleInputChange,
     handleSubmit,
@@ -109,54 +109,54 @@ const CustomerManagementTemplate: React.FC = () => {
       </Box>
       <Box>
         <Text fontWeight="bold">住所:</Text>
-        <Text>{activeCustomer?.address || "未登録"}</Text>
+        <Text>{activeCustomer?.address || '未登録'}</Text>
       </Box>
       <Box>
         <Text fontWeight="bold">生年月日:</Text>
         <Text>
           {activeCustomer?.birthDate
-            ? format(parseISO(activeCustomer.birthDate), "yyyy-MM-dd")
-            : "未登録"}
+            ? format(parseISO(activeCustomer.birthDate), 'yyyy-MM-dd')
+            : '未登録'}
         </Text>
       </Box>
     </VStack>
   );
 
   const renderPurchaseHistory = () => (
-    <Table variant="simple" size={isMobile ? "sm" : "md"}>
+    <Table variant="simple" size={isMobile ? 'sm' : 'md'}>
       <Thead>
         <Tr>
           <Th>注文ID</Th>
           <Th>日付</Th>
           <Th>金額</Th>
-          {modalMode !== "detail" && <Th>アクション</Th>}
+          {modalMode !== 'detail' && <Th>アクション</Th>}
         </Tr>
       </Thead>
       <Tbody>
-        {activeCustomer?.purchaseHistory?.map((purchase) => (
+        {activeCustomer?.purchaseHistory?.map(purchase => (
           <Tr key={purchase.id}>
             <Td>
-              {modalMode === "detail" ? (
+              {modalMode === 'detail' ? (
                 purchase.id
               ) : (
                 <Input defaultValue={purchase.id} size="sm" />
               )}
             </Td>
             <Td>
-              {modalMode === "detail" ? (
+              {modalMode === 'detail' ? (
                 purchase.date
               ) : (
                 <Input defaultValue={purchase.date} size="sm" />
               )}
             </Td>
             <Td>
-              {modalMode === "detail" ? (
+              {modalMode === 'detail' ? (
                 `¥${purchase.amount.toLocaleString()}`
               ) : (
                 <Input defaultValue={purchase.amount} size="sm" />
               )}
             </Td>
-            {modalMode !== "detail" && (
+            {modalMode !== 'detail' && (
               <Td>
                 <IconButton
                   aria-label="Delete purchase"
@@ -189,7 +189,7 @@ const CustomerManagementTemplate: React.FC = () => {
           {customers
             .filter(
               (customer, index, self) =>
-                index === self.findIndex((t) => t.id === customer.id)
+                index === self.findIndex(t => t.id === customer.id),
             )
             .map((customer: Customer, index: number) => (
               <Tr key={`${customer.id}-${index}`}>
@@ -205,8 +205,8 @@ const CustomerManagementTemplate: React.FC = () => {
                 <Td whiteSpace="nowrap">{customer.phoneNumber}</Td>
                 <Td whiteSpace="nowrap">
                   {customer.birthDate
-                    ? format(parseISO(customer.birthDate), "yyyy-MM-dd")
-                    : "未登録"}
+                    ? format(parseISO(customer.birthDate), 'yyyy-MM-dd')
+                    : '未登録'}
                 </Td>
                 <Td>
                   {isMobile ? (
@@ -256,55 +256,55 @@ const CustomerManagementTemplate: React.FC = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={5}
-        flexDirection={["column", "row"]}>
+        flexDirection={['column', 'row']}>
         <Heading as="h1" size="xl" mb={[4, 0]}>
           顧客管理
         </Heading>
         <HStack
           spacing={2}
           flexWrap="wrap"
-          justifyContent={["center", "flex-end"]}>
+          justifyContent={['center', 'flex-end']}>
           <Button
             leftIcon={<AddIcon />}
             colorScheme="blue"
             onClick={handleAddCustomer}
             mb={[2, 0]}
-            w={["100%", "auto"]}>
+            w={['100%', 'auto']}>
             新規顧客登録
           </Button>
           <Button
             leftIcon={<ArrowBackIcon />}
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push('/dashboard')}
             mb={[2, 0]}
-            w={["100%", "auto"]}
-            fontSize={["sm", "md"]}>
+            w={['100%', 'auto']}
+            fontSize={['sm', 'md']}>
             ダッシュボードへ戻る
           </Button>
         </HStack>
       </Flex>
 
-      <Flex mb={5} flexDirection={["column", "row"]}>
+      <Flex mb={5} flexDirection={['column', 'row']}>
         <Input
           placeholder="顧客名または電話番号( - は除く)"
           mr={[0, 3]}
           mb={[2, 0]}
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={e => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
         />
         <Button
           leftIcon={<SearchIcon />}
           onClick={() => handleSearch(searchTerm)} // searchTermを引数に
-          width={["100%", "auto"]}>
+          width={['100%', 'auto']}>
           検索
         </Button>
       </Flex>
 
-      {status === "loading" && page === 1 ? (
+      {status === 'loading' && page === 1 ? (
         <Flex justify="center" align="center" height="200px">
           <Spinner size="xl" />
         </Flex>
-      ) : status === "failed" ? (
+      ) : status === 'failed' ? (
         <Alert status="error">
           <AlertIcon />
           {error}
@@ -339,15 +339,15 @@ const CustomerManagementTemplate: React.FC = () => {
         />
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose} size={isMobile ? "full" : "xl"}>
+      <Modal isOpen={isOpen} onClose={onClose} size={isMobile ? 'full' : 'xl'}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {modalMode === "detail"
-              ? "顧客詳細"
-              : modalMode === "add"
-              ? "新規顧客登録"
-              : "顧客情報編集"}
+            {modalMode === 'detail'
+              ? '顧客詳細'
+              : modalMode === 'add'
+                ? '新規顧客登録'
+                : '顧客情報編集'}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
@@ -360,7 +360,7 @@ const CustomerManagementTemplate: React.FC = () => {
 
               <TabPanels>
                 <TabPanel>
-                  {modalMode === "detail" ? (
+                  {modalMode === 'detail' ? (
                     renderCustomerInfo()
                   ) : (
                     <CustomerBasicInfo
@@ -374,7 +374,7 @@ const CustomerManagementTemplate: React.FC = () => {
                 </TabPanel>
                 <TabPanel>
                   <Box overflowX="auto">{renderPurchaseHistory()}</Box>
-                  {modalMode !== "detail" && (
+                  {modalMode !== 'detail' && (
                     <Button leftIcon={<AddIcon />} mt={4} size="sm">
                       購入履歴を追加
                     </Button>
@@ -385,7 +385,7 @@ const CustomerManagementTemplate: React.FC = () => {
                     <FormLabel>メモ</FormLabel>
                     <Textarea
                       placeholder="顧客に関する特記事項を入力"
-                      isReadOnly={modalMode === "detail"}
+                      isReadOnly={modalMode === 'detail'}
                     />
                   </FormControl>
                 </TabPanel>
@@ -394,9 +394,9 @@ const CustomerManagementTemplate: React.FC = () => {
           </ModalBody>
 
           <ModalFooter>
-            {modalMode !== "detail" && (
+            {modalMode !== 'detail' && (
               <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
-                {modalMode === "add" ? "登録" : "更新"}
+                {modalMode === 'add' ? '登録' : '更新'}
               </Button>
             )}
             <Button variant="ghost" onClick={onClose}>

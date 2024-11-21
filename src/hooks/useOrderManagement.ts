@@ -47,6 +47,12 @@ export const useOrderManagement = () => {
     end: null,
   });
 
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [localOrders, setLocalOrders] = useState<Order[]>([]);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
+
   // Hooks
   const { isOpen, onOpen, onClose: originalOnClose } = useDisclosure();
   const toast = useToast();
@@ -74,28 +80,52 @@ export const useOrderManagement = () => {
   }, [originalOnClose]);
 
   // 注文一覧の取得
-  const fetchOrders = useCallback(async () => {
-    try {
-      setStatus('loading');
-      const params: Record<string, any> = {
-        search: searchTerm || undefined,
-        status: statusFilter || undefined,
-        start_date: dateRange.start?.toISOString() || undefined,
-        end_date: dateRange.end?.toISOString() || undefined,
-      };
+  const fetchOrders = useCallback(
+    async (pageNum = page) => {
+      try {
+        setStatus('loading');
+        const params: Record<string, any> = {
+          page: pageNum,
+          per_page: 15,
+          search: searchTerm || undefined,
+          status: statusFilter || undefined,
+          start_date: dateRange.start?.toISOString() || undefined,
+          end_date: dateRange.end?.toISOString() || undefined,
+        };
 
-      await dispatch(fetchOrdersAction(params)).unwrap();
-      setStatus('succeeded');
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      setStatus('failed');
-      setError(
-        axiosError.response?.data?.error?.message ||
-          '注文データの取得に失敗しました',
-      );
-      console.error('Error fetching orders:', error);
+        const response = await dispatch(fetchOrdersAction(params)).unwrap();
+
+        if (pageNum === 1) {
+          setLocalOrders(response.data.data);
+        } else {
+          setLocalOrders(prev => [...prev, ...response.data.data]);
+        }
+
+        setHasMore(response.data.data.length === 15);
+        setPage(pageNum);
+        setStatus('succeeded');
+
+        return response;
+      } catch (error) {
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        setStatus('failed');
+        setError(
+          axiosError.response?.data?.error?.message ||
+            '注文データの取得に失敗しました',
+        );
+        console.error('Error fetching orders:', error);
+        throw error;
+      }
+    },
+    [dispatch, searchTerm, statusFilter, dateRange, page],
+  );
+
+  // 追加ロード用の関数
+  const loadMore = useCallback(() => {
+    if (!isSearching && status !== 'loading' && hasMore) {
+      fetchOrders(page + 1);
     }
-  }, [dispatch, searchTerm, statusFilter, dateRange]);
+  }, [fetchOrders, page, isSearching, status, hasMore]);
 
   // 検索入力のハンドラー
   const handleSearchChange = useCallback(
@@ -105,22 +135,14 @@ export const useOrderManagement = () => {
     [],
   );
 
-  const executeSearch = useCallback(async () => {
-    setStatus('loading');
-    try {
-      dispatch(setFilterParams({ searchTerm }));
-      await fetchOrders();
-    } catch (error) {
-      console.error('Search error:', error);
-    }
-  }, [dispatch, fetchOrders, searchTerm]);
-
   // 検索実行処理
   const handleSearchSubmit = useCallback(async () => {
     setIsSearching(true);
+    setPage(1);
     try {
       dispatch(setFilterParams({ searchTerm }));
-      await fetchOrders();
+      const response = await fetchOrders(1);
+      setTotalCount(response.meta.total); // 検索時にも総数を更新
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -211,7 +233,21 @@ export const useOrderManagement = () => {
         },
       );
 
-      await fetchOrders();
+      // 削除後に最新データを取得
+      const response = await dispatch(
+        fetchOrdersAction({
+          page: 1,
+          per_page: 15,
+          status: statusFilter || undefined,
+          start_date: dateRange.start?.toISOString() || undefined,
+          end_date: dateRange.end?.toISOString() || undefined,
+        }),
+      ).unwrap();
+
+      // ローカルの注文リストと総数を更新
+      setLocalOrders(response.data.data);
+      setTotalCount(response.meta.total);
+
       toast({
         title: '注文を削除しました',
         status: 'success',
@@ -234,7 +270,7 @@ export const useOrderManagement = () => {
         position: 'top',
       });
     }
-  }, [orderToDelete, toast, fetchOrders]);
+  }, [orderToDelete, toast, dispatch, statusFilter, dateRange]);
 
   const cancelDelete = useCallback(() => {
     setIsDeleteAlertOpen(false);
@@ -245,8 +281,9 @@ export const useOrderManagement = () => {
   const handleStatusFilter = useCallback(
     (status: OrderStatus) => {
       setStatusFilter(status);
+      setPage(1); // ページをリセット
       dispatch(setFilterParams({ status }));
-      fetchOrders();
+      fetchOrders(1);
     },
     [dispatch, fetchOrders],
   );
@@ -273,13 +310,14 @@ export const useOrderManagement = () => {
       }
 
       setDateRange({ start, end });
+      setPage(1); // ページをリセット
       dispatch(
         setFilterParams({
           startDate: start.toISOString(),
           endDate: end.toISOString(),
         }),
       );
-      fetchOrders();
+      fetchOrders(1);
     },
     [dispatch, fetchOrders],
   );
@@ -288,8 +326,9 @@ export const useOrderManagement = () => {
     setSearchTerm('');
     setStatusFilter(null);
     setDateRange({ start: null, end: null });
+    setPage(1); // ページをリセット
     dispatch(setFilterParams({}));
-    fetchOrders();
+    fetchOrders(1);
   }, [dispatch, fetchOrders]);
 
   // 注文アイテムの処理
@@ -411,7 +450,7 @@ export const useOrderManagement = () => {
         ]);
       }
 
-      await fetchOrders();
+      await fetchOrders(1); // ページをリセットして最初から取得
       toast({
         title:
           modalMode === 'add' ? '注文を作成しました' : '注文を更新しました',
@@ -444,11 +483,17 @@ export const useOrderManagement = () => {
       try {
         setStatus('loading');
         const params: Record<string, any> = {
+          page: 1,
+          per_page: 15,
           status: statusFilter || undefined,
           start_date: dateRange.start?.toISOString() || undefined,
           end_date: dateRange.end?.toISOString() || undefined,
         };
-        await dispatch(fetchOrdersAction(params)).unwrap();
+        const response = await dispatch(fetchOrdersAction(params)).unwrap();
+        setLocalOrders(response.data.data);
+        if (totalCount === null) {
+          setTotalCount(response.meta.total);
+        }
         setStatus('succeeded');
       } catch (error) {
         setStatus('failed');
@@ -456,11 +501,11 @@ export const useOrderManagement = () => {
       }
     };
     initialFetch();
-  }, [dispatch, statusFilter, dateRange]);
+  }, [dispatch, statusFilter, dateRange, totalCount, setTotalCount]); // 依存配列に追加
 
   return {
     // 状態
-    orders: Array.isArray(orders) ? orders : [],
+    orders: localOrders,
     status: status === 'loading' ? 'loading' : reduxStatus,
     error: error || reduxError,
     activeOrder,
@@ -473,6 +518,9 @@ export const useOrderManagement = () => {
     isOpen,
     onOpen,
     onClose,
+    hasMore,
+    loadMore,
+    totalCount: totalCount || 0,
 
     // アクション
     handleSearchChange,

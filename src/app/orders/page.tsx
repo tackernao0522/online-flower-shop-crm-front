@@ -679,6 +679,15 @@ const OrdersPage = () => {
         </Table>
       </Box>
 
+      {/* 注文リストの表示件数 */}
+      <Flex justify="center" my={4}>
+        <Text color="red">
+          {orders.length >= totalCount
+            ? `すべての注文リストを表示しました (${totalCount}件)`
+            : `${orders.length}件の注文リストを表示中 (全${totalCount}件)`}
+        </Text>
+      </Flex>
+
       {/* ローディングインジケーター */}
       {(status === 'loading' || isSearching) && (
         <Flex justify="center" py={4}>

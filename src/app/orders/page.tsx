@@ -599,9 +599,8 @@ const OrdersPage = () => {
       {renderSearchAndFilter()}
 
       <Text mb={4} color="gray.600">
-        総注文リスト数: {totalCount > 0 ? totalCount : '読込中...'}
+        総注文リスト数: {totalCount.toLocaleString()}
       </Text>
-
       <Box overflowX="auto">
         <Table variant="simple">
           <Thead>
@@ -695,8 +694,8 @@ const OrdersPage = () => {
       <Flex justify="center" my={4}>
         <Text color="red">
           {orders.length >= totalCount
-            ? `すべての注文リストを表示しました (${totalCount}件)`
-            : `${orders.length}件の注文リストを表示中 (全${totalCount}件)`}
+            ? `全 ${totalCount.toLocaleString()} 件を表示中`
+            : `${orders.length.toLocaleString()} 件を表示中 (全 ${totalCount.toLocaleString()} 件)`}
         </Text>
       </Flex>
 

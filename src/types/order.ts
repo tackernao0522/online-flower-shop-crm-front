@@ -1,15 +1,15 @@
-import type { Customer } from "./customer";
-import type { Product } from "./product";
-import type { User } from "./user";
+import type { Customer } from './customer';
+import type { Product } from './product';
+import type { User } from './user';
 
 // 注文ステータスの型
 export type OrderStatus =
-  | "PENDING"
-  | "PROCESSING"
-  | "CONFIRMED"
-  | "SHIPPED"
-  | "DELIVERED"
-  | "CANCELLED";
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'CONFIRMED'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED';
 
 // APIレスポンスの注文商品の型
 export interface OrderItem {
@@ -42,7 +42,8 @@ export interface Order {
   userId: string;
   campaignId: string | null;
   customer: Customer;
-  order_items: OrderItem[]; // APIレスポンスではorder_itemsを使用
+  order_items: OrderItem[];
+  orderItems?: OrderItem[];
   user?: User;
   created_at: string;
   updated_at: string;

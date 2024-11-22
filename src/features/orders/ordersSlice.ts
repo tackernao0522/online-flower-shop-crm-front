@@ -25,6 +25,7 @@ export interface OrdersState {
   statsError: string | null;
   currentPage: number;
   totalPages: number;
+  totalItems: number;
   filterParams: {
     status?: string;
     startDate?: string;
@@ -59,6 +60,7 @@ const initialState: OrdersState = {
   statsError: null,
   currentPage: 1,
   totalPages: 1,
+  totalItems: 0,
   filterParams: {},
 };
 
@@ -180,11 +182,28 @@ const ordersSlice = createSlice({
       action: PayloadAction<OrdersState['filterParams']>,
     ) => {
       state.filterParams = action.payload;
+      state.currentPage = 1;
     },
     clearFilters: state => {
       state.filterParams = {};
+      state.filterParams = {};
+      state.currentPage = 1;
+      state.totalItems = 0;
     },
     resetOrderState: () => initialState,
+
+    updatePaginationInfo: (
+      state,
+      action: PayloadAction<{
+        currentPage: number;
+        totalPages: number;
+        totalItems: number;
+      }>,
+    ) => {
+      state.currentPage = action.payload.currentPage;
+      state.totalPages = action.payload.totalPages;
+      state.totalItems = action.payload.totalItems;
+    },
   },
   extraReducers: builder => {
     builder
@@ -198,6 +217,7 @@ const ordersSlice = createSlice({
         state.orders = action.payload.data.data;
         state.currentPage = action.payload.meta.current_page;
         state.totalPages = action.payload.meta.total_pages;
+        state.totalItems = action.payload.meta.total;
 
         if (action.payload.stats) {
           if (state.stats.totalCount === null) {
@@ -310,6 +330,20 @@ export const selectOrderStatsWithStatus = createSelector(
   (stats, status) => ({ stats, status }),
 );
 
+export const selectTotalItems = createSelector(
+  [selectOrdersState],
+  state => state.totalItems,
+);
+
+export const selectPaginationInfo = createSelector(
+  [selectOrdersState],
+  state => ({
+    currentPage: state.currentPage,
+    totalPages: state.totalPages,
+    totalItems: state.totalItems,
+  }),
+);
+
 // Actions
 export const {
   setOrderStats,
@@ -319,6 +353,7 @@ export const {
   setFilterParams,
   clearFilters,
   resetOrderState,
+  updatePaginationInfo,
 } = ordersSlice.actions;
 
 // Reducer

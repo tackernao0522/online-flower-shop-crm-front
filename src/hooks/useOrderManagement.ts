@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast, useDisclosure } from '@chakra-ui/react';
 import axios, { AxiosError } from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
@@ -6,7 +6,6 @@ import { AppDispatch } from '@/store';
 import {
   fetchOrders as fetchOrdersAction,
   setFilterParams,
-  selectOrders,
   selectOrdersStatus,
   selectOrdersError,
 } from '@/features/orders/ordersSlice';
@@ -19,6 +18,7 @@ import type {
   FormErrors,
 } from '@/types/order';
 import type { ApiErrorResponse } from '@/types/api';
+import { startOfDay, endOfDay } from 'date-fns';
 
 type OrderItemField = keyof OrderFormItem;
 
@@ -57,26 +57,13 @@ interface OrderParams {
   end_date?: string;
 }
 
-interface FetchOrdersResponse {
-  data: {
-    data: Order[];
-    meta: {
-      total: number;
-      current_page: number;
-      total_pages: number;
-    };
-  };
-}
-
 export const useOrderManagement = () => {
-  // Redux - 型付きで状態を取得
   const dispatch = useDispatch<AppDispatch>();
-  const reduxOrders = useSelector(selectOrders);
-  const orders = useMemo(() => reduxOrders || [], [reduxOrders]);
+  const toast = useToast();
   const reduxStatus = useSelector(selectOrdersStatus);
   const reduxError = useSelector(selectOrdersError);
 
-  // Local State - すべての状態に明示的な型を指定
+  // Local State
   const [status, setStatus] =
     useState<UseOrderManagementState['status']>('idle');
   const [error, setError] = useState<UseOrderManagementState['error']>(null);
@@ -95,32 +82,27 @@ export const useOrderManagement = () => {
     start: null,
     end: null,
   });
-
-  // Pagination State - 型付きでページネーション状態を管理
   const [page, setPage] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
-  const [localOrders, setLocalOrders] = useState<Order[]>(orders);
-  const [totalCount, setTotalCount] = useState<number | null>(null);
-
-  // Hooks
-  const { isOpen, onOpen, onClose: originalOnClose } = useDisclosure();
-  const toast = useToast();
-
-  // Refs - フィルター状態を参照として保持
-  const filterStateRef = useRef<FilterState>({
-    currentStatus: null,
-    currentSearchTerm: '',
-    currentDateRange: { start: null, end: null },
-  });
-
-  // 新規注文の初期状態
+  const [localOrders, setLocalOrders] = useState<Order[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [newOrder, setNewOrder] = useState<OrderForm>({
     customerId: '',
     orderItems: [],
     status: 'PENDING',
   });
 
-  // 基本的なハンドラー - モーダル制御
+  // Refs for filter state
+  const filterStateRef = useRef<FilterState>({
+    currentStatus: null,
+    currentSearchTerm: '',
+    currentDateRange: { start: null, end: null },
+  });
+
+  // Modal disclosure
+  const { isOpen, onOpen, onClose: originalOnClose } = useDisclosure();
+
+  // Close modal handler
   const onClose = useCallback((): void => {
     originalOnClose();
     setTimeout(() => {
@@ -135,9 +117,9 @@ export const useOrderManagement = () => {
     }, 300);
   }, [originalOnClose]);
 
-  // 注文一覧の取得 - 型安全な実装
+  // Fetch orders
   const fetchOrders = useCallback(
-    async (pageNum: number = page): Promise<FetchOrdersResponse> => {
+    async (pageNum: number = page): Promise<void> => {
       try {
         setStatus('loading');
         const params: OrderParams = {
@@ -153,6 +135,7 @@ export const useOrderManagement = () => {
             undefined,
         };
 
+        // Redux ThunkのResponse型を明示的に指定
         const response = await dispatch(fetchOrdersAction(params)).unwrap();
 
         if (pageNum === 1) {
@@ -165,8 +148,6 @@ export const useOrderManagement = () => {
         setTotalCount(response.meta.total);
         setPage(pageNum);
         setStatus('succeeded');
-
-        return response;
       } catch (error) {
         const axiosError = error as AxiosError<ApiErrorResponse>;
         setStatus('failed');
@@ -180,13 +161,14 @@ export const useOrderManagement = () => {
     [dispatch, page],
   );
 
-  // 無限スクロール用のローディング処理
+  // Load more for infinite scroll
   const loadMore = useCallback((): void => {
     if (!isSearching && status !== 'loading' && hasMore) {
-      fetchOrders(page + 1);
+      void fetchOrders(page + 1);
     }
   }, [fetchOrders, page, isSearching, status, hasMore]);
 
+  // Handle input changes
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
       const { name, value } = e.target;
@@ -209,9 +191,8 @@ export const useOrderManagement = () => {
     [],
   );
 
-  // 注文フォームの送信処理を追加
-  const handleSubmit = useCallback(async () => {
-    // バリデーション
+  // Form submission handler
+  const handleSubmit = useCallback(async (): Promise<void> => {
     const errors: FormErrors = {};
     if (!newOrder.customerId) errors.customerId = '顧客IDは必須です';
     if (newOrder.orderItems.length === 0) {
@@ -225,7 +206,6 @@ export const useOrderManagement = () => {
 
     try {
       if (modalMode === 'add') {
-        // 新規作成
         await axios.post(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
           newOrder,
@@ -245,7 +225,6 @@ export const useOrderManagement = () => {
           position: 'top',
         });
       } else if (modalMode === 'edit' && activeOrder) {
-        // 編集の場合、注文アイテムとステータスの両方を更新
         await Promise.all([
           axios.put(
             `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/items`,
@@ -278,7 +257,6 @@ export const useOrderManagement = () => {
         });
       }
 
-      // データを再取得してモーダルを閉じる
       setPage(1);
       await fetchOrders(1);
       onClose();
@@ -298,25 +276,22 @@ export const useOrderManagement = () => {
     }
   }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
 
-  // フィルターをクリアする処理
+  // Clear filters
   const clearFilters = useCallback(async (): Promise<void> => {
     try {
       setIsSearching(true);
 
-      // フィルター状態を完全にリセット
       filterStateRef.current = {
         currentStatus: null,
         currentSearchTerm: '',
         currentDateRange: { start: null, end: null },
       };
 
-      // ローカルステートをリセット
       setSearchTerm('');
       setStatusFilter(null);
       setDateRange({ start: null, end: null });
       setPage(1);
 
-      // Redux状態のクリアとデータの再取得を一括で実行
       const [_, response] = await Promise.all([
         dispatch(setFilterParams({})),
         dispatch(
@@ -327,7 +302,6 @@ export const useOrderManagement = () => {
         ).unwrap(),
       ]);
 
-      // 状態を更新
       setLocalOrders(response.data.data);
       setTotalCount(response.meta.total);
       setHasMore(response.data.data.length === 15);
@@ -346,19 +320,18 @@ export const useOrderManagement = () => {
     }
   }, [dispatch, toast]);
 
-  // 検索入力の変更ハンドラー
+  // Search handlers
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
       const value = e.target.value;
       setSearchTerm(value);
       if (!value) {
-        clearFilters();
+        void clearFilters();
       }
     },
     [clearFilters],
   );
 
-  // 検索実行処理
   const handleSearchSubmit = useCallback(async (): Promise<void> => {
     if (isSearching) return;
 
@@ -366,14 +339,12 @@ export const useOrderManagement = () => {
       setIsSearching(true);
       setPage(1);
 
-      // 検索条件のみで検索
       filterStateRef.current = {
-        currentStatus: null, // ステータスをリセット
-        currentSearchTerm: searchTerm, // 検索語句のみ設定
-        currentDateRange: { start: null, end: null }, // 日付範囲をリセット
+        currentStatus: null,
+        currentSearchTerm: searchTerm,
+        currentDateRange: { start: null, end: null },
       };
 
-      // 他のフィルター状態をリセット
       setStatusFilter(null);
       setDateRange({ start: null, end: null });
 
@@ -383,7 +354,6 @@ export const useOrderManagement = () => {
         search: searchTerm || undefined,
       };
 
-      // Redux状態を更新
       await dispatch(
         setFilterParams({
           searchTerm,
@@ -431,7 +401,7 @@ export const useOrderManagement = () => {
     }
   }, [isSearching, searchTerm, dispatch, toast]);
 
-  // 検索のキーダウンハンドラー（Enterキー）
+  // Search keydown handler
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
       if (e.key === 'Enter') {
@@ -442,12 +412,224 @@ export const useOrderManagement = () => {
     [handleSearchSubmit],
   );
 
-  // 注文詳細の取得
-  const fetchOrderDetails = useCallback(
-    async (orderId: string): Promise<void> => {
+  // Date range filter handler
+  const handleDateRangeFilter = useCallback(
+    async (
+      range: 'today' | 'week' | 'month' | 'custom',
+      customStart?: Date | null,
+      customEnd?: Date | null,
+    ): Promise<void> => {
       try {
+        setIsSearching(true);
+
+        const today = new Date();
+        let start: Date;
+        let end: Date;
+
+        switch (range) {
+          case 'today':
+            start = startOfDay(today);
+            end = endOfDay(today);
+            break;
+          case 'week':
+            // 今日の曜日を取得（0: 日曜日, 1: 月曜日, ..., 6: 土曜日）
+            const dayOfWeek = today.getDay();
+            // 今日から日曜日までさかのぼる
+            start = startOfDay(
+              new Date(today.getTime() - dayOfWeek * 24 * 60 * 60 * 1000),
+            );
+            // 今週の土曜日まで
+            end = endOfDay(new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000));
+            break;
+          case 'month':
+            start = startOfDay(
+              new Date(today.getFullYear(), today.getMonth(), 1),
+            );
+            end = endOfDay(
+              new Date(today.getFullYear(), today.getMonth() + 1, 0),
+            );
+            break;
+          case 'custom':
+            if (!customStart || !customEnd) {
+              // 日付範囲をクリア
+              setDateRange({ start: null, end: null });
+
+              // フィルター状態をリセット
+              filterStateRef.current = {
+                currentStatus: null,
+                currentSearchTerm: '',
+                currentDateRange: { start: null, end: null },
+              };
+
+              // 他の検索条件もクリア
+              setSearchTerm('');
+              setStatusFilter(null);
+              setPage(1);
+
+              try {
+                // Redux state をクリア
+                await dispatch(setFilterParams({}));
+
+                // 検索条件をリセットして全データを再取得
+                const response = await dispatch(
+                  fetchOrdersAction({
+                    page: 1,
+                    per_page: 15,
+                  }),
+                ).unwrap();
+
+                setLocalOrders(response.data.data);
+                setTotalCount(response.meta.total);
+                setHasMore(response.data.data.length === 15);
+
+                toast({
+                  title: 'フィルターをクリアしました',
+                  status: 'success',
+                  duration: 2000,
+                  isClosable: true,
+                });
+              } catch (error) {
+                console.error('Clear filter error:', error);
+                const axiosError = error as AxiosError<ApiErrorResponse>;
+                toast({
+                  title: 'フィルターのクリアに失敗しました',
+                  description: axiosError.response?.data?.error?.message,
+                  status: 'error',
+                  duration: 3000,
+                  isClosable: true,
+                });
+              } finally {
+                setIsSearching(false);
+              }
+              return;
+            }
+            start = startOfDay(customStart);
+            end = endOfDay(customEnd);
+            break;
+          default:
+            return;
+        }
+
+        // 他の検索条件をリセット
+        setSearchTerm('');
+        setStatusFilter(null);
+
+        // 日付範囲の設定
+        const newDateRange = { start, end };
+        setDateRange(newDateRange);
+
+        // フィルター状態を更新（他の条件はリセット）
+        filterStateRef.current = {
+          currentStatus: null, // ステータスをリセット
+          currentSearchTerm: '', // 検索語句をリセット
+          currentDateRange: newDateRange, // 新しい日付範囲を設定
+        };
+
+        // APIリクエストのパラメータを設定（日付範囲のみ）
+        const params: OrderParams = {
+          page: 1,
+          per_page: 15,
+          start_date: start.toISOString(),
+          end_date: end.toISOString(),
+        };
+
+        // Reduxの状態とAPIリクエストを更新
+        await dispatch(
+          setFilterParams({
+            searchTerm: '',
+            status: undefined,
+            startDate: start.toISOString(),
+            endDate: end.toISOString(),
+          }),
+        );
+
+        const response = await dispatch(fetchOrdersAction(params)).unwrap();
+
+        setLocalOrders(response.data.data);
+        setTotalCount(response.meta.total);
+        setHasMore(response.data.data.length === 15);
+        setPage(1);
+
+        toast({
+          title: '期間フィルターを適用しました',
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error('Date range filter error:', error);
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        toast({
+          title: 'フィルタリングに失敗しました',
+          description:
+            axiosError.response?.data?.error?.message ||
+            '期間フィルターの適用中にエラーが発生しました',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [dispatch, toast],
+  );
+
+  // Status filter handler
+  const handleStatusFilter = useCallback(
+    async (status: OrderStatus): Promise<void> => {
+      try {
+        setIsSearching(true);
+        setStatusFilter(status);
+
+        filterStateRef.current = {
+          currentStatus: status,
+          currentSearchTerm: '',
+          currentDateRange: { start: null, end: null },
+        };
+
+        setDateRange({ start: null, end: null });
+        setSearchTerm('');
+        setPage(1);
+
+        const response = await dispatch(
+          fetchOrdersAction({
+            page: 1,
+            per_page: 15,
+            status: status || undefined,
+          }),
+        ).unwrap();
+
+        if (response && response.data) {
+          setLocalOrders(response.data.data);
+          setTotalCount(response.meta.total);
+          setHasMore(response.data.data.length === 15);
+        }
+      } catch (error) {
+        console.error('Status filtering error:', error);
+        // AxiosErrorの型アサーションを修正
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        toast({
+          title: 'フィルタリングに失敗しました',
+          description: axiosError.response?.data?.error?.message,
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [dispatch, toast],
+  );
+
+  // Order management handlers
+  const handleOrderClick = useCallback(
+    async (order: Order): Promise<void> => {
+      try {
+        setModalMode('detail');
         const response = await axios.get<Order>(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${orderId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${order.id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -458,6 +640,7 @@ export const useOrderManagement = () => {
         const data = response.data;
         data.orderItems = data.order_items;
         setActiveOrder(data);
+        onOpen();
       } catch (error) {
         const axiosError = error as AxiosError<ApiErrorResponse>;
         console.error('注文詳細データの取得に失敗しました:', axiosError);
@@ -470,20 +653,9 @@ export const useOrderManagement = () => {
         });
       }
     },
-    [toast],
+    [onOpen, toast],
   );
 
-  // 注文詳細を表示
-  const handleOrderClick = useCallback(
-    (order: Order): void => {
-      setModalMode('detail');
-      void fetchOrderDetails(order.id);
-      onOpen();
-    },
-    [onOpen, fetchOrderDetails],
-  );
-
-  // 新規注文作成モーダルを開く
   const handleAddOrder = useCallback((): void => {
     setActiveOrder(null);
     setNewOrder({
@@ -496,13 +668,10 @@ export const useOrderManagement = () => {
     onOpen();
   }, [onOpen]);
 
-  // 注文編集モーダルを開く
   const handleEditOrder = useCallback(
     (order: Order): void => {
       setActiveOrder(order);
-
       const formattedOrderItems = (order.order_items ?? []).map(item => ({
-        ...item,
         productId: item.product.id,
         quantity: Number(item.quantity),
       }));
@@ -512,7 +681,6 @@ export const useOrderManagement = () => {
         orderItems: formattedOrderItems,
         status: order.status,
       });
-
       setFormErrors({});
       setModalMode('edit');
       onOpen();
@@ -520,13 +688,11 @@ export const useOrderManagement = () => {
     [onOpen],
   );
 
-  // 削除確認モーダルを開く
   const handleDeleteOrder = useCallback((order: Order): void => {
     setOrderToDelete(order);
     setIsDeleteAlertOpen(true);
   }, []);
 
-  // 注文を削除
   const confirmDelete = useCallback(async (): Promise<void> => {
     if (!orderToDelete) return;
 
@@ -578,13 +744,12 @@ export const useOrderManagement = () => {
     }
   }, [orderToDelete, toast, dispatch, statusFilter, dateRange, searchTerm]);
 
-  // 削除をキャンセル
   const cancelDelete = useCallback((): void => {
     setIsDeleteAlertOpen(false);
     setOrderToDelete(null);
   }, []);
 
-  // 注文アイテムの操作
+  // Order items handlers
   const handleOrderItemChange = useCallback(
     (index: number, field: OrderItemField, value: string | number): void => {
       setNewOrder(prev => {
@@ -609,7 +774,6 @@ export const useOrderManagement = () => {
     [],
   );
 
-  // 注文アイテムを追加
   const handleAddOrderItem = useCallback((): void => {
     setNewOrder(prev => ({
       ...prev,
@@ -618,12 +782,11 @@ export const useOrderManagement = () => {
         {
           productId: '',
           quantity: 1,
-        } satisfies OrderFormItem,
+        },
       ],
     }));
   }, []);
 
-  // 注文アイテムを削除
   const handleRemoveOrderItem = useCallback((index: number): void => {
     setNewOrder(prev => ({
       ...prev,
@@ -631,157 +794,7 @@ export const useOrderManagement = () => {
     }));
   }, []);
 
-  // ステータスフィルターの処理
-  const handleStatusFilter = useCallback(
-    async (status: OrderStatus): Promise<void> => {
-      try {
-        setIsSearching(true);
-        setStatusFilter(status);
-
-        // ステータスのみで検索
-        filterStateRef.current = {
-          currentStatus: status,
-          currentSearchTerm: '',
-          currentDateRange: { start: null, end: null },
-        };
-
-        // 他のフィルター状態をリセット
-        setDateRange({ start: null, end: null });
-        setSearchTerm('');
-        setPage(1);
-
-        // ステータスのみでAPIリクエスト
-        const response = await dispatch(
-          fetchOrdersAction({
-            page: 1,
-            per_page: 15,
-            status: status || undefined,
-          }),
-        ).unwrap();
-
-        if (response && response.data) {
-          setLocalOrders(response.data.data);
-          setTotalCount(response.meta.total);
-          setHasMore(response.data.data.length === 15);
-        }
-      } catch (error) {
-        console.error('Status filtering error:', error);
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        toast({
-          title: 'フィルタリングに失敗しました',
-          description: axiosError.response?.data?.error?.message,
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [dispatch, toast],
-  );
-
-  // 日付範囲フィルターの処理
-  const handleDateRangeFilter = useCallback(
-    (range: 'today' | 'week' | 'month' | 'custom'): void => {
-      const today = new Date();
-      let start: Date;
-      let end: Date;
-
-      switch (range) {
-        case 'today':
-          start = new Date();
-          end = new Date();
-          start.setHours(0, 0, 0, 0);
-          end.setHours(23, 59, 59, 999);
-          break;
-        case 'week':
-          start = new Date();
-          end = new Date();
-          start.setDate(today.getDate() - 7);
-          end.setHours(23, 59, 59, 999);
-          break;
-        case 'month':
-          start = new Date(today.getFullYear(), today.getMonth(), 1);
-          end = new Date(
-            today.getFullYear(),
-            today.getMonth() + 1,
-            0,
-            23,
-            59,
-            59,
-            999,
-          );
-          break;
-        case 'custom':
-          start = new Date();
-          end = new Date();
-          break;
-      }
-
-      try {
-        setIsSearching(true);
-        const newDateRange = { start, end };
-        setDateRange(newDateRange);
-
-        // 日付範囲のみで検索
-        filterStateRef.current = {
-          currentStatus: null,
-          currentSearchTerm: '',
-          currentDateRange: newDateRange,
-        };
-
-        // 他のフィルター状態をリセット
-        setStatusFilter(null);
-        setSearchTerm('');
-        setPage(1);
-
-        // 日付範囲のみでAPIリクエスト
-        void dispatch(
-          fetchOrdersAction({
-            page: 1,
-            per_page: 15,
-            start_date: start.toISOString(),
-            end_date: end.toISOString(),
-          }),
-        )
-          .unwrap()
-          .then(response => {
-            setLocalOrders(response.data.data);
-            setTotalCount(response.meta.total);
-            setHasMore(response.data.data.length === 15);
-          })
-          .catch(error => {
-            console.error('Date range filter error:', error);
-            const axiosError = error as AxiosError<ApiErrorResponse>;
-            toast({
-              title: 'フィルタリングに失敗しました',
-              description: axiosError.response?.data?.error?.message,
-              status: 'error',
-              duration: 3000,
-              isClosable: true,
-            });
-          })
-          .finally(() => {
-            setIsSearching(false);
-          });
-      } catch (error) {
-        console.error('Date range filter error:', error);
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        toast({
-          title: 'フィルタリングに失敗しました',
-          description: axiosError.response?.data?.error?.message,
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-        setIsSearching(false);
-      }
-    },
-    [dispatch, toast],
-  );
-
-  // 初期データ取得
+  // Initial data fetch
   useEffect(() => {
     const initialFetch = async (): Promise<void> => {
       try {
@@ -795,7 +808,7 @@ export const useOrderManagement = () => {
         };
         const response = await dispatch(fetchOrdersAction(params)).unwrap();
         setLocalOrders(response.data.data);
-        if (totalCount === null) {
+        if (totalCount === 0) {
           setTotalCount(response.meta.total);
         }
         setStatus('succeeded');
@@ -815,9 +828,8 @@ export const useOrderManagement = () => {
     }
   }, [dispatch, statusFilter, dateRange, totalCount, isInitialLoad]);
 
-  // フックの返り値
   return {
-    // 状態
+    // State
     orders: localOrders,
     status: status === 'loading' ? 'loading' : reduxStatus,
     error: error || reduxError,
@@ -835,10 +847,10 @@ export const useOrderManagement = () => {
     onClose,
     hasMore,
     loadMore,
-    totalCount: totalCount || 0,
+    totalCount,
     isSearching,
 
-    // アクション
+    // Handlers
     handleSearchChange,
     handleSearchSubmit,
     handleSubmit,

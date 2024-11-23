@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useLoading } from '@/hooks/useLoading';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import {
   Box,
   Flex,
@@ -56,10 +54,8 @@ import {
   DrawerCloseButton,
   useBreakpointValue,
   useToast,
-  Tooltip,
   DrawerProps,
   ModalProps,
-  Divider,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -76,18 +72,31 @@ import {
   ChevronDownIcon,
   WarningIcon,
   ArrowUpIcon,
+  CalendarIcon,
 } from '@chakra-ui/icons';
 import { format } from 'date-fns';
+import { ja } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
-import { Order, OrderStatus, OrderForm, OrderFormItem } from '@/types/order';
+import { useLoading } from '@/hooks/useLoading';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import { OrderStatus } from '@/types/order';
 import { formatDate } from '@/utils/dateFormatter';
+import { useDisclosure } from '@chakra-ui/react';
+import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
 
 const OrdersPage = () => {
   const router = useRouter();
   const toast = useToast();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const modalSize = useBreakpointValue({ base: 'full', md: '4xl' });
+
+  // DateRangePicker用のディスクロージャー
+  const {
+    isOpen: isDatePickerOpen,
+    onOpen: onDatePickerOpen,
+    onClose: onDatePickerClose,
+  } = useDisclosure();
 
   const {
     orders,
@@ -101,8 +110,8 @@ const OrdersPage = () => {
     newOrder,
     formErrors,
     searchTerm,
+    dateRange,
     isOpen,
-    onOpen,
     onClose,
     handleSearchChange,
     handleSearchSubmit,
@@ -142,21 +151,6 @@ const OrdersPage = () => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    if (isOpen && activeOrder) {
-      console.log('モーダルに表示する注文:', activeOrder);
-
-      if (!activeOrder.order_items) {
-        console.warn(
-          '注文商品情報が見つかりません:',
-          JSON.stringify(activeOrder, null, 2),
-        );
-      } else {
-        console.log('注文商品:', activeOrder.order_items);
-      }
-    }
-  }, [isOpen, activeOrder]);
 
   const statusColorScheme: Record<OrderStatus, string> = {
     PENDING: 'yellow',
@@ -229,6 +223,7 @@ const OrdersPage = () => {
             </Button>
           </InputRightElement>
         </InputGroup>
+
         <Menu>
           <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
             ステータス
@@ -248,6 +243,7 @@ const OrdersPage = () => {
             <MenuItem onClick={clearFilters}>フィルタをクリア</MenuItem>
           </MenuList>
         </Menu>
+
         <Menu>
           <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
             期間
@@ -262,11 +258,28 @@ const OrdersPage = () => {
             <MenuItem onClick={() => handleDateRangeFilter('month')}>
               今月
             </MenuItem>
-            <MenuItem onClick={() => handleDateRangeFilter('custom')}>
-              期間を指定...
+            <MenuItem onClick={onDatePickerOpen}>
+              <HStack>
+                <CalendarIcon />
+                <Text>期間を指定...</Text>
+              </HStack>
             </MenuItem>
+            {(dateRange.start || dateRange.end) && (
+              <MenuItem
+                onClick={() => handleDateRangeFilter('custom', null, null)}>
+                期間指定をクリア
+              </MenuItem>
+            )}
           </MenuList>
         </Menu>
+
+        {/* 選択中の期間表示 */}
+        {dateRange.start && dateRange.end && (
+          <Text color="gray.600" fontSize="sm">
+            期間: {format(dateRange.start, 'yyyy/MM/dd', { locale: ja })} -{' '}
+            {format(dateRange.end, 'yyyy/MM/dd', { locale: ja })}
+          </Text>
+        )}
       </Flex>
     </VStack>
   );
@@ -365,7 +378,7 @@ const OrdersPage = () => {
 
     const items = activeOrder.order_items;
 
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
       return (
         <Alert status="warning">
           <AlertIcon />
@@ -528,7 +541,7 @@ const OrdersPage = () => {
       <VStack align="stretch" spacing={4} py={2}>
         <Box borderWidth="1px" borderRadius="lg" p={4}>
           <VStack align="stretch" spacing={4}>
-            <Text key="customer-info-title" fontWeight="bold" fontSize="lg">
+            <Text fontWeight="bold" fontSize="lg">
               顧客情報
             </Text>
             {customerInfoItems.map(item => (
@@ -551,6 +564,7 @@ const OrdersPage = () => {
       </Alert>
     );
   };
+
   if (status === 'loading' && orders.length === 0) {
     return (
       <Flex justify="center" align="center" height="200px">
@@ -601,6 +615,7 @@ const OrdersPage = () => {
       <Text mb={4} color="gray.600">
         総注文リスト数: {totalCount.toLocaleString()}
       </Text>
+
       <Box overflowX="auto">
         <Table variant="simple">
           <Thead>
@@ -834,6 +849,18 @@ const OrdersPage = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* DateRangePickerModal */}
+      <DateRangePickerModal
+        isOpen={isDatePickerOpen}
+        onClose={onDatePickerClose}
+        onApply={(start, end) => {
+          handleDateRangeFilter('custom', start, end);
+          onDatePickerClose();
+        }}
+        initialStartDate={dateRange.start}
+        initialEndDate={dateRange.end}
+      />
     </Container>
   );
 };

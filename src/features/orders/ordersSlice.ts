@@ -6,7 +6,7 @@ import {
 } from '@reduxjs/toolkit';
 import axios from 'axios';
 import { RootState } from '@/store';
-import { Order } from '@/types/order';
+import { Order, FetchOrdersResponse } from '@/types/order';
 
 // State types
 export interface OrderStats {
@@ -69,10 +69,12 @@ export const fetchOrders = createAsyncThunk(
   'orders/fetchOrders',
   async (params: FetchOrdersParams, { rejectWithValue }) => {
     try {
-      const response = await axios.get(
+      const response = await axios.get<FetchOrdersResponse>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
           params: {
             ...params,
             per_page: params.per_page || 15,

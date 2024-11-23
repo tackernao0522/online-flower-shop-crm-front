@@ -24,6 +24,22 @@ export interface OrderItem {
   deleted_at: string | null;
 }
 
+export interface FetchOrdersResponse {
+  data: {
+    data: Order[];
+  };
+  meta: {
+    current_page: number;
+    total_pages: number;
+    total: number;
+  };
+  stats?: {
+    totalCount: number;
+    previousCount: number;
+    changeRate: number;
+  };
+}
+
 // フォームの注文商品入力用の型
 export interface OrderFormItem {
   productId: string;

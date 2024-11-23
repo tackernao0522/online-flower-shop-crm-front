@@ -62,6 +62,7 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   Stack,
+  Tooltip,
 } from '@chakra-ui/react';
 import {
   AddIcon,
@@ -71,12 +72,10 @@ import {
   SearchIcon,
   ChevronDownIcon,
   WarningIcon,
-  ArrowUpIcon,
   CalendarIcon,
 } from '@chakra-ui/icons';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { useRouter } from 'next/navigation';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
 import { useLoading } from '@/hooks/useLoading';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
@@ -88,7 +87,6 @@ import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
 import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
 
 const OrdersPage = () => {
-  const router = useRouter();
   const toast = useToast();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const modalSize = useBreakpointValue({ base: 'full', md: '4xl' });
@@ -149,10 +147,6 @@ const OrdersPage = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const statusColorScheme: Record<OrderStatus, string> = {
     PENDING: 'yellow',
@@ -480,34 +474,88 @@ const OrdersPage = () => {
           <Text fontWeight="bold" fontSize="lg" mb={4}>
             注文商品
           </Text>
-          <Table variant="simple" size="sm">
-            <Thead>
-              <Tr>
-                <Th>商品名</Th>
-                <Th width="80px" textAlign="center">
-                  数量
-                </Th>
-                <Th width="100px" textAlign="center">
-                  単価
-                </Th>
-                <Th width="100px" textAlign="right">
-                  小計
-                </Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {items.map((item, index) => (
-                <Tr key={`detail-order-item-${item.id || index}`}>
-                  <Td whiteSpace="normal">{item.product.name}</Td>
-                  <Td textAlign="center">{item.quantity}</Td>
-                  <Td textAlign="center">¥{item.unitPrice.toLocaleString()}</Td>
-                  <Td textAlign="right">
-                    ¥{(item.quantity * item.unitPrice).toLocaleString()}
-                  </Td>
+          <Box overflowX="auto">
+            <Table variant="simple" size="sm">
+              <Thead>
+                <Tr>
+                  <Th width="40%" whiteSpace="nowrap">
+                    商品名
+                  </Th>
+                  <Th width="20%" whiteSpace="nowrap" textAlign="center">
+                    数量
+                  </Th>
+                  <Th width="20%" whiteSpace="nowrap" textAlign="right">
+                    単価
+                  </Th>
+                  <Th width="20%" whiteSpace="nowrap" textAlign="right">
+                    小計
+                  </Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
+              </Thead>
+              <Tbody>
+                {items.map((item, index) => (
+                  <Tr key={`detail-order-item-${item.id || index}`}>
+                    <Td
+                      width="40%"
+                      sx={{
+                        maxWidth: '200px',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                      onClick={() => {
+                        if (isMobile) {
+                          toast({
+                            title: '商品名',
+                            description: item.product.name,
+                            status: 'info',
+                            duration: 3000,
+                            isClosable: true,
+                            position: 'top',
+                          });
+                        }
+                      }}>
+                      {isMobile ? (
+                        <Text
+                          sx={{
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            width: '100%',
+                          }}>
+                          {item.product.name}
+                        </Text>
+                      ) : (
+                        <Tooltip
+                          label={item.product.name}
+                          placement="top-start"
+                          hasArrow
+                          bg="gray.900"
+                          color="white">
+                          <Text
+                            whiteSpace="nowrap"
+                            overflow="hidden"
+                            textOverflow="ellipsis">
+                            {item.product.name}
+                          </Text>
+                        </Tooltip>
+                      )}
+                    </Td>
+                    <Td width="20%" textAlign="center" whiteSpace="nowrap">
+                      {item.quantity}
+                    </Td>
+                    <Td width="20%" textAlign="right" whiteSpace="nowrap">
+                      ¥{item.unitPrice.toLocaleString()}
+                    </Td>
+                    <Td width="20%" textAlign="right" whiteSpace="nowrap">
+                      ¥{(item.quantity * item.unitPrice).toLocaleString()}
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         </Box>
       </VStack>
     );
@@ -590,17 +638,15 @@ const OrdersPage = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={5}
-        flexDirection={{ base: 'column', md: 'row' }} // モバイルで縦、PCで横
-        gap={4} // ボタン間の間隔
-      >
+        flexDirection={{ base: 'column', md: 'row' }}
+        gap={4}>
         <Heading as="h1" size="xl">
           注文管理
         </Heading>
         <Stack
-          direction={{ base: 'column', md: 'row' }} // モバイルで縦、PCで横
+          direction={{ base: 'column', md: 'row' }}
           spacing={2}
-          width={{ base: '100%', md: 'auto' }} // モバイルで100%幅
-        >
+          width={{ base: '100%', md: 'auto' }}>
           <Button
             leftIcon={<AddIcon />}
             colorScheme="blue"

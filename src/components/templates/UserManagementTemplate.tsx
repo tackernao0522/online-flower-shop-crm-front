@@ -14,12 +14,11 @@ import {
   Text,
   Spinner,
   Center,
-  IconButton,
   useToast,
   useBreakpointValue,
   Stack,
 } from '@chakra-ui/react';
-import { AddIcon, LockIcon, ArrowUpIcon } from '@chakra-ui/icons';
+import { AddIcon, LockIcon } from '@chakra-ui/icons';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { AppDispatch, RootState } from '@/store';

@@ -40,14 +40,7 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
 } from '@chakra-ui/react';
-import {
-  AddIcon,
-  EditIcon,
-  DeleteIcon,
-  SearchIcon,
-  ArrowUpIcon,
-} from '@chakra-ui/icons';
-import { useRouter } from 'next/navigation';
+import { AddIcon, EditIcon, DeleteIcon, SearchIcon } from '@chakra-ui/icons';
 import { format, parseISO } from 'date-fns';
 import { useCustomerManagement } from '@/hooks/useCustomerManagement';
 import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
@@ -58,20 +51,17 @@ import ScrollToTopButton from '../atoms/ScrollToTopButton';
 const CustomerManagementTemplate: React.FC = () => {
   const {
     isOpen,
-    onOpen,
     onClose,
     activeCustomer,
     modalMode,
     customers,
     status,
     error,
-    loading,
     page,
     hasMore,
     isDeleteAlertOpen,
     customerToDelete,
     searchTerm,
-    showScrollTop,
     newCustomer,
     formErrors,
     isMobile,
@@ -85,12 +75,9 @@ const CustomerManagementTemplate: React.FC = () => {
     handleKeyDown,
     handleInputChange,
     handleSubmit,
-    scrollToTop,
     ref,
     setSearchTerm,
   } = useCustomerManagement();
-
-  const router = useRouter();
 
   const renderCustomerInfo = () => (
     <VStack align="stretch" spacing={4}>

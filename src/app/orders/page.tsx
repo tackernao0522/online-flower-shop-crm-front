@@ -622,12 +622,12 @@ const OrdersPage = () => {
         <Table variant="simple">
           <Thead>
             <Tr>
-              <Th>注文番号</Th>
-              <Th>顧客名</Th>
-              <Th>注文日</Th>
-              <Th>合計金額</Th>
-              <Th>ステータス</Th>
-              <Th>アクション</Th>
+              <Th whiteSpace="nowrap">注文番号</Th>
+              <Th whiteSpace="nowrap">顧客名</Th>
+              <Th whiteSpace="nowrap">注文日</Th>
+              <Th whiteSpace="nowrap">合計金額</Th>
+              <Th whiteSpace="nowrap">ステータス</Th>
+              <Th whiteSpace="nowrap">アクション</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -635,16 +635,18 @@ const OrdersPage = () => {
               <Tr
                 key={`${order.id}-${order.orderNumber}-${index}`}
                 ref={index === orders.length - 1 ? lastElementRef : undefined}>
-                <Td>{order.orderNumber}</Td>
-                <Td>{order.customer.name}</Td>
-                <Td>{formatDate(order.orderDate)}</Td>
-                <Td>¥{order.totalAmount.toLocaleString()}</Td>
-                <Td>
+                <Td whiteSpace="nowrap">{order.orderNumber}</Td>
+                <Td whiteSpace="nowrap">{order.customer.name}</Td>
+                <Td whiteSpace="nowrap">{formatDate(order.orderDate)}</Td>
+                <Td whiteSpace="nowrap">
+                  ¥{order.totalAmount.toLocaleString()}
+                </Td>
+                <Td whiteSpace="nowrap">
                   <Badge colorScheme={statusColorScheme[order.status]}>
                     {statusDisplayText[order.status]}
                   </Badge>
                 </Td>
-                <Td>
+                <Td whiteSpace="nowrap">
                   {isMobile ? (
                     <HStack spacing={2}>
                       <IconButton

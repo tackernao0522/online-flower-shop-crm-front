@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Flex,
@@ -18,53 +18,49 @@ import {
   useToast,
   useBreakpointValue,
   Stack,
-} from "@chakra-ui/react";
-import {
-  AddIcon,
-  ArrowBackIcon,
-  LockIcon,
-  ArrowUpIcon,
-} from "@chakra-ui/icons";
-import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import { AppDispatch, RootState } from "@/store";
+} from '@chakra-ui/react';
+import { AddIcon, LockIcon, ArrowUpIcon } from '@chakra-ui/icons';
+import { useDispatch, useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import { AppDispatch, RootState } from '@/store';
 import {
   fetchUsers,
   addUser,
   updateUser,
   deleteUser,
   resetUsersState,
-} from "@/features/users/usersSlice";
-import { fetchRoles, deleteRole } from "@/features/roles/rolesSlice";
-import { updateUserRole, setUser } from "@/features/auth/authSlice";
-import { User, UserState } from "@/types/user";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import DeleteAlertDialog from "../molecules/DeleteAlertDialog";
-import { useWebSocket } from "@/hooks/useWebSocket";
-import UserSearchForm from "../molecules/UserSearchForm";
-import UserManagementTable from "../organisms/UserManagementTable";
-import UserRegistrationModal from "../organisms/UserRegistrationModal";
-import UserEditModal from "../organisms/UserEditModal";
-import RoleManagement from "../organisms/RoleManagement";
-import { Role } from "@/types/role";
+} from '@/features/users/usersSlice';
+import { fetchRoles, deleteRole } from '@/features/roles/rolesSlice';
+import { updateUserRole, setUser } from '@/features/auth/authSlice';
+import { User } from '@/types/user';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import DeleteAlertDialog from '../molecules/DeleteAlertDialog';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import UserSearchForm from '../molecules/UserSearchForm';
+import UserManagementTable from '../organisms/UserManagementTable';
+import UserRegistrationModal from '../organisms/UserRegistrationModal';
+import UserEditModal from '../organisms/UserEditModal';
+import RoleManagement from '../organisms/RoleManagement';
+import { Role } from '@/types/role';
+import BackToDashboardButton from '../atoms/BackToDashboardButton';
 
 const UserManagementTemplate: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [activeItem, setActiveItem] = useState<User | Role | null>(null);
-  const [modalMode, setModalMode] = useState<"detail" | "add" | "edit">(
-    "detail"
+  const [modalMode, setModalMode] = useState<'detail' | 'add' | 'edit'>(
+    'detail',
   );
-  const [currentView, setCurrentView] = useState<"users" | "roles">("users");
+  const [currentView, setCurrentView] = useState<'users' | 'roles'>('users');
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [, forceUpdate] = useState({});
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [searchRole, setSearchRole] = useState("");
-  const [lastSearch, setLastSearch] = useState({ type: "", value: "" });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchRole, setSearchRole] = useState('');
+  const [lastSearch, setLastSearch] = useState({ type: '', value: '' });
 
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
@@ -77,20 +73,20 @@ const UserManagementTemplate: React.FC = () => {
     username: string;
     email: string;
     password: string;
-    role: "ADMIN" | "MANAGER" | "STAFF";
+    role: 'ADMIN' | 'MANAGER' | 'STAFF';
     isActive: boolean;
   }>({
-    username: "",
-    email: "",
-    password: "",
-    role: "STAFF",
+    username: '',
+    email: '',
+    password: '',
+    role: 'STAFF',
     isActive: true,
   });
 
   const [canDeleteUser, setCanDeleteUser] = useState(false);
 
-  const isSearchTermEmpty = searchTerm.trim() === "";
-  const isSearchRoleEmpty = searchRole === "";
+  const isSearchTermEmpty = searchTerm.trim() === '';
+  const isSearchRoleEmpty = searchRole === '';
 
   const usersState = useSelector((state: RootState) => state.users);
   const { users, status, error, currentPage, totalPages, totalCount } =
@@ -101,17 +97,17 @@ const UserManagementTemplate: React.FC = () => {
   const { totalUserCount } = useWebSocket();
 
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as
-    | "column"
-    | "row";
-  const modalSize = useBreakpointValue({ base: "full", md: "xl" });
+  const flexDirection = useBreakpointValue({ base: 'column', md: 'row' }) as
+    | 'column'
+    | 'row';
+  const modalSize = useBreakpointValue({ base: 'full', md: 'xl' });
 
   useEffect(() => {
-    console.log("Current users state:", usersState);
+    console.log('Current users state:', usersState);
   }, [usersState]);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       dispatch(setUser(parsedUser));
@@ -119,22 +115,22 @@ const UserManagementTemplate: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    console.log("Current user changed:", currentUser);
-    const newCanDeleteUser = currentUser?.role === "ADMIN";
-    console.log("Setting canDeleteUser to:", newCanDeleteUser);
+    console.log('Current user changed:', currentUser);
+    const newCanDeleteUser = currentUser?.role === 'ADMIN';
+    console.log('Setting canDeleteUser to:', newCanDeleteUser);
     setCanDeleteUser(newCanDeleteUser);
   }, [currentUser]);
 
   const loadMore = useCallback(() => {
-    if (currentPage < totalPages && status !== "loading") {
-      console.log("Loading more users...");
+    if (currentPage < totalPages && status !== 'loading') {
+      console.log('Loading more users...');
       dispatch(
         fetchUsers({
           page: currentPage + 1,
-          search: lastSearch.type === "term" ? lastSearch.value : "",
-          role: lastSearch.type === "role" ? lastSearch.value : "",
+          search: lastSearch.type === 'term' ? lastSearch.value : '',
+          role: lastSearch.type === 'role' ? lastSearch.value : '',
           isNewSearch: false,
-        })
+        }),
       );
     }
   }, [dispatch, currentPage, totalPages, lastSearch, status]);
@@ -142,18 +138,18 @@ const UserManagementTemplate: React.FC = () => {
   const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
 
   useEffect(() => {
-    if (currentUser?.role === "STAFF") {
-      router.push("/dashboard");
+    if (currentUser?.role === 'STAFF') {
+      router.push('/dashboard');
     }
   }, [currentUser, router]);
 
   useEffect(() => {
     dispatch(resetUsersState());
-    dispatch(fetchUsers({ page: 1, search: "", role: "", isNewSearch: true }));
+    dispatch(fetchUsers({ page: 1, search: '', role: '', isNewSearch: true }));
     dispatch(fetchRoles());
-    setSearchTerm("");
-    setSearchRole("");
-    setLastSearch({ type: "", value: "" });
+    setSearchTerm('');
+    setSearchRole('');
+    setLastSearch({ type: '', value: '' });
 
     return () => {
       dispatch(resetUsersState());
@@ -176,8 +172,8 @@ const UserManagementTemplate: React.FC = () => {
     const handleScroll = () => {
       setShowScrollTop(window.pageYOffset > 300);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -185,56 +181,56 @@ const UserManagementTemplate: React.FC = () => {
   }, [currentPage, totalPages]);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const permissions = [
-    { id: 1, name: "顧客管理", actions: ["表示", "作成", "編集", "削除"] },
-    { id: 2, name: "注文管理", actions: ["表示", "作成", "編集", "削除"] },
-    { id: 3, name: "配送管理", actions: ["表示", "更新"] },
+    { id: 1, name: '顧客管理', actions: ['表示', '作成', '編集', '削除'] },
+    { id: 2, name: '注文管理', actions: ['表示', '作成', '編集', '削除'] },
+    { id: 3, name: '配送管理', actions: ['表示', '更新'] },
     {
       id: 4,
-      name: "キャンペーン管理",
-      actions: ["表示", "作成", "編集", "削除"],
+      name: 'キャンペーン管理',
+      actions: ['表示', '作成', '編集', '削除'],
     },
-    { id: 5, name: "レポート閲覧", actions: ["表示"] },
+    { id: 5, name: 'レポート閲覧', actions: ['表示'] },
   ];
 
-  const handleSearch = (type: "term" | "role") => {
-    const searchValue = type === "term" ? searchTerm : searchRole;
+  const handleSearch = (type: 'term' | 'role') => {
+    const searchValue = type === 'term' ? searchTerm : searchRole;
     dispatch(
       fetchUsers({
         page: 1,
-        search: type === "term" ? searchValue : "",
-        role: type === "role" ? searchValue : "",
+        search: type === 'term' ? searchValue : '',
+        role: type === 'role' ? searchValue : '',
         isNewSearch: true,
-      })
+      }),
     );
     setLastSearch({ type, value: searchValue });
     setHasMore(true);
-    type === "term" ? setSearchTerm("") : setSearchRole("");
+    type === 'term' ? setSearchTerm('') : setSearchRole('');
   };
 
   const handleResetSearch = () => {
     dispatch(resetUsersState());
-    dispatch(fetchUsers({ page: 1, search: "", role: "", isNewSearch: true }));
-    setSearchTerm("");
-    setSearchRole("");
-    setLastSearch({ type: "", value: "" });
+    dispatch(fetchUsers({ page: 1, search: '', role: '', isNewSearch: true }));
+    setSearchTerm('');
+    setSearchRole('');
+    setLastSearch({ type: '', value: '' });
   };
 
   const handleKeyPress = (
     event: React.KeyboardEvent,
-    type: "term" | "role"
+    type: 'term' | 'role',
   ) => {
-    if (event.key === "Enter") {
+    if (event.key === 'Enter') {
       handleSearch(type);
     }
   };
 
   const handleUserClick = (user: User) => {
     setActiveItem(user);
-    setModalMode("detail");
+    setModalMode('detail');
     onOpen();
   };
 
@@ -244,23 +240,23 @@ const UserManagementTemplate: React.FC = () => {
 
   const handleEditUser = (user: User) => {
     setActiveItem(user);
-    setModalMode("edit");
+    setModalMode('edit');
     onOpen();
   };
 
   const handleRolesAndPermissions = () => {
-    setCurrentView("roles");
+    setCurrentView('roles');
   };
 
   const handleAddRole = () => {
     setActiveItem(null);
-    setModalMode("add");
+    setModalMode('add');
     onOpen();
   };
 
   const handleEditRole = (role: Role) => {
     setActiveItem(role);
-    setModalMode("edit");
+    setModalMode('edit');
     onOpen();
   };
 
@@ -269,7 +265,7 @@ const UserManagementTemplate: React.FC = () => {
   };
 
   const handleDeleteUser = useCallback((user: User) => {
-    console.log("handleDeleteUser called", user);
+    console.log('handleDeleteUser called', user);
     setUserToDelete(user);
     setIsDeleteAlertOpen(true);
   }, []);
@@ -279,18 +275,18 @@ const UserManagementTemplate: React.FC = () => {
       try {
         await dispatch(deleteUser(userToDelete.id)).unwrap();
         toast({
-          title: "ユーザーを削除しました",
+          title: 'ユーザーを削除しました',
           description: `${userToDelete.username} の情報が削除されました。`,
-          status: "warning",
+          status: 'warning',
           duration: 5000,
           isClosable: true,
         });
       } catch (error: any) {
-        console.error("Error deleting user:", error);
+        console.error('Error deleting user:', error);
         toast({
-          title: "ユーザーの削除に失敗しました",
+          title: 'ユーザーの削除に失敗しました',
           description: `エラー: ${error.message || JSON.stringify(error)}`,
-          status: "error",
+          status: 'error',
           duration: 5000,
           isClosable: true,
         });
@@ -306,46 +302,46 @@ const UserManagementTemplate: React.FC = () => {
   }, []);
 
   const handleNewUserChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setNewUserFormData((prev) => ({
+    setNewUserFormData(prev => ({
       ...prev,
       [name]:
-        name === "isActive"
-          ? value === "true"
-          : name === "role"
-          ? (value as "ADMIN" | "MANAGER" | "STAFF")
-          : value,
+        name === 'isActive'
+          ? value === 'true'
+          : name === 'role'
+            ? (value as 'ADMIN' | 'MANAGER' | 'STAFF')
+            : value,
     }));
   };
 
   const handleNewUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      console.log("Submitting new user data:", newUserFormData);
+      console.log('Submitting new user data:', newUserFormData);
       const result = await dispatch(addUser(newUserFormData)).unwrap();
-      console.log("New user added:", result);
+      console.log('New user added:', result);
       toast({
-        title: "ユーザーが登録されました",
-        status: "success",
+        title: 'ユーザーが登録されました',
+        status: 'success',
         duration: 3000,
         isClosable: true,
       });
       setIsUserRegistrationModalOpen(false);
       setNewUserFormData({
-        username: "",
-        email: "",
-        password: "",
-        role: "STAFF",
+        username: '',
+        email: '',
+        password: '',
+        role: 'STAFF',
         isActive: true,
       });
     } catch (error: any) {
-      console.error("Error in handleNewUserSubmit:", error);
+      console.error('Error in handleNewUserSubmit:', error);
       toast({
-        title: "ユーザー登録に失敗しました",
+        title: 'ユーザー登録に失敗しました',
         description: error.message || JSON.stringify(error),
-        status: "error",
+        status: 'error',
         duration: 5000,
         isClosable: true,
       });
@@ -353,16 +349,16 @@ const UserManagementTemplate: React.FC = () => {
   };
 
   const handleEditUserChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setActiveItem((prev) => {
+    setActiveItem(prev => {
       if (prev) {
-        if ("isActive" in prev) {
+        if ('isActive' in prev) {
           return {
             ...prev,
-            [name]: name === "isActive" ? value === "true" : value,
-            isActive: name === "isActive" ? value === "true" : prev.isActive,
+            [name]: name === 'isActive' ? value === 'true' : value,
+            isActive: name === 'isActive' ? value === 'true' : prev.isActive,
           } as User;
         } else {
           return {
@@ -377,30 +373,30 @@ const UserManagementTemplate: React.FC = () => {
 
   const handleSaveUser = async (updatedUser: User) => {
     try {
-      console.log("Saving user:", updatedUser);
+      console.log('Saving user:', updatedUser);
       const result = await dispatch(
-        updateUser({ id: updatedUser.id, userData: updatedUser })
+        updateUser({ id: updatedUser.id, userData: updatedUser }),
       ).unwrap();
-      console.log("Updated user:", result);
+      console.log('Updated user:', result);
 
       if (currentUser && currentUser.id === updatedUser.id) {
-        console.log("Updating current user role to:", result.role);
-        dispatch(updateUserRole(result.role as "ADMIN" | "MANAGER" | "STAFF"));
+        console.log('Updating current user role to:', result.role);
+        dispatch(updateUserRole(result.role as 'ADMIN' | 'MANAGER' | 'STAFF'));
       }
 
       toast({
-        title: "ユーザー情報を更新しました",
-        status: "success",
+        title: 'ユーザー情報を更新しました',
+        status: 'success',
         duration: 3000,
         isClosable: true,
       });
       onClose();
     } catch (error: any) {
-      console.error("Error saving user:", error);
+      console.error('Error saving user:', error);
       toast({
-        title: "ユーザー情報の更新に失敗しました",
+        title: 'ユーザー情報の更新に失敗しました',
         description: error.message,
-        status: "error",
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
@@ -422,12 +418,12 @@ const UserManagementTemplate: React.FC = () => {
         <Heading size="md" mt={4}>
           権限設定
         </Heading>
-        {permissions.map((permission) => (
+        {permissions.map(permission => (
           <Box key={permission.id} borderWidth={1} p={3} borderRadius="md">
             <FormControl>
               <FormLabel>{permission.name}</FormLabel>
               <HStack>
-                {permission.actions.map((action) => (
+                {permission.actions.map(action => (
                   <Checkbox key={action}>{action}</Checkbox>
                 ))}
               </HStack>
@@ -455,13 +451,13 @@ const UserManagementTemplate: React.FC = () => {
 
       {lastSearch.value && (
         <Text>
-          最後の検索: {lastSearch.type === "term" ? "名前/メール" : "役割"} -{" "}
-          {lastSearch.value === "" ? "全ての役割" : lastSearch.value}
+          最後の検索: {lastSearch.type === 'term' ? '名前/メール' : '役割'} -{' '}
+          {lastSearch.value === '' ? '全ての役割' : lastSearch.value}
         </Text>
       )}
 
       <Text>
-        総ユーザー数: {totalUsers !== null ? totalUsers : "読み込み中..."}
+        総ユーザー数: {totalUsers !== null ? totalUsers : '読み込み中...'}
       </Text>
 
       {users && users.length > 0 ? (
@@ -489,7 +485,7 @@ const UserManagementTemplate: React.FC = () => {
           検索条件に一致するユーザーが見つかりませんでした。
         </Text>
       )}
-      {status === "loading" && (
+      {status === 'loading' && (
         <Center mt={4}>
           <Spinner size="xl" />
         </Center>
@@ -518,7 +514,7 @@ const UserManagementTemplate: React.FC = () => {
     <RoleManagement
       roles={roles}
       isMobile={isMobile ?? false}
-      modalSize={modalSize ?? "md"}
+      modalSize={modalSize ?? 'md'}
       isOpen={isOpen}
       onClose={onClose}
       modalMode={modalMode}
@@ -529,7 +525,7 @@ const UserManagementTemplate: React.FC = () => {
     />
   );
 
-  if (status === "loading" && users.length === 0) {
+  if (status === 'loading' && users.length === 0) {
     return (
       <Center height="100vh">
         <Spinner size="xl" />
@@ -537,11 +533,11 @@ const UserManagementTemplate: React.FC = () => {
     );
   }
 
-  if (status === "failed") {
+  if (status === 'failed') {
     return (
       <Box textAlign="center" p={5}>
         <Text fontSize="xl" color="red.500">
-          エラーが発生しました: {error ? JSON.stringify(error) : "不明なエラー"}
+          エラーが発生しました: {error ? JSON.stringify(error) : '不明なエラー'}
         </Text>
       </Box>
     );
@@ -555,46 +551,47 @@ const UserManagementTemplate: React.FC = () => {
         mb={5}
         flexDirection={flexDirection}>
         <Heading as="h1" size="xl" mb={isMobile ? 4 : 0}>
-          {currentView === "users" ? "ユーザー管理" : "ロールと権限管理"}
+          {currentView === 'users' ? 'ユーザー管理' : 'ロールと権限管理'}
         </Heading>
         <Stack
-          direction={isMobile ? "column" : "row"}
+          direction={isMobile ? 'column' : 'row'}
           spacing={2}
-          width={isMobile ? "100%" : "auto"}>
-          {currentView === "users" && (
+          width={isMobile ? '100%' : 'auto'}>
+          {currentView === 'users' && (
             <>
               <Button
                 leftIcon={<AddIcon />}
                 colorScheme="blue"
                 onClick={handleAddUser}
-                width={isMobile ? "100%" : "auto"}>
+                width={isMobile ? '100%' : 'auto'}>
                 新規ユーザー登録
               </Button>
               <Button
                 leftIcon={<LockIcon />}
                 colorScheme="green"
                 onClick={handleRolesAndPermissions}
-                width={isMobile ? "100%" : "auto"}>
+                width={isMobile ? '100%' : 'auto'}>
                 ロールと権限管理
               </Button>
             </>
           )}
-          <Button
-            leftIcon={<ArrowBackIcon />}
+          <BackToDashboardButton
             onClick={() =>
-              currentView === "roles"
-                ? setCurrentView("users")
-                : router.push("/dashboard")
+              currentView === 'roles'
+                ? setCurrentView('users')
+                : router.push('/dashboard')
             }
-            width={isMobile ? "100%" : "auto"}>
-            {currentView === "roles"
-              ? "ユーザー管理に戻る"
-              : "ダッシュボードへ戻る"}
-          </Button>
+            customText={
+              currentView === 'roles'
+                ? 'ユーザー管理に戻る'
+                : 'ダッシュボードへ戻る'
+            }
+            w={isMobile ? '100%' : 'auto'}
+          />
         </Stack>
       </Flex>
 
-      {currentView === "users"
+      {currentView === 'users'
         ? renderUserManagement()
         : renderRoleManagement()}
 
@@ -614,7 +611,7 @@ const UserManagementTemplate: React.FC = () => {
         isOpen={isDeleteAlertOpen}
         onClose={cancelDelete}
         onConfirm={confirmDelete}
-        itemName={userToDelete?.username || ""}
+        itemName={userToDelete?.username || ''}
         itemType="ユーザー"
       />
     </Box>

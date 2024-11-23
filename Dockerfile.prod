@@ -14,7 +14,7 @@ RUN if [ -z "$(grep BASIC_AUTH_USER .env.production)" ] || [ -z "$(grep BASIC_AU
 COPY package*.json ./
 
 # npmを最新バージョンにアップデート
-RUN npm install -g npm@10.9.0
+RUN npm install -g npm@10.9.1
 
 # 依存関係のインストール
 RUN npm ci

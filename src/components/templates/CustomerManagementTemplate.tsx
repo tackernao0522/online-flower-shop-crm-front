@@ -53,6 +53,7 @@ import { useCustomerManagement } from '@/hooks/useCustomerManagement';
 import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
 import { Customer } from '@/types/customer';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
+import ScrollToTopButton from '../atoms/ScrollToTopButton';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -318,17 +319,7 @@ const CustomerManagementTemplate: React.FC = () => {
         </>
       )}
 
-      {showScrollTop && (
-        <IconButton
-          icon={<ArrowUpIcon />}
-          position="fixed"
-          bottom="50px"
-          right="50px"
-          colorScheme="blue"
-          onClick={scrollToTop}
-          aria-label="トップに戻る"
-        />
-      )}
+      <ScrollToTopButton />
 
       <Modal isOpen={isOpen} onClose={onClose} size={isMobile ? 'full' : 'xl'}>
         <ModalOverlay />

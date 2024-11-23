@@ -1,29 +1,50 @@
-import React from "react";
-import { render, fireEvent } from "@testing-library/react";
-import "@testing-library/jest-dom";
-import ScrollToTopButton from "../../atoms/ScrollToTopButton";
+import React from 'react';
+import { render, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import ScrollToTopButton from '../ScrollToTopButton';
 
-// window.scrollToをモック
 const scrollToMock = jest.fn();
-Object.defineProperty(window, "scrollTo", { value: scrollToMock });
+Object.defineProperty(window, 'scrollTo', { value: scrollToMock });
 
-describe("ScrollToTopButton", () => {
-  it("ボタンが正常にレンダリングされる", () => {
-    const { getByRole } = render(<ScrollToTopButton />);
-    const button = getByRole("button", { name: "トップに戻る" });
+Object.defineProperty(window, 'pageYOffset', {
+  value: 400,
+  writable: true,
+});
 
-    // ボタンが正しくレンダリングされていることを確認
+describe('ScrollToTopButton', () => {
+  beforeEach(() => {
+    scrollToMock.mockClear();
+  });
+
+  it('スクロール位置が閾値を超えている場合、ボタンが表示される', () => {
+    const { getByRole } = render(<ScrollToTopButton threshold={300} />);
+    const button = getByRole('button', { name: 'トップに戻る' });
     expect(button).toBeInTheDocument();
   });
 
-  it("クリック時にトップにスクロールする", () => {
-    const { getByRole } = render(<ScrollToTopButton />);
-    const button = getByRole("button", { name: "トップに戻る" });
+  it('クリック時にトップにスクロールする', () => {
+    const { getByRole } = render(<ScrollToTopButton threshold={300} />);
+    const button = getByRole('button', { name: 'トップに戻る' });
 
-    // ボタンをクリック
     fireEvent.click(button);
+    expect(scrollToMock).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  });
 
-    // scrollToが呼び出されているか確認
-    expect(scrollToMock).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
+  it('ボタンのスタイルが正しく適用されている', () => {
+    const { getByRole } = render(
+      <ScrollToTopButton
+        threshold={300}
+        bottom="60px"
+        right="60px"
+        colorScheme="teal"
+      />,
+    );
+
+    const button = getByRole('button', { name: 'トップに戻る' });
+    expect(button).toHaveStyle({
+      position: 'fixed',
+      bottom: '60px',
+      right: '60px',
+    });
   });
 });

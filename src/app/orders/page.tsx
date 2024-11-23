@@ -85,6 +85,7 @@ import { formatDate } from '@/utils/dateFormatter';
 import { useDisclosure } from '@chakra-ui/react';
 import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
 import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
+import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
 
 const OrdersPage = () => {
   const router = useRouter();
@@ -722,17 +723,7 @@ const OrdersPage = () => {
         </Flex>
       )}
 
-      {showScrollTop && (
-        <IconButton
-          icon={<ArrowUpIcon />}
-          position="fixed"
-          bottom="50px"
-          right="50px"
-          colorScheme="blue"
-          onClick={scrollToTop}
-          aria-label="トップに戻る"
-        />
-      )}
+      {showScrollTop && <ScrollToTopButton />}
 
       <ModalComponent {...ModalProps}>
         {isMobile && <DrawerOverlay />}

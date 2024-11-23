@@ -43,6 +43,7 @@ import UserEditModal from '../organisms/UserEditModal';
 import RoleManagement from '../organisms/RoleManagement';
 import { Role } from '@/types/role';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
+import ScrollToTopButton from '../atoms/ScrollToTopButton';
 
 const UserManagementTemplate: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -595,17 +596,7 @@ const UserManagementTemplate: React.FC = () => {
         ? renderUserManagement()
         : renderRoleManagement()}
 
-      {showScrollTop && (
-        <IconButton
-          icon={<ArrowUpIcon />}
-          position="fixed"
-          bottom="50px"
-          right="50px"
-          colorScheme="blue"
-          onClick={scrollToTop}
-          aria-label="トップに戻る"
-        />
-      )}
+      {showScrollTop && <ScrollToTopButton />}
 
       <DeleteAlertDialog
         isOpen={isDeleteAlertOpen}

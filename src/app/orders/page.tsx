@@ -61,12 +61,12 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  Stack,
 } from '@chakra-ui/react';
 import {
   AddIcon,
   EditIcon,
   DeleteIcon,
-  ArrowBackIcon,
   ViewIcon,
   SearchIcon,
   ChevronDownIcon,
@@ -84,6 +84,7 @@ import { OrderStatus } from '@/types/order';
 import { formatDate } from '@/utils/dateFormatter';
 import { useDisclosure } from '@chakra-ui/react';
 import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
+import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
 
 const OrdersPage = () => {
   const router = useRouter();
@@ -588,12 +589,17 @@ const OrdersPage = () => {
         justifyContent="space-between"
         alignItems="center"
         mb={5}
-        flexDirection={{ base: 'column', md: 'row' }}
-        gap={4}>
+        flexDirection={{ base: 'column', md: 'row' }} // モバイルで縦、PCで横
+        gap={4} // ボタン間の間隔
+      >
         <Heading as="h1" size="xl">
           注文管理
         </Heading>
-        <HStack spacing={2}>
+        <Stack
+          direction={{ base: 'column', md: 'row' }} // モバイルで縦、PCで横
+          spacing={2}
+          width={{ base: '100%', md: 'auto' }} // モバイルで100%幅
+        >
           <Button
             leftIcon={<AddIcon />}
             colorScheme="blue"
@@ -601,13 +607,8 @@ const OrdersPage = () => {
             w={{ base: 'full', md: 'auto' }}>
             新規注文作成
           </Button>
-          <Button
-            leftIcon={<ArrowBackIcon />}
-            onClick={() => router.push('/dashboard')}
-            w={{ base: 'full', md: 'auto' }}>
-            ダッシュボードへ戻る
-          </Button>
-        </HStack>
+          <BackToDashboardButton />
+        </Stack>
       </Flex>
 
       {renderSearchAndFilter()}

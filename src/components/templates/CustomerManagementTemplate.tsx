@@ -39,14 +39,11 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
-  FormErrorMessage,
-  useBreakpointValue,
 } from '@chakra-ui/react';
 import {
   AddIcon,
   EditIcon,
   DeleteIcon,
-  ArrowBackIcon,
   SearchIcon,
   ArrowUpIcon,
 } from '@chakra-ui/icons';
@@ -55,6 +52,7 @@ import { format, parseISO } from 'date-fns';
 import { useCustomerManagement } from '@/hooks/useCustomerManagement';
 import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
 import { Customer } from '@/types/customer';
+import BackToDashboardButton from '../atoms/BackToDashboardButton';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -272,14 +270,7 @@ const CustomerManagementTemplate: React.FC = () => {
             w={['100%', 'auto']}>
             新規顧客登録
           </Button>
-          <Button
-            leftIcon={<ArrowBackIcon />}
-            onClick={() => router.push('/dashboard')}
-            mb={[2, 0]}
-            w={['100%', 'auto']}
-            fontSize={['sm', 'md']}>
-            ダッシュボードへ戻る
-          </Button>
+          <BackToDashboardButton />
         </HStack>
       </Flex>
 
@@ -294,7 +285,7 @@ const CustomerManagementTemplate: React.FC = () => {
         />
         <Button
           leftIcon={<SearchIcon />}
-          onClick={() => handleSearch(searchTerm)} // searchTermを引数に
+          onClick={() => handleSearch(searchTerm)}
           width={['100%', 'auto']}>
           検索
         </Button>

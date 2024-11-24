@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Flex,
@@ -8,7 +8,6 @@ import {
   Tr,
   Th,
   Td,
-  Button,
   IconButton,
   Stack,
   Modal,
@@ -18,9 +17,10 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-} from "@chakra-ui/react";
-import { AddIcon, EditIcon, DeleteIcon } from "@chakra-ui/icons";
-import { Role } from "@/types/role";
+} from '@chakra-ui/react';
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { Role } from '@/types/role';
+import CommonButton from '../atoms/CommonButton';
 
 interface RoleManagementProps {
   roles: Role[];
@@ -28,7 +28,7 @@ interface RoleManagementProps {
   modalSize: string;
   isOpen: boolean;
   onClose: () => void;
-  modalMode: "add" | "edit" | "detail";
+  modalMode: 'add' | 'edit' | 'detail';
   handleAddRole: () => void;
   handleEditRole: (role: Role) => void;
   handleDeleteRole: (roleId: number) => void;
@@ -50,26 +50,26 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
   return (
     <Box>
       <Flex justifyContent="flex-end" mb={5}>
-        <Button
-          leftIcon={<AddIcon />}
-          colorScheme="blue"
+        <CommonButton
+          variant="primary"
+          withIcon={<AddIcon />}
           onClick={handleAddRole}
-          width={isMobile ? "100%" : "auto"}>
+          isFullWidthMobile={isMobile}>
           新規ロール追加
-        </Button>
+        </CommonButton>
       </Flex>
 
       <Box overflowX="auto">
-        <Table variant="simple" size={isMobile ? "sm" : "md"}>
+        <Table variant="simple" size={isMobile ? 'sm' : 'md'}>
           <Thead>
             <Tr>
-              <Th minWidth={isMobile ? "100px" : "auto"}>ロール名</Th>
-              <Th minWidth={isMobile ? "150px" : "auto"}>説明</Th>
-              <Th minWidth={isMobile ? "100px" : "auto"}>アクション</Th>
+              <Th minWidth={isMobile ? '100px' : 'auto'}>ロール名</Th>
+              <Th minWidth={isMobile ? '150px' : 'auto'}>説明</Th>
+              <Th minWidth={isMobile ? '100px' : 'auto'}>アクション</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {roles.map((role) => (
+            {roles.map(role => (
               <Tr key={role.id}>
                 <Td>{role.name}</Td>
                 <Td>{role.description}</Td>
@@ -93,19 +93,20 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
                     </Flex>
                   ) : (
                     <Stack direction="row" spacing={2}>
-                      <Button
+                      <CommonButton
                         size="sm"
-                        leftIcon={<EditIcon />}
+                        variant="secondary"
+                        withIcon={<EditIcon />}
                         onClick={() => handleEditRole(role)}>
                         編集
-                      </Button>
-                      <Button
+                      </CommonButton>
+                      <CommonButton
                         size="sm"
-                        leftIcon={<DeleteIcon />}
-                        colorScheme="red"
+                        variant="danger"
+                        withIcon={<DeleteIcon />}
                         onClick={() => handleDeleteRole(role.id)}>
                         削除
-                      </Button>
+                      </CommonButton>
                     </Stack>
                   )}
                 </Td>
@@ -119,17 +120,17 @@ const RoleManagement: React.FC<RoleManagementProps> = ({
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>
-            {modalMode === "add" ? "新規ロール追加" : "ロール編集"}
+            {modalMode === 'add' ? '新規ロール追加' : 'ロール編集'}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>{renderRoleForm()}</ModalBody>
           <ModalFooter>
-            <Button colorScheme="blue" mr={3}>
+            <CommonButton variant="primary" mr={3}>
               保存
-            </Button>
-            <Button variant="ghost" onClick={onClose}>
+            </CommonButton>
+            <CommonButton variant="ghost" onClick={onClose}>
               キャンセル
-            </Button>
+            </CommonButton>
           </ModalFooter>
         </ModalContent>
       </Modal>

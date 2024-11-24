@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Table,
@@ -7,14 +7,14 @@ import {
   Tr,
   Th,
   Td,
-  Button,
   Stack,
   Text,
   Badge,
   IconButton,
-} from "@chakra-ui/react";
-import { ViewIcon, EditIcon, DeleteIcon } from "@chakra-ui/icons";
-import { User } from "@/types/user";
+} from '@chakra-ui/react';
+import { ViewIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { User } from '@/types/user';
+import CommonButton from '../atoms/CommonButton';
 
 interface UserManagementTableProps {
   users: User[];
@@ -39,15 +39,15 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
 }) => {
   return (
     <Box overflowX="auto">
-      <Table variant="simple" size={isMobile ? "sm" : "md"}>
+      <Table variant="simple" size={isMobile ? 'sm' : 'md'}>
         <Thead>
           <Tr>
-            <Th minWidth={isMobile ? "60px" : "auto"}>ID</Th>
-            <Th minWidth={isMobile ? "100px" : "auto"}>ユーザー名</Th>
-            <Th minWidth={isMobile ? "150px" : "auto"}>メールアドレス</Th>
-            <Th minWidth={isMobile ? "80px" : "auto"}>役割</Th>
-            <Th minWidth={isMobile ? "80px" : "auto"}>ステータス</Th>
-            <Th minWidth={isMobile ? "120px" : "auto"}>アクション</Th>
+            <Th minWidth={isMobile ? '60px' : 'auto'}>ID</Th>
+            <Th minWidth={isMobile ? '100px' : 'auto'}>ユーザー名</Th>
+            <Th minWidth={isMobile ? '150px' : 'auto'}>メールアドレス</Th>
+            <Th minWidth={isMobile ? '80px' : 'auto'}>役割</Th>
+            <Th minWidth={isMobile ? '80px' : 'auto'}>ステータス</Th>
+            <Th minWidth={isMobile ? '120px' : 'auto'}>アクション</Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -57,7 +57,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
               ref={index === users.length - 1 ? lastElementRef : null}>
               <Td>{user.id}</Td>
               <Td>
-                {isMobile && lastSearch.type === "term" ? (
+                {isMobile && lastSearch.type === 'term' ? (
                   <Text whiteSpace="normal" wordBreak="break-word">
                     {user.username}
                   </Text>
@@ -70,11 +70,11 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
               <Td>
                 <Badge
                   colorScheme={
-                    user.isActive ?? user.is_active ? "green" : "red"
+                    (user.isActive ?? user.is_active) ? 'green' : 'red'
                   }>
-                  {user.isActive ?? user.is_active
-                    ? "アクティブ"
-                    : "非アクティブ"}
+                  {(user.isActive ?? user.is_active)
+                    ? 'アクティブ'
+                    : '非アクティブ'}
                 </Badge>
               </Td>
               <Td>
@@ -104,26 +104,28 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({
                   </Stack>
                 ) : (
                   <Stack direction="row" spacing={2}>
-                    <Button
+                    <CommonButton
                       size="sm"
-                      leftIcon={<ViewIcon />}
+                      variant="secondary"
+                      withIcon={<ViewIcon />}
                       onClick={() => handleUserClick(user)}>
                       詳細
-                    </Button>
-                    <Button
+                    </CommonButton>
+                    <CommonButton
                       size="sm"
-                      leftIcon={<EditIcon />}
+                      variant="secondary"
+                      withIcon={<EditIcon />}
                       onClick={() => handleEditUser(user)}>
                       編集
-                    </Button>
+                    </CommonButton>
                     {canDeleteUser && (
-                      <Button
+                      <CommonButton
                         size="sm"
-                        leftIcon={<DeleteIcon />}
-                        colorScheme="red"
+                        variant="danger"
+                        withIcon={<DeleteIcon />}
                         onClick={() => handleDeleteUser(user)}>
                         削除
-                      </Button>
+                      </CommonButton>
                     )}
                   </Stack>
                 )}

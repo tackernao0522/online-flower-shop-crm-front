@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   VStack,
   Flex,
@@ -10,45 +10,49 @@ import {
   useBreakpointValue,
   Spinner,
   Box,
-} from "@chakra-ui/react";
-import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import FormField from "../molecules/FormField";
-import Button from "../atoms/Button";
-import Checkbox from "../atoms/Checkbox";
-import { login } from "../../features/auth/authSlice";
-import axios from "axios";
-import { RootState } from "../../store";
+} from '@chakra-ui/react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useRouter } from 'next/navigation';
+import FormField from '../molecules/FormField';
+import CommonButton from '../atoms/CommonButton';
+import Checkbox from '../atoms/Checkbox';
+import { login } from '../../features/auth/authSlice';
+import axios from 'axios';
+import { RootState } from '../../store';
 
 const LoginForm: React.FC = () => {
   const dispatch = useDispatch();
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
+    (state: RootState) => state.auth.isAuthenticated,
   );
 
-  const buttonSize = useBreakpointValue({ base: "md", md: "lg" });
-  const linkColor = useColorModeValue("blue.500", "blue.300");
+  const buttonSize = useBreakpointValue({ base: 'md', md: 'lg' }) as
+    | 'sm'
+    | 'md'
+    | 'lg'
+    | undefined;
+  const linkColor = useColorModeValue('blue.500', 'blue.300');
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("/dashboard");
+      router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     if (isAuthenticated) {
       setError(
-        "既にログインしています。新しくログインするには一度ログアウトしてください。"
+        '既にログインしています。新しくログインするには一度ログアウトしてください。',
       );
       setLoading(false);
       return;
@@ -63,50 +67,49 @@ const LoginForm: React.FC = () => {
         },
         {
           headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
           withCredentials: true,
-        }
+        },
       );
 
       if (response.data && response.data.accessToken) {
         const { accessToken, user } = response.data;
 
-        if (typeof window !== "undefined") {
+        if (typeof window !== 'undefined') {
           try {
-            localStorage.setItem("token", accessToken);
-            localStorage.setItem("user", JSON.stringify(user));
-            localStorage.setItem("userId", user.id);
+            localStorage.setItem('token', accessToken);
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('userId', user.id);
           } catch (e) {
-            console.error("Error saving to localStorage:", e);
-            setError("ローカルストレージへの保存中にエラーが発生しました。");
+            console.error('Error saving to localStorage:', e);
+            setError('ローカルストレージへの保存中にエラーが発生しました。');
             setLoading(false);
             return;
           }
         }
 
         dispatch(login({ token: accessToken, user }));
-        router.push("/dashboard");
+        router.push('/dashboard');
       } else {
-        throw new Error("Unexpected response from server.");
+        throw new Error('Unexpected response from server.');
       }
     } catch (err) {
-      console.error("Login Error:", err);
+      console.error('Login Error:', err);
 
-      // error の型を明示的にキャスト
       if (axios.isAxiosError(err) && err.response) {
         setError(
-          err.response.data.error?.message || "ログインに失敗しました。"
+          err.response.data.error?.message || 'ログインに失敗しました。',
         );
       } else if (
         err instanceof Error &&
-        err.message === "Unexpected response from server."
+        err.message === 'Unexpected response from server.'
       ) {
-        setError("Unexpected response from server.");
+        setError('Unexpected response from server.');
       } else {
         setError(
-          "ログインに失敗しました。メールアドレスとパスワードを確認してください。"
+          'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
         );
       }
     } finally {
@@ -116,7 +119,7 @@ const LoginForm: React.FC = () => {
 
   if (isAuthenticated) {
     return (
-      <Text color="red.500" fontSize={{ base: "sm", md: "md" }}>
+      <Text color="red.500" fontSize={{ base: 'sm', md: 'md' }}>
         既にログインしています。新しくログインするには一度ログアウトしてください。
       </Text>
     );
@@ -131,7 +134,7 @@ const LoginForm: React.FC = () => {
           type="email"
           placeholder="your-email@example.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           error={error}
         />
         <FormField
@@ -140,37 +143,37 @@ const LoginForm: React.FC = () => {
           type="password"
           placeholder="********"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
         />
-        <Checkbox size={{ base: "sm", md: "md" }}>
+        <Checkbox size={{ base: 'sm', md: 'md' }}>
           ログイン状態を保持する
         </Checkbox>
-        <Button
+        <CommonButton
           type="submit"
-          colorScheme="blue"
+          variant="primary"
           size={buttonSize}
-          width="100%"
+          isFullWidthMobile
           disabled={loading}
-          height={{ base: "40px", md: "48px" }}
-          fontSize={{ base: "md", md: "lg" }}>
+          height={{ base: '40px', md: '48px' }}
+          fontSize={{ base: 'md', md: 'lg' }}>
           {loading ? (
             <Spinner size="sm" role="status">
               <span className="sr-only">Loading...</span>
             </Spinner>
           ) : (
-            "ログイン"
+            'ログイン'
           )}
-        </Button>
+        </CommonButton>
         {error && (
-          <Text color="red.500" fontSize={{ base: "sm", md: "md" }}>
+          <Text color="red.500" fontSize={{ base: 'sm', md: 'md' }}>
             {error}
           </Text>
         )}
         <Flex
           justify="space-between"
-          fontSize={{ base: "sm", md: "md" }}
-          flexDirection={{ base: "column", sm: "row" }}
-          align={{ base: "stretch", sm: "center" }}
+          fontSize={{ base: 'sm', md: 'md' }}
+          flexDirection={{ base: 'column', sm: 'row' }}
+          align={{ base: 'stretch', sm: 'center' }}
           gap={2}>
           <Link color={linkColor}>パスワードを忘れた場合</Link>
           <Link color={linkColor}>新規登録</Link>
@@ -180,6 +183,6 @@ const LoginForm: React.FC = () => {
   );
 };
 
-LoginForm.displayName = "LoginForm";
+LoginForm.displayName = 'LoginForm';
 
 export default LoginForm;

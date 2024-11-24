@@ -9,7 +9,6 @@ import {
   Tr,
   Th,
   Td,
-  Button,
   Input,
   VStack,
   HStack,
@@ -47,6 +46,7 @@ import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
 import { Customer } from '@/types/customer';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
 import ScrollToTopButton from '../atoms/ScrollToTopButton';
+import CommonButton from '../atoms/CommonButton';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -181,11 +181,11 @@ const CustomerManagementTemplate: React.FC = () => {
               <Tr key={`${customer.id}-${index}`}>
                 <Td>{customer.id}</Td>
                 <Td>
-                  <Button
-                    variant="link"
+                  <CommonButton
+                    variant="ghost"
                     onClick={() => handleCustomerClick(customer)}>
                     {customer.name}
-                  </Button>
+                  </CommonButton>
                 </Td>
                 <Td>{customer.email}</Td>
                 <Td whiteSpace="nowrap">{customer.phoneNumber}</Td>
@@ -213,19 +213,20 @@ const CustomerManagementTemplate: React.FC = () => {
                     </HStack>
                   ) : (
                     <HStack spacing={2}>
-                      <Button
+                      <CommonButton
+                        variant="secondary"
                         size="sm"
-                        leftIcon={<EditIcon />}
+                        withIcon={<EditIcon />}
                         onClick={() => handleEditCustomer(customer)}>
                         編集
-                      </Button>
-                      <Button
+                      </CommonButton>
+                      <CommonButton
+                        variant="danger"
                         size="sm"
-                        leftIcon={<DeleteIcon />}
-                        colorScheme="red"
+                        withIcon={<DeleteIcon />}
                         onClick={() => handleDeleteCustomer(customer)}>
                         削除
-                      </Button>
+                      </CommonButton>
                     </HStack>
                   )}
                 </Td>
@@ -250,14 +251,13 @@ const CustomerManagementTemplate: React.FC = () => {
           spacing={2}
           flexWrap="wrap"
           justifyContent={['center', 'flex-end']}>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="blue"
+          <CommonButton
+            variant="primary"
+            withIcon={<AddIcon />}
             onClick={handleAddCustomer}
-            mb={[2, 0]}
-            w={['100%', 'auto']}>
+            isFullWidthMobile>
             新規顧客登録
-          </Button>
+          </CommonButton>
           <BackToDashboardButton />
         </HStack>
       </Flex>
@@ -271,12 +271,13 @@ const CustomerManagementTemplate: React.FC = () => {
           onChange={e => setSearchTerm(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        <Button
-          leftIcon={<SearchIcon />}
+        <CommonButton
+          variant="secondary"
+          withIcon={<SearchIcon />}
           onClick={() => handleSearch(searchTerm)}
-          width={['100%', 'auto']}>
+          isFullWidthMobile>
           検索
-        </Button>
+        </CommonButton>
       </Flex>
 
       {status === 'loading' && page === 1 ? (
@@ -344,9 +345,13 @@ const CustomerManagementTemplate: React.FC = () => {
                 <TabPanel>
                   <Box overflowX="auto">{renderPurchaseHistory()}</Box>
                   {modalMode !== 'detail' && (
-                    <Button leftIcon={<AddIcon />} mt={4} size="sm">
+                    <CommonButton
+                      variant="secondary"
+                      size="sm"
+                      withIcon={<AddIcon />}
+                      mt={4}>
                       購入履歴を追加
-                    </Button>
+                    </CommonButton>
                   )}
                 </TabPanel>
                 <TabPanel>
@@ -364,13 +369,13 @@ const CustomerManagementTemplate: React.FC = () => {
 
           <ModalFooter>
             {modalMode !== 'detail' && (
-              <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
+              <CommonButton variant="primary" mr={3} onClick={handleSubmit}>
                 {modalMode === 'add' ? '登録' : '更新'}
-              </Button>
+              </CommonButton>
             )}
-            <Button variant="ghost" onClick={onClose}>
+            <CommonButton variant="ghost" onClick={onClose}>
               閉じる
-            </Button>
+            </CommonButton>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -391,10 +396,12 @@ const CustomerManagementTemplate: React.FC = () => {
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button onClick={cancelDelete}>キャンセル</Button>
-              <Button colorScheme="red" onClick={confirmDelete} ml={3}>
+              <CommonButton variant="ghost" onClick={cancelDelete}>
+                キャンセル
+              </CommonButton>
+              <CommonButton variant="danger" onClick={confirmDelete} ml={3}>
                 削除
-              </Button>
+              </CommonButton>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogOverlay>

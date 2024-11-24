@@ -3,7 +3,6 @@ import {
   Box,
   Flex,
   Heading,
-  Button,
   VStack,
   HStack,
   useDisclosure,
@@ -43,6 +42,7 @@ import RoleManagement from '../organisms/RoleManagement';
 import { Role } from '@/types/role';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
 import ScrollToTopButton from '../atoms/ScrollToTopButton';
+import CommonButton from '../atoms/CommonButton';
 
 const UserManagementTemplate: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -559,20 +559,20 @@ const UserManagementTemplate: React.FC = () => {
           width={isMobile ? '100%' : 'auto'}>
           {currentView === 'users' && (
             <>
-              <Button
-                leftIcon={<AddIcon />}
-                colorScheme="blue"
+              <CommonButton
+                variant="primary"
+                withIcon={<AddIcon />}
                 onClick={handleAddUser}
-                width={isMobile ? '100%' : 'auto'}>
+                isFullWidthMobile>
                 新規ユーザー登録
-              </Button>
-              <Button
-                leftIcon={<LockIcon />}
-                colorScheme="green"
+              </CommonButton>
+              <CommonButton
+                variant="success"
+                withIcon={<LockIcon />}
                 onClick={handleRolesAndPermissions}
-                width={isMobile ? '100%' : 'auto'}>
+                isFullWidthMobile>
                 ロールと権限管理
-              </Button>
+              </CommonButton>
             </>
           )}
           <BackToDashboardButton

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -7,7 +7,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
   VStack,
   FormControl,
   FormLabel,
@@ -23,16 +22,17 @@ import {
   DrawerContent,
   DrawerCloseButton,
   useBreakpointValue,
-} from "@chakra-ui/react";
-import { User } from "@/types/user";
+} from '@chakra-ui/react';
+import { User } from '@/types/user';
+import CommonButton from '../atoms/CommonButton';
 
 interface UserEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  modalMode: "detail" | "add" | "edit";
+  modalMode: 'detail' | 'add' | 'edit';
   activeItem: User | null;
   handleEditUserChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   handleSaveUser: (user: User) => void;
 }
@@ -46,7 +46,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
   handleSaveUser,
 }) => {
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const modalSize = useBreakpointValue({ base: "full", md: "xl" });
+  const modalSize = useBreakpointValue({ base: 'full', md: 'xl' });
 
   const renderUserForm = () => (
     <VStack spacing={4} align="stretch">
@@ -54,7 +54,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <FormLabel>ユーザー名</FormLabel>
         <Input
           name="username"
-          defaultValue={activeItem?.username || ""}
+          defaultValue={activeItem?.username || ''}
           onChange={handleEditUserChange}
         />
       </FormControl>
@@ -63,7 +63,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <Input
           name="email"
           type="email"
-          defaultValue={activeItem?.email || ""}
+          defaultValue={activeItem?.email || ''}
           onChange={handleEditUserChange}
         />
       </FormControl>
@@ -71,7 +71,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <FormLabel>役割</FormLabel>
         <Select
           name="role"
-          defaultValue={activeItem?.role || ""}
+          defaultValue={activeItem?.role || ''}
           onChange={handleEditUserChange}>
           <option value="ADMIN">管理者</option>
           <option value="MANAGER">マネージャー</option>
@@ -82,7 +82,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <FormLabel>ステータス</FormLabel>
         <Select
           name="isActive"
-          value={activeItem?.isActive?.toString() || "false"}
+          value={activeItem?.isActive?.toString() || 'false'}
           onChange={handleEditUserChange}>
           <option value="true">アクティブ</option>
           <option value="false">非アクティブ</option>
@@ -103,16 +103,34 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <strong>役割:</strong> {activeItem?.role}
       </Box>
       <Box>
-        <strong>ステータス:</strong>{" "}
-        <Badge colorScheme={activeItem?.isActive ? "green" : "red"}>
-          {activeItem?.isActive ? "アクティブ" : "非アクティブ"}
+        <strong>ステータス:</strong>{' '}
+        <Badge colorScheme={activeItem?.isActive ? 'green' : 'red'}>
+          {activeItem?.isActive ? 'アクティブ' : '非アクティブ'}
         </Badge>
       </Box>
     </VStack>
   );
 
   const modalContent = (
-    <>{modalMode === "detail" ? renderUserDetails() : renderUserForm()}</>
+    <>{modalMode === 'detail' ? renderUserDetails() : renderUserForm()}</>
+  );
+
+  const renderFooterButtons = () => (
+    <>
+      {(modalMode === 'add' || modalMode === 'edit') && (
+        <CommonButton
+          variant="primary"
+          mr={3}
+          onClick={() => handleSaveUser(activeItem as User)}>
+          更新
+        </CommonButton>
+      )}
+      <CommonButton
+        variant={modalMode === 'detail' ? 'ghost' : 'secondary'}
+        onClick={onClose}>
+        {modalMode === 'detail' ? '閉じる' : 'キャンセル'}
+      </CommonButton>
+    </>
   );
 
   if (isMobile) {
@@ -122,26 +140,14 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
         <DrawerContent>
           <DrawerCloseButton />
           <DrawerHeader>
-            {modalMode === "detail"
-              ? "ユーザー詳細"
-              : modalMode === "add"
-              ? "新規ユーザー登録"
-              : "ユーザー編集"}
+            {modalMode === 'detail'
+              ? 'ユーザー詳細'
+              : modalMode === 'add'
+                ? '新規ユーザー登録'
+                : 'ユーザー編集'}
           </DrawerHeader>
           <DrawerBody>{modalContent}</DrawerBody>
-          <DrawerFooter>
-            {(modalMode === "add" || modalMode === "edit") && (
-              <Button
-                colorScheme="blue"
-                mr={3}
-                onClick={() => handleSaveUser(activeItem as User)}>
-                更新
-              </Button>
-            )}
-            <Button variant="outline" onClick={onClose}>
-              {modalMode === "detail" ? "閉じる" : "キャンセル"}
-            </Button>
-          </DrawerFooter>
+          <DrawerFooter>{renderFooterButtons()}</DrawerFooter>
         </DrawerContent>
       </Drawer>
     );
@@ -152,27 +158,15 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
-          {modalMode === "detail"
-            ? "ユーザー詳細"
-            : modalMode === "add"
-            ? "新規ユーザー登録"
-            : "ユーザー編集"}
+          {modalMode === 'detail'
+            ? 'ユーザー詳細'
+            : modalMode === 'add'
+              ? '新規ユーザー登録'
+              : 'ユーザー編集'}
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>{modalContent}</ModalBody>
-        <ModalFooter>
-          {(modalMode === "add" || modalMode === "edit") && (
-            <Button
-              colorScheme="blue"
-              mr={3}
-              onClick={() => handleSaveUser(activeItem as User)}>
-              更新
-            </Button>
-          )}
-          <Button variant="ghost" onClick={onClose}>
-            閉じる
-          </Button>
-        </ModalFooter>
+        <ModalFooter>{renderFooterButtons()}</ModalFooter>
       </ModalContent>
     </Modal>
   );

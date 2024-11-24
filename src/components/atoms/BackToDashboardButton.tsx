@@ -1,7 +1,7 @@
 import React from 'react';
-import { Button } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
+import CommonButton from './CommonButton';
 
 interface BackToDashboardButtonProps {
   mb?: any;
@@ -9,6 +9,8 @@ interface BackToDashboardButtonProps {
   fontSize?: any;
   onClick?: () => void;
   customText?: string;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
 }
 
 const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
@@ -17,6 +19,8 @@ const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
   fontSize = ['sm', 'md'],
   onClick,
   customText,
+  variant = 'secondary',
+  size = 'md',
 }) => {
   const router = useRouter();
 
@@ -29,15 +33,19 @@ const BackToDashboardButton: React.FC<BackToDashboardButtonProps> = ({
   };
 
   return (
-    <Button
-      leftIcon={<ArrowBackIcon />}
+    <CommonButton
+      variant={variant}
+      size={size}
+      withIcon={<ArrowBackIcon />}
       onClick={handleClick}
       mb={mb}
-      w={w}
+      isFullWidthMobile={w.base === 'full'}
       fontSize={fontSize}>
       {customText || 'ダッシュボードへ戻る'}
-    </Button>
+    </CommonButton>
   );
 };
+
+BackToDashboardButton.displayName = 'BackToDashboardButton';
 
 export default BackToDashboardButton;

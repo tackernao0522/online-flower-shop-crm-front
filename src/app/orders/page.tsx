@@ -11,7 +11,6 @@ import {
   Tr,
   Th,
   Td,
-  Button,
   Input,
   VStack,
   HStack,
@@ -85,6 +84,7 @@ import { useDisclosure } from '@chakra-ui/react';
 import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
 import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
 import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
+import CommonButton from '@/components/atoms/CommonButton';
 
 const OrdersPage = () => {
   const toast = useToast();
@@ -207,21 +207,25 @@ const OrdersPage = () => {
             onKeyDown={handleSearchKeyDown}
           />
           <InputRightElement width="4.5rem">
-            <Button
-              h="1.75rem"
+            <CommonButton
               size="sm"
+              variant="secondary"
               onClick={handleSearchSubmit}
               isLoading={
                 isSearching || (status === 'loading' && isLoadingVisible)
               }
               loadingText="検索中">
               検索
-            </Button>
+            </CommonButton>
           </InputRightElement>
         </InputGroup>
 
         <Menu>
-          <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+          <MenuButton
+            as={CommonButton}
+            variant="secondary"
+            withIcon={<ChevronDownIcon />}
+            iconPosition="right">
             ステータス
           </MenuButton>
           <MenuList>
@@ -241,7 +245,11 @@ const OrdersPage = () => {
         </Menu>
 
         <Menu>
-          <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+          <MenuButton
+            as={CommonButton}
+            variant="secondary"
+            withIcon={<ChevronDownIcon />}
+            iconPosition="right">
             期間
           </MenuButton>
           <MenuList>
@@ -333,13 +341,12 @@ const OrdersPage = () => {
               />
             </HStack>
           ))}
-          <Button
-            leftIcon={<AddIcon />}
-            onClick={handleAddOrderItem}
-            colorScheme="teal"
-            variant="outline">
+          <CommonButton
+            variant="outline"
+            withIcon={<AddIcon />}
+            onClick={handleAddOrderItem}>
             商品を追加
-          </Button>
+          </CommonButton>
         </VStack>
         <FormErrorMessage>{formErrors.orderItems}</FormErrorMessage>
       </FormControl>
@@ -647,13 +654,13 @@ const OrdersPage = () => {
           direction={{ base: 'column', md: 'row' }}
           spacing={2}
           width={{ base: '100%', md: 'auto' }}>
-          <Button
-            leftIcon={<AddIcon />}
-            colorScheme="blue"
+          <CommonButton
+            variant="primary"
+            withIcon={<AddIcon />}
             onClick={handleAddOrder}
-            w={{ base: 'full', md: 'auto' }}>
+            isFullWidthMobile>
             新規注文作成
-          </Button>
+          </CommonButton>
           <BackToDashboardButton />
         </Stack>
       </Flex>
@@ -722,13 +729,15 @@ const OrdersPage = () => {
                     </HStack>
                   ) : (
                     <HStack spacing={2}>
-                      <Button
+                      <CommonButton
+                        variant="secondary"
                         size="sm"
-                        leftIcon={<ViewIcon />}
+                        withIcon={<ViewIcon />}
                         onClick={() => handleOrderClick(order)}>
                         詳細
-                      </Button>
-                      <Button
+                      </CommonButton>
+                      <CommonButton
+                        variant="secondary"
                         size="sm"
                         leftIcon={<EditIcon />}
                         isDisabled={
@@ -737,15 +746,15 @@ const OrdersPage = () => {
                         }
                         onClick={() => handleEditOrder(order)}>
                         編集
-                      </Button>
-                      <Button
+                      </CommonButton>
+                      <CommonButton
+                        variant="danger"
                         size="sm"
-                        leftIcon={<DeleteIcon />}
-                        colorScheme="red"
+                        withIcon={<DeleteIcon />}
                         isDisabled={order.status === 'DELIVERED'}
                         onClick={() => handleDeleteOrder(order)}>
                         削除
-                      </Button>
+                      </CommonButton>
                     </HStack>
                   )}
                 </Td>
@@ -806,13 +815,13 @@ const OrdersPage = () => {
             </DrawerBody>
             <DrawerFooter>
               {modalMode !== 'detail' && (
-                <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
+                <CommonButton variant="primary" mr={3} onClick={handleSubmit}>
                   {modalMode === 'add' ? '作成' : '更新'}
-                </Button>
+                </CommonButton>
               )}
-              <Button variant="ghost" onClick={onClose}>
+              <CommonButton variant="ghost" onClick={onClose}>
                 閉じる
-              </Button>
+              </CommonButton>
             </DrawerFooter>
           </DrawerContent>
         ) : (
@@ -845,13 +854,13 @@ const OrdersPage = () => {
             </ModalBody>
             <ModalFooter>
               {modalMode !== 'detail' && (
-                <Button colorScheme="blue" mr={3} onClick={handleSubmit}>
+                <CommonButton variant="primary" mr={3} onClick={handleSubmit}>
                   {modalMode === 'add' ? '作成' : '更新'}
-                </Button>
+                </CommonButton>
               )}
-              <Button variant="ghost" onClick={onClose}>
+              <CommonButton variant="ghost" onClick={onClose}>
                 閉じる
-              </Button>
+              </CommonButton>
             </ModalFooter>
           </ModalContent>
         )}
@@ -880,12 +889,12 @@ const OrdersPage = () => {
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button colorScheme="red" mr={3} onClick={confirmDelete}>
+            <CommonButton variant="danger" mr={3} onClick={confirmDelete}>
               削除
-            </Button>
-            <Button variant="ghost" onClick={cancelDelete}>
+            </CommonButton>
+            <CommonButton variant="ghost" onClick={cancelDelete}>
               キャンセル
-            </Button>
+            </CommonButton>
           </ModalFooter>
         </ModalContent>
       </Modal>

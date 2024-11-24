@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -7,14 +7,14 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
   VStack,
   FormControl,
   FormLabel,
   Input,
   Select,
   useBreakpointValue,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
+import CommonButton from '../atoms/CommonButton';
 
 interface UserRegistrationModalProps {
   isOpen: boolean;
@@ -23,11 +23,11 @@ interface UserRegistrationModalProps {
     username: string;
     email: string;
     password: string;
-    role: "ADMIN" | "MANAGER" | "STAFF";
+    role: 'ADMIN' | 'MANAGER' | 'STAFF';
     isActive: boolean;
   };
   handleNewUserChange: (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => void;
   handleNewUserSubmit: (e: React.FormEvent) => void;
 }
@@ -39,7 +39,7 @@ const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
   handleNewUserChange,
   handleNewUserSubmit,
 }) => {
-  const modalSize = useBreakpointValue({ base: "full", md: "xl" });
+  const modalSize = useBreakpointValue({ base: 'full', md: 'xl' });
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   return (
@@ -102,19 +102,19 @@ const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
           </form>
         </ModalBody>
         <ModalFooter>
-          <Button
+          <CommonButton
             variant="ghost"
             mr={3}
             onClick={onClose}
-            width={isMobile ? "100%" : "auto"}>
+            isFullWidthMobile={isMobile}>
             キャンセル
-          </Button>
-          <Button
-            colorScheme="blue"
+          </CommonButton>
+          <CommonButton
+            variant="primary"
             onClick={handleNewUserSubmit}
-            width={isMobile ? "100%" : "auto"}>
+            isFullWidthMobile={isMobile}>
             登録
-          </Button>
+          </CommonButton>
         </ModalFooter>
       </ModalContent>
     </Modal>

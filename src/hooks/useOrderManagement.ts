@@ -19,28 +19,9 @@ import type {
 } from '@/types/order';
 import type { ApiErrorResponse } from '@/types/api';
 import { startOfDay, endOfDay } from 'date-fns';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 type OrderItemField = keyof OrderFormItem;
-
-interface UseOrderManagementState {
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
-  error: string | null;
-  activeOrder: Order | null;
-  modalMode: 'detail' | 'add' | 'edit';
-  isDeleteAlertOpen: boolean;
-  orderToDelete: Order | null;
-  formErrors: FormErrors;
-  isInitialLoad: boolean;
-  isSearching: boolean;
-  searchTerm: string;
-  statusFilter: OrderStatus | null;
-  dateRange: DateRange;
-  page: number;
-  hasMore: boolean;
-  localOrders: Order[];
-  totalCount: number;
-  newOrder: OrderForm;
-}
 
 interface FilterState {
   currentStatus: OrderStatus | null;
@@ -60,50 +41,46 @@ interface OrderParams {
 export const useOrderManagement = () => {
   const dispatch = useDispatch<AppDispatch>();
   const toast = useToast();
-  const reduxStatus = useSelector(selectOrdersStatus);
-  const reduxError = useSelector(selectOrdersError);
 
   // Local State
-  const [status, setStatus] =
-    useState<UseOrderManagementState['status']>('idle');
-  const [error, setError] = useState<UseOrderManagementState['error']>(null);
-  const [activeOrder, setActiveOrder] =
-    useState<UseOrderManagementState['activeOrder']>(null);
-  const [modalMode, setModalMode] =
-    useState<UseOrderManagementState['modalMode']>('detail');
-  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState<boolean>(false);
+  const [status, setStatus] = useState<
+    'idle' | 'loading' | 'succeeded' | 'failed'
+  >('idle');
+  const [error, setError] = useState<string | null>(null);
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [modalMode, setModalMode] = useState<'detail' | 'add' | 'edit'>(
+    'detail',
+  );
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [isInitialLoad, setIsInitialLoad] = useState<boolean>(true);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>({
     start: null,
     end: null,
   });
-  const [page, setPage] = useState<number>(1);
-  const [hasMore, setHasMore] = useState<boolean>(true);
-  const [localOrders, setLocalOrders] = useState<Order[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [newOrder, setNewOrder] = useState<OrderForm>({
     customerId: '',
     orderItems: [],
     status: 'PENDING',
   });
 
-  // Refs for filter state
   const filterStateRef = useRef<FilterState>({
     currentStatus: null,
     currentSearchTerm: '',
     currentDateRange: { start: null, end: null },
   });
 
-  // Modal disclosure
   const { isOpen, onOpen, onClose: originalOnClose } = useDisclosure();
 
-  // Close modal handler
-  const onClose = useCallback((): void => {
+  const onClose = useCallback(() => {
     originalOnClose();
     setTimeout(() => {
       setActiveOrder(null);
@@ -117,9 +94,8 @@ export const useOrderManagement = () => {
     }, 300);
   }, [originalOnClose]);
 
-  // Fetch orders
   const fetchOrders = useCallback(
-    async (pageNum: number = page): Promise<void> => {
+    async (pageNum: number = page) => {
       try {
         setStatus('loading');
         const params: OrderParams = {
@@ -135,13 +111,12 @@ export const useOrderManagement = () => {
             undefined,
         };
 
-        // Redux ThunkのResponse型を明示的に指定
         const response = await dispatch(fetchOrdersAction(params)).unwrap();
 
         if (pageNum === 1) {
-          setLocalOrders(response.data.data);
+          setOrders(response.data.data);
         } else {
-          setLocalOrders(prev => [...prev, ...response.data.data]);
+          setOrders(prev => [...prev, ...response.data.data]);
         }
 
         setHasMore(response.data.data.length === 15);
@@ -161,14 +136,12 @@ export const useOrderManagement = () => {
     [dispatch, page],
   );
 
-  // Load more for infinite scroll
-  const loadMore = useCallback((): void => {
+  const loadMore = useCallback(() => {
     if (!isSearching && status !== 'loading' && hasMore) {
-      void fetchOrders(page + 1);
+      setPage(prevPage => prevPage + 1);
     }
-  }, [fetchOrders, page, isSearching, status, hasMore]);
+  }, [isSearching, status, hasMore]);
 
-  // Handle input changes
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
       const { name, value } = e.target;
@@ -191,19 +164,9 @@ export const useOrderManagement = () => {
     [],
   );
 
-  // Form submission handler
-  const handleSubmit = useCallback(async (): Promise<void> => {
-    const errors: FormErrors = {};
-    if (!newOrder.customerId) errors.customerId = '顧客IDは必須です';
-    if (newOrder.orderItems.length === 0) {
-      errors.orderItems = '商品を1つ以上追加してください';
-    }
+  const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
 
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
+  const handleSubmit = useCallback(async () => {
     try {
       if (modalMode === 'add') {
         await axios.post(
@@ -276,7 +239,45 @@ export const useOrderManagement = () => {
     }
   }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
 
-  // Clear filters
+  useEffect(() => {
+    if (page > 1) {
+      void fetchOrders(page);
+    }
+  }, [page, fetchOrders]);
+
+  useEffect(() => {
+    const initialFetch = async (): Promise<void> => {
+      try {
+        setStatus('loading');
+        const params: OrderParams = {
+          page: 1,
+          per_page: 15,
+          status: statusFilter || undefined,
+          start_date: dateRange.start?.toISOString() || undefined,
+          end_date: dateRange.end?.toISOString() || undefined,
+        };
+        const response = await dispatch(fetchOrdersAction(params)).unwrap();
+        setOrders(response.data.data);
+        if (totalCount === 0) {
+          setTotalCount(response.meta.total);
+        }
+        setStatus('succeeded');
+        setIsInitialLoad(false);
+      } catch (error) {
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        setStatus('failed');
+        setError(
+          axiosError.response?.data?.error?.message ||
+            '注文データの取得に失敗しました',
+        );
+      }
+    };
+
+    if (isInitialLoad) {
+      void initialFetch();
+    }
+  }, [dispatch, statusFilter, dateRange, totalCount, isInitialLoad]);
+
   const clearFilters = useCallback(async (): Promise<void> => {
     try {
       setIsSearching(true);
@@ -302,7 +303,7 @@ export const useOrderManagement = () => {
         ).unwrap(),
       ]);
 
-      setLocalOrders(response.data.data);
+      setOrders(response.data.data);
       setTotalCount(response.meta.total);
       setHasMore(response.data.data.length === 15);
     } catch (error) {
@@ -320,7 +321,6 @@ export const useOrderManagement = () => {
     }
   }, [dispatch, toast]);
 
-  // Search handlers
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>): void => {
       const value = e.target.value;
@@ -369,7 +369,7 @@ export const useOrderManagement = () => {
         throw new Error('Invalid response data structure');
       }
 
-      setLocalOrders(response.data.data);
+      setOrders(response.data.data);
       setTotalCount(response.meta.total);
       setHasMore(response.data.data.length === 15);
 
@@ -393,7 +393,7 @@ export const useOrderManagement = () => {
         position: 'top',
       });
 
-      setLocalOrders([]);
+      setOrders([]);
       setTotalCount(0);
       setHasMore(false);
     } finally {
@@ -401,7 +401,6 @@ export const useOrderManagement = () => {
     }
   }, [isSearching, searchTerm, dispatch, toast]);
 
-  // Search keydown handler
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
       if (e.key === 'Enter') {
@@ -412,7 +411,6 @@ export const useOrderManagement = () => {
     [handleSearchSubmit],
   );
 
-  // Date range filter handler
   const handleDateRangeFilter = useCallback(
     async (
       range: 'today' | 'week' | 'month' | 'custom',
@@ -432,13 +430,10 @@ export const useOrderManagement = () => {
             end = endOfDay(today);
             break;
           case 'week':
-            // 今日の曜日を取得（0: 日曜日, 1: 月曜日, ..., 6: 土曜日）
             const dayOfWeek = today.getDay();
-            // 今日から日曜日までさかのぼる
             start = startOfDay(
               new Date(today.getTime() - dayOfWeek * 24 * 60 * 60 * 1000),
             );
-            // 今週の土曜日まで
             end = endOfDay(new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000));
             break;
           case 'month':
@@ -451,26 +446,18 @@ export const useOrderManagement = () => {
             break;
           case 'custom':
             if (!customStart || !customEnd) {
-              // 日付範囲をクリア
               setDateRange({ start: null, end: null });
-
-              // フィルター状態をリセット
               filterStateRef.current = {
                 currentStatus: null,
                 currentSearchTerm: '',
                 currentDateRange: { start: null, end: null },
               };
-
-              // 他の検索条件もクリア
               setSearchTerm('');
               setStatusFilter(null);
               setPage(1);
 
               try {
-                // Redux state をクリア
                 await dispatch(setFilterParams({}));
-
-                // 検索条件をリセットして全データを再取得
                 const response = await dispatch(
                   fetchOrdersAction({
                     page: 1,
@@ -478,7 +465,7 @@ export const useOrderManagement = () => {
                   }),
                 ).unwrap();
 
-                setLocalOrders(response.data.data);
+                setOrders(response.data.data);
                 setTotalCount(response.meta.total);
                 setHasMore(response.data.data.length === 15);
 
@@ -510,22 +497,18 @@ export const useOrderManagement = () => {
             return;
         }
 
-        // 他の検索条件をリセット
         setSearchTerm('');
         setStatusFilter(null);
 
-        // 日付範囲の設定
         const newDateRange = { start, end };
         setDateRange(newDateRange);
 
-        // フィルター状態を更新（他の条件はリセット）
         filterStateRef.current = {
-          currentStatus: null, // ステータスをリセット
-          currentSearchTerm: '', // 検索語句をリセット
-          currentDateRange: newDateRange, // 新しい日付範囲を設定
+          currentStatus: null,
+          currentSearchTerm: '',
+          currentDateRange: newDateRange,
         };
 
-        // APIリクエストのパラメータを設定（日付範囲のみ）
         const params: OrderParams = {
           page: 1,
           per_page: 15,
@@ -533,7 +516,6 @@ export const useOrderManagement = () => {
           end_date: end.toISOString(),
         };
 
-        // Reduxの状態とAPIリクエストを更新
         await dispatch(
           setFilterParams({
             searchTerm: '',
@@ -545,7 +527,7 @@ export const useOrderManagement = () => {
 
         const response = await dispatch(fetchOrdersAction(params)).unwrap();
 
-        setLocalOrders(response.data.data);
+        setOrders(response.data.data);
         setTotalCount(response.meta.total);
         setHasMore(response.data.data.length === 15);
         setPage(1);
@@ -575,7 +557,6 @@ export const useOrderManagement = () => {
     [dispatch, toast],
   );
 
-  // Status filter handler
   const handleStatusFilter = useCallback(
     async (status: OrderStatus): Promise<void> => {
       try {
@@ -601,13 +582,12 @@ export const useOrderManagement = () => {
         ).unwrap();
 
         if (response && response.data) {
-          setLocalOrders(response.data.data);
+          setOrders(response.data.data);
           setTotalCount(response.meta.total);
           setHasMore(response.data.data.length === 15);
         }
       } catch (error) {
         console.error('Status filtering error:', error);
-        // AxiosErrorの型アサーションを修正
         const axiosError = error as AxiosError<ApiErrorResponse>;
         toast({
           title: 'フィルタリングに失敗しました',
@@ -623,7 +603,6 @@ export const useOrderManagement = () => {
     [dispatch, toast],
   );
 
-  // Order management handlers
   const handleOrderClick = useCallback(
     async (order: Order): Promise<void> => {
       try {
@@ -717,7 +696,7 @@ export const useOrderManagement = () => {
         }),
       ).unwrap();
 
-      setLocalOrders(response.data.data);
+      setOrders(response.data.data);
       setTotalCount(response.meta.total);
 
       toast({
@@ -749,7 +728,6 @@ export const useOrderManagement = () => {
     setOrderToDelete(null);
   }, []);
 
-  // Order items handlers
   const handleOrderItemChange = useCallback(
     (index: number, field: OrderItemField, value: string | number): void => {
       setNewOrder(prev => {
@@ -794,45 +772,11 @@ export const useOrderManagement = () => {
     }));
   }, []);
 
-  // Initial data fetch
-  useEffect(() => {
-    const initialFetch = async (): Promise<void> => {
-      try {
-        setStatus('loading');
-        const params: OrderParams = {
-          page: 1,
-          per_page: 15,
-          status: statusFilter || undefined,
-          start_date: dateRange.start?.toISOString() || undefined,
-          end_date: dateRange.end?.toISOString() || undefined,
-        };
-        const response = await dispatch(fetchOrdersAction(params)).unwrap();
-        setLocalOrders(response.data.data);
-        if (totalCount === 0) {
-          setTotalCount(response.meta.total);
-        }
-        setStatus('succeeded');
-        setIsInitialLoad(false);
-      } catch (error) {
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        setStatus('failed');
-        setError(
-          axiosError.response?.data?.error?.message ||
-            '注文データの取得に失敗しました',
-        );
-      }
-    };
-
-    if (isInitialLoad) {
-      void initialFetch();
-    }
-  }, [dispatch, statusFilter, dateRange, totalCount, isInitialLoad]);
-
   return {
-    // State
-    orders: localOrders,
-    status: status === 'loading' ? 'loading' : reduxStatus,
-    error: error || reduxError,
+    orders,
+    totalCount,
+    status,
+    error,
     activeOrder,
     modalMode,
     isDeleteAlertOpen,
@@ -843,14 +787,10 @@ export const useOrderManagement = () => {
     statusFilter,
     dateRange,
     isOpen,
-    onOpen,
     onClose,
     hasMore,
-    loadMore,
-    totalCount,
     isSearching,
-
-    // Handlers
+    lastElementRef,
     handleSearchChange,
     handleSearchSubmit,
     handleSubmit,
@@ -870,5 +810,3 @@ export const useOrderManagement = () => {
     clearFilters,
   };
 };
-
-export type UseOrderManagementReturn = ReturnType<typeof useOrderManagement>;

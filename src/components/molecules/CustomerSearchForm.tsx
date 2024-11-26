@@ -1,42 +1,38 @@
-import React, { useState } from "react";
-import { Flex, Input, Button } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
+import React from 'react';
+import { Flex, Input } from '@chakra-ui/react';
+import { SearchIcon } from '@chakra-ui/icons';
+import CommonButton from '../atoms/CommonButton';
 
 interface CustomerSearchFormProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
   onSearch: (searchTerm: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const CustomerSearchForm: React.FC<CustomerSearchFormProps> = ({
+  searchTerm,
+  setSearchTerm,
   onSearch,
+  onKeyDown,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const handleSearch = () => {
-    onSearch(searchTerm);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
   return (
-    <Flex mb={5} flexDirection={["column", "row"]}>
+    <Flex mb={5} flexDirection={['column', 'row']}>
       <Input
         placeholder="顧客名または電話番号( - は除く)"
         mr={[0, 3]}
         mb={[2, 0]}
         value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        onKeyDown={handleKeyDown}
+        onChange={e => setSearchTerm(e.target.value)}
+        onKeyDown={onKeyDown}
       />
-      <Button
-        leftIcon={<SearchIcon />}
-        onClick={handleSearch}
-        width={["100%", "auto"]}>
+      <CommonButton
+        variant="secondary"
+        withIcon={<SearchIcon />}
+        onClick={() => onSearch(searchTerm)}
+        isFullWidthMobile>
         検索
-      </Button>
+      </CommonButton>
     </Flex>
   );
 };

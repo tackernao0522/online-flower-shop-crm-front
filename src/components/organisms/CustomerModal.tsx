@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -13,19 +13,19 @@ import {
   FormLabel,
   Input,
   useBreakpointValue,
-} from "@chakra-ui/react";
-import { Customer } from "@/types/customer";
+} from '@chakra-ui/react';
+import { Customer } from '@/types/customer';
 
 interface CustomerModalProps {
   isOpen: boolean;
   onClose: () => void;
   newCustomer: Omit<
     Customer,
-    "id" | "created_at" | "updated_at" | "purchaseHistory"
+    'id' | 'created_at' | 'updated_at' | 'purchaseHistory'
   >;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
-  modalMode: "detail" | "add" | "edit"; // modalModeを追加
+  modalMode: 'detail' | 'add' | 'edit';
 }
 
 const CustomerModal: React.FC<CustomerModalProps> = ({
@@ -36,7 +36,7 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
   handleSubmit,
   modalMode,
 }) => {
-  const modalSize = useBreakpointValue({ base: "full", md: "xl" });
+  const modalSize = useBreakpointValue({ base: 'full', md: 'xl' });
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   const onSubmit = (e: React.FormEvent) => {
@@ -46,14 +46,14 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
 
   const getModalTitle = () => {
     switch (modalMode) {
-      case "add":
-        return "新規顧客登録";
-      case "edit":
-        return "顧客情報編集";
-      case "detail":
-        return "顧客詳細";
+      case 'add':
+        return '新規顧客登録';
+      case 'edit':
+        return '顧客情報編集';
+      case 'detail':
+        return '顧客詳細';
       default:
-        return "新規顧客登録";
+        return '新規顧客登録';
     }
   };
 
@@ -117,14 +117,14 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
             variant="ghost"
             mr={3}
             onClick={onClose}
-            width={isMobile ? "100%" : "auto"}>
+            width={isMobile ? '100%' : 'auto'}>
             キャンセル
           </Button>
           <Button
             colorScheme="blue"
             type="submit"
             form="customer-form"
-            width={isMobile ? "100%" : "auto"}>
+            width={isMobile ? '100%' : 'auto'}>
             登録
           </Button>
         </ModalFooter>

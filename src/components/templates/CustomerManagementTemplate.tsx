@@ -39,7 +39,7 @@ import {
   AlertDialogContent,
   AlertDialogOverlay,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, SearchIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { format, parseISO } from 'date-fns';
 import { useCustomerManagement } from '@/hooks/useCustomerManagement';
 import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
@@ -47,6 +47,7 @@ import { Customer } from '@/types/customer';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
 import ScrollToTopButton from '../atoms/ScrollToTopButton';
 import CommonButton from '../atoms/CommonButton';
+import CustomerSearchForm from '../molecules/CustomerSearchForm';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -57,7 +58,7 @@ const CustomerManagementTemplate: React.FC = () => {
     customers,
     status,
     error,
-    page,
+    loading,
     hasMore,
     isDeleteAlertOpen,
     customerToDelete,
@@ -75,7 +76,7 @@ const CustomerManagementTemplate: React.FC = () => {
     handleKeyDown,
     handleInputChange,
     handleSubmit,
-    ref,
+    lastElementRef,
     setSearchTerm,
   } = useCustomerManagement();
 
@@ -178,7 +179,11 @@ const CustomerManagementTemplate: React.FC = () => {
                 index === self.findIndex(t => t.id === customer.id),
             )
             .map((customer: Customer, index: number) => (
-              <Tr key={`${customer.id}-${index}`}>
+              <Tr
+                key={`${customer.id}-${index}`}
+                ref={
+                  index === customers.length - 1 ? lastElementRef : undefined
+                }>
                 <Td>{customer.id}</Td>
                 <Td>
                   <CommonButton
@@ -262,32 +267,21 @@ const CustomerManagementTemplate: React.FC = () => {
         </HStack>
       </Flex>
 
-      <Flex mb={5} flexDirection={['column', 'row']}>
-        <Input
-          placeholder="顧客名または電話番号( - は除く)"
-          mr={[0, 3]}
-          mb={[2, 0]}
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-        <CommonButton
-          variant="secondary"
-          withIcon={<SearchIcon />}
-          onClick={() => handleSearch(searchTerm)}
-          isFullWidthMobile>
-          検索
-        </CommonButton>
-      </Flex>
+      <CustomerSearchForm
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        onSearch={handleSearch}
+        onKeyDown={handleKeyDown}
+      />
 
-      {status === 'loading' && page === 1 ? (
+      {loading && customers.length === 0 ? (
         <Flex justify="center" align="center" height="200px">
           <Spinner size="xl" />
         </Flex>
-      ) : status === 'failed' ? (
+      ) : status === 'failed' && error ? (
         <Alert status="error">
           <AlertIcon />
-          {error}
+          <Text>{error}</Text>
         </Alert>
       ) : (
         <>
@@ -300,7 +294,7 @@ const CustomerManagementTemplate: React.FC = () => {
             </Flex>
           )}
           {hasMore && (
-            <Flex justify="center" my={4} ref={ref}>
+            <Flex justify="center" my={4}>
               <Spinner />
             </Flex>
           )}

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   Box,
   Flex,
@@ -76,8 +76,6 @@ import {
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
-import { useLoading } from '@/hooks/useLoading';
-import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 import { OrderStatus } from '@/types/order';
 import { formatDate } from '@/utils/dateFormatter';
 import { useDisclosure } from '@chakra-ui/react';
@@ -91,7 +89,6 @@ const OrdersPage = () => {
   const isMobile = useBreakpointValue({ base: true, md: false });
   const modalSize = useBreakpointValue({ base: 'full', md: '4xl' });
 
-  // DateRangePicker用のディスクロージャー
   const {
     isOpen: isDatePickerOpen,
     onOpen: onDatePickerOpen,
@@ -132,21 +129,8 @@ const OrdersPage = () => {
     clearFilters,
     isSearching,
     hasMore,
-    loadMore,
+    lastElementRef,
   } = useOrderManagement();
-
-  const isLoadingVisible = useLoading(2000);
-  const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
-
-  const [showScrollTop, setShowScrollTop] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowScrollTop(window.pageYOffset > 300);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const statusColorScheme: Record<OrderStatus, string> = {
     PENDING: 'yellow',
@@ -211,9 +195,7 @@ const OrdersPage = () => {
               size="sm"
               variant="secondary"
               onClick={handleSearchSubmit}
-              isLoading={
-                isSearching || (status === 'loading' && isLoadingVisible)
-              }
+              isLoading={isSearching || status === 'loading'}
               loadingText="検索中">
               検索
             </CommonButton>
@@ -277,7 +259,6 @@ const OrdersPage = () => {
           </MenuList>
         </Menu>
 
-        {/* 選択中の期間表示 */}
         {dateRange.start && dateRange.end && (
           <Text color="gray.600" fontSize="sm">
             期間: {format(dateRange.start, 'yyyy/MM/dd', { locale: ja })} -{' '}
@@ -625,7 +606,7 @@ const OrdersPage = () => {
   if (status === 'loading' && orders.length === 0) {
     return (
       <Flex justify="center" align="center" height="200px">
-        <Spinner size="xl" />
+        <Spinner />
       </Flex>
     );
   }
@@ -764,7 +745,6 @@ const OrdersPage = () => {
         </Table>
       </Box>
 
-      {/* 注文リストの表示件数 */}
       <Flex justify="center" my={4}>
         <Text color="red">
           {orders.length >= totalCount
@@ -773,14 +753,13 @@ const OrdersPage = () => {
         </Text>
       </Flex>
 
-      {/* ローディングインジケーター */}
-      {(status === 'loading' || isSearching) && (
-        <Flex justify="center" py={4}>
+      {hasMore && status === 'loading' && (
+        <Flex justify="center" my={4}>
           <Spinner />
         </Flex>
       )}
 
-      {showScrollTop && <ScrollToTopButton />}
+      <ScrollToTopButton />
 
       <ModalComponent {...ModalProps}>
         {isMobile && <DrawerOverlay />}
@@ -866,7 +845,6 @@ const OrdersPage = () => {
         )}
       </ModalComponent>
 
-      {/* 削除確認モーダル */}
       <Modal
         isOpen={isDeleteAlertOpen}
         onClose={cancelDelete}
@@ -899,7 +877,6 @@ const OrdersPage = () => {
         </ModalContent>
       </Modal>
 
-      {/* DateRangePickerModal */}
       <DateRangePickerModal
         isOpen={isDatePickerOpen}
         onClose={onDatePickerClose}

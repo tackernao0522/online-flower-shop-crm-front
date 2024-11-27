@@ -1,7 +1,8 @@
-"use client";
+'use client';
 
-import { Box, Heading, Text, Button } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
+import CommonButton from '@/components/atoms/CommonButton';
+import { Box, Heading, Text } from '@chakra-ui/react';
+import { useRouter } from 'next/navigation';
 
 export default function NotFound() {
   const router = useRouter();
@@ -19,18 +20,13 @@ export default function NotFound() {
       <Text fontSize="18px" mt={3} mb={2}>
         ページが見つかりません
       </Text>
-      <Text color={"gray.500"} mb={6}>
+      <Text color={'gray.500'} mb={6}>
         お探しのページは存在しないか、移動した可能性があります。
       </Text>
 
-      <Button
-        colorScheme="teal"
-        bgGradient="linear(to-r, teal.400, teal.500, teal.600)"
-        color="white"
-        variant="solid"
-        onClick={() => router.push("/")}>
+      <CommonButton variant="tealGradient" onClick={() => router.push('/')}>
         ホームに戻る
-      </Button>
+      </CommonButton>
     </Box>
   );
 }

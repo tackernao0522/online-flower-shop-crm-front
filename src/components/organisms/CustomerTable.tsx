@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   Box,
   Table,
@@ -7,17 +7,17 @@ import {
   Tr,
   Th,
   Td,
-  Button,
   Spinner,
   Text,
   Flex,
   Alert,
   AlertIcon,
-} from "@chakra-ui/react";
-import { format, parseISO } from "date-fns";
-import { useInView } from "react-intersection-observer";
-import { Customer } from "@/types/customer";
-import CustomerTableActions from "@/components/molecules/CustomerTableActions";
+} from '@chakra-ui/react';
+import { format, parseISO } from 'date-fns';
+import { useInView } from 'react-intersection-observer';
+import { Customer } from '@/types/customer';
+import CustomerTableActions from '@/components/molecules/CustomerTableActions';
+import CommonButton from '../atoms/CommonButton';
 
 interface CustomerTableProps {
   customers: Customer[];
@@ -50,7 +50,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
     }
   }, [inView, hasMore, onLoadMore]);
 
-  if (status === "loading" && customers.length === 0) {
+  if (status === 'loading' && customers.length === 0) {
     return (
       <Flex justify="center" align="center" height="200px">
         <Spinner size="xl" />
@@ -58,7 +58,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
     );
   }
 
-  if (status === "failed") {
+  if (status === 'failed') {
     return (
       <Alert status="error">
         <AlertIcon />
@@ -85,18 +85,18 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
             <Tr key={customer.id}>
               <Td>{customer.id}</Td>
               <Td>
-                <Button
-                  variant="link"
+                <CommonButton
+                  variant="ghost"
                   onClick={() => onCustomerClick(customer)}>
                   {customer.name}
-                </Button>
+                </CommonButton>
               </Td>
               <Td>{customer.email}</Td>
               <Td whiteSpace="nowrap">{customer.phoneNumber}</Td>
               <Td whiteSpace="nowrap">
                 {customer.birthDate
-                  ? format(parseISO(customer.birthDate), "yyyy-MM-dd")
-                  : "未登録"}
+                  ? format(parseISO(customer.birthDate), 'yyyy-MM-dd')
+                  : '未登録'}
               </Td>
               <Td>
                 <CustomerTableActions

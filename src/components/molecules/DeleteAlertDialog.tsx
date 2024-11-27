@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 import {
   AlertDialog,
   AlertDialogBody,
@@ -6,8 +6,8 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
-  Button,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
+import CommonButton from '../atoms/CommonButton';
 
 interface DeleteAlertDialogProps {
   isOpen: boolean;
@@ -42,12 +42,12 @@ const DeleteAlertDialog: React.FC<DeleteAlertDialogProps> = ({
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onClose}>
+            <CommonButton ref={cancelRef} variant="ghost" onClick={onClose}>
               キャンセル
-            </Button>
-            <Button colorScheme="red" onClick={onConfirm} ml={3}>
+            </CommonButton>
+            <CommonButton variant="danger" onClick={onConfirm} ml={3}>
               削除
-            </Button>
+            </CommonButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialogOverlay>

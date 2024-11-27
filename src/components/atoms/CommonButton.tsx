@@ -14,7 +14,8 @@ export interface CommonButtonProps extends ChakraButtonProps {
     | 'danger'
     | 'ghost'
     | 'success'
-    | 'outline';
+    | 'outline'
+    | 'tealGradient';
   size?: 'sm' | 'md' | 'lg';
   withIcon?: React.ReactElement;
   iconPosition?: 'left' | 'right';
@@ -59,6 +60,15 @@ const CommonButton = forwardRef<HTMLButtonElement, CommonButtonProps>(
       outline: {
         colorScheme: 'teal',
         variant: 'outline',
+      },
+      tealGradient: {
+        colorScheme: 'teal',
+        color: 'white',
+        bgGradient: 'linear(to-r, teal.400, teal.500, teal.600',
+        variant: 'solid',
+        _hover: {
+          bgGradient: 'linear(to-r, teal.500, teal.600, teal.700)',
+        },
       },
     };
 

@@ -7,7 +7,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
   FormControl,
   FormLabel,
   Input,
@@ -18,6 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { format, isValid, parseISO, startOfDay, endOfDay } from 'date-fns';
 import ja from 'date-fns/locale/ja';
+import CommonButton from '@/components/atoms/CommonButton';
 
 interface DateRangePickerModalProps {
   isOpen: boolean;
@@ -185,16 +185,16 @@ const DateRangePickerModal: React.FC<DateRangePickerModalProps> = ({
         </ModalBody>
 
         <ModalFooter>
-          <Button
-            colorScheme="blue"
+          <CommonButton
+            variant="primary"
             mr={3}
             onClick={handleApply}
             isDisabled={!startDate || !endDate || !!error}>
             適用
-          </Button>
-          <Button variant="ghost" onClick={onClose}>
+          </CommonButton>
+          <CommonButton variant="ghost" onClick={onClose}>
             キャンセル
-          </Button>
+          </CommonButton>
         </ModalFooter>
       </ModalContent>
     </Modal>

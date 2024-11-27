@@ -1,7 +1,8 @@
-import React from "react";
-import { HStack, Button, IconButton } from "@chakra-ui/react";
-import { EditIcon, DeleteIcon } from "@chakra-ui/icons";
-import { Customer } from "@/types/customer";
+import React from 'react';
+import { HStack } from '@chakra-ui/react';
+import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { Customer } from '@/types/customer';
+import CommonButton from '../atoms/CommonButton';
 
 interface CustomerTableActionsProps {
   customer: Customer;
@@ -19,17 +20,18 @@ const CustomerTableActions: React.FC<CustomerTableActionsProps> = ({
   if (isMobile) {
     return (
       <HStack spacing={2}>
-        <IconButton
-          aria-label="Edit customer"
-          icon={<EditIcon />}
+        <CommonButton
+          variant="secondary"
           size="sm"
+          withIcon={<EditIcon />}
+          aria-label="Edit customer"
           onClick={() => onEdit(customer)}
         />
-        <IconButton
-          aria-label="Delete customer"
-          icon={<DeleteIcon />}
+        <CommonButton
+          variant="danger"
           size="sm"
-          colorScheme="red"
+          withIcon={<DeleteIcon />}
+          aria-label="Delete customer"
           onClick={() => onDelete(customer)}
         />
       </HStack>
@@ -38,19 +40,22 @@ const CustomerTableActions: React.FC<CustomerTableActionsProps> = ({
 
   return (
     <HStack spacing={2}>
-      <Button
+      <CommonButton
+        variant="secondary"
         size="sm"
-        leftIcon={<EditIcon />}
+        withIcon={<EditIcon />}
+        iconPosition="left"
         onClick={() => onEdit(customer)}>
         編集
-      </Button>
-      <Button
+      </CommonButton>
+      <CommonButton
+        variant="danger"
         size="sm"
-        leftIcon={<DeleteIcon />}
-        colorScheme="red"
+        withIcon={<DeleteIcon />}
+        iconPosition="left"
         onClick={() => onDelete(customer)}>
         削除
-      </Button>
+      </CommonButton>
     </HStack>
   );
 };

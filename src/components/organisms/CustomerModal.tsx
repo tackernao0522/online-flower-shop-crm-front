@@ -7,7 +7,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
   VStack,
   FormControl,
   FormLabel,
@@ -15,6 +14,7 @@ import {
   useBreakpointValue,
 } from '@chakra-ui/react';
 import { Customer } from '@/types/customer';
+import CommonButton from '../atoms/CommonButton';
 
 interface CustomerModalProps {
   isOpen: boolean;
@@ -113,20 +113,20 @@ const CustomerModal: React.FC<CustomerModalProps> = ({
           </form>
         </ModalBody>
         <ModalFooter>
-          <Button
+          <CommonButton
             variant="ghost"
             mr={3}
             onClick={onClose}
-            width={isMobile ? '100%' : 'auto'}>
+            isFullWidthMobile={isMobile}>
             キャンセル
-          </Button>
-          <Button
-            colorScheme="blue"
+          </CommonButton>
+          <CommonButton
+            variant="primary"
             type="submit"
             form="customer-form"
-            width={isMobile ? '100%' : 'auto'}>
+            isFullWidthMobile={isMobile}>
             登録
-          </Button>
+          </CommonButton>
         </ModalFooter>
       </ModalContent>
     </Modal>

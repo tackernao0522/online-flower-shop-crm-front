@@ -1,22 +1,12 @@
-import React from "react";
-import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Button,
-  IconButton,
-  Input,
-  Box,
-} from "@chakra-ui/react";
-import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import { Customer } from "@/types/customer";
+import React from 'react';
+import { Table, Thead, Tbody, Tr, Th, Td, Input, Box } from '@chakra-ui/react';
+import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { Customer } from '@/types/customer';
+import CommonButton from '../atoms/CommonButton';
 
 interface CustomerPurchaseHistoryProps {
   customer: Customer | null;
-  modalMode: "detail" | "add" | "edit";
+  modalMode: 'detail' | 'add' | 'edit';
   isMobile: boolean;
 }
 
@@ -27,46 +17,46 @@ const CustomerPurchaseHistory: React.FC<CustomerPurchaseHistoryProps> = ({
 }) => {
   return (
     <Box overflowX="auto">
-      <Table variant="simple" size={isMobile ? "sm" : "md"}>
+      <Table variant="simple" size={isMobile ? 'sm' : 'md'}>
         <Thead>
           <Tr>
             <Th>注文ID</Th>
             <Th>日付</Th>
             <Th>金額</Th>
-            {modalMode !== "detail" && <Th>アクション</Th>}
+            {modalMode !== 'detail' && <Th>アクション</Th>}
           </Tr>
         </Thead>
         <Tbody>
-          {customer?.purchaseHistory?.map((purchase) => (
+          {customer?.purchaseHistory?.map(purchase => (
             <Tr key={purchase.id}>
               <Td>
-                {modalMode === "detail" ? (
+                {modalMode === 'detail' ? (
                   purchase.id
                 ) : (
                   <Input defaultValue={purchase.id} size="sm" />
                 )}
               </Td>
               <Td>
-                {modalMode === "detail" ? (
+                {modalMode === 'detail' ? (
                   purchase.date
                 ) : (
                   <Input defaultValue={purchase.date} size="sm" />
                 )}
               </Td>
               <Td>
-                {modalMode === "detail" ? (
+                {modalMode === 'detail' ? (
                   `¥${purchase.amount.toLocaleString()}`
                 ) : (
                   <Input defaultValue={purchase.amount} size="sm" />
                 )}
               </Td>
-              {modalMode !== "detail" && (
+              {modalMode !== 'detail' && (
                 <Td>
-                  <IconButton
-                    aria-label="Delete purchase"
-                    icon={<DeleteIcon />}
+                  <CommonButton
+                    variant="danger"
                     size="sm"
-                    colorScheme="red"
+                    withIcon={<DeleteIcon />}
+                    aria-label="Delete purchase"
                   />
                 </Td>
               )}
@@ -74,10 +64,10 @@ const CustomerPurchaseHistory: React.FC<CustomerPurchaseHistoryProps> = ({
           ))}
         </Tbody>
       </Table>
-      {modalMode !== "detail" && (
-        <Button leftIcon={<AddIcon />} mt={4} size="sm">
+      {modalMode !== 'detail' && (
+        <CommonButton size="sm" withIcon={<AddIcon />} mt={4}>
           購入履歴を追加
-        </Button>
+        </CommonButton>
       )}
     </Box>
   );

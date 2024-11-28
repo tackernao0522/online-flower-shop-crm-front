@@ -7,7 +7,7 @@ import {
   FormErrorMessage,
   useBreakpointValue,
 } from '@chakra-ui/react';
-import Input from '../atoms/Input';
+import CommonInput from '../atoms/CommonInput';
 
 interface FormFieldProps {
   label: string;
@@ -35,7 +35,7 @@ const FormField: React.FC<FormFieldProps> = ({
       <FormLabel htmlFor={name} fontSize={['sm', 'md']}>
         {label}
       </FormLabel>
-      <Input
+      <CommonInput
         id={name}
         name={name}
         type={type}

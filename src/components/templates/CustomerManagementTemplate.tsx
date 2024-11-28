@@ -20,7 +20,6 @@ import {
   Tr,
   Th,
   Td,
-  Input,
   IconButton,
   VStack,
 } from '@chakra-ui/react';
@@ -36,6 +35,7 @@ import CustomerSearchForm from '../molecules/CustomerSearchForm';
 import DeleteAlertDialog from '../molecules/DeleteAlertDialog';
 import PageHeader from '../molecules/PageHeader';
 import CustomerPurchaseHistory from '../molecules/CustomerPurchaseHistory';
+import CommonInput from '../atoms/CommonInput';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -113,21 +113,21 @@ const CustomerManagementTemplate: React.FC = () => {
               {modalMode === 'detail' ? (
                 purchase.id
               ) : (
-                <Input defaultValue={purchase.id} size="sm" />
+                <CommonInput defaultValue={purchase.id} size="sm" />
               )}
             </Td>
             <Td>
               {modalMode === 'detail' ? (
                 purchase.date
               ) : (
-                <Input defaultValue={purchase.date} size="sm" />
+                <CommonInput defaultValue={purchase.date} size="sm" />
               )}
             </Td>
             <Td>
               {modalMode === 'detail' ? (
                 `¥${purchase.amount.toLocaleString()}`
               ) : (
-                <Input defaultValue={purchase.amount} size="sm" />
+                <CommonInput defaultValue={purchase.amount} size="sm" />
               )}
             </Td>
             {modalMode !== 'detail' && (

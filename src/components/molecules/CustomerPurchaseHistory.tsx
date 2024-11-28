@@ -16,60 +16,68 @@ const CustomerPurchaseHistory: React.FC<CustomerPurchaseHistoryProps> = ({
   isMobile,
 }) => {
   return (
-    <Box overflowX="auto">
-      <Table variant="simple" size={isMobile ? 'sm' : 'md'}>
-        <Thead>
-          <Tr>
-            <Th>注文ID</Th>
-            <Th>日付</Th>
-            <Th>金額</Th>
-            {modalMode !== 'detail' && <Th>アクション</Th>}
-          </Tr>
-        </Thead>
-        <Tbody>
-          {customer?.purchaseHistory?.map(purchase => (
-            <Tr key={purchase.id}>
-              <Td>
-                {modalMode === 'detail' ? (
-                  purchase.id
-                ) : (
-                  <Input defaultValue={purchase.id} size="sm" />
-                )}
-              </Td>
-              <Td>
-                {modalMode === 'detail' ? (
-                  purchase.date
-                ) : (
-                  <Input defaultValue={purchase.date} size="sm" />
-                )}
-              </Td>
-              <Td>
-                {modalMode === 'detail' ? (
-                  `¥${purchase.amount.toLocaleString()}`
-                ) : (
-                  <Input defaultValue={purchase.amount} size="sm" />
-                )}
-              </Td>
-              {modalMode !== 'detail' && (
-                <Td>
-                  <CommonButton
-                    variant="danger"
-                    size="sm"
-                    withIcon={<DeleteIcon />}
-                    aria-label="Delete purchase"
-                  />
-                </Td>
-              )}
+    <>
+      <Box overflowX="auto">
+        <Table variant="simple" size={isMobile ? 'sm' : 'md'}>
+          <Thead>
+            <Tr>
+              <Th>注文ID</Th>
+              <Th>日付</Th>
+              <Th>金額</Th>
+              {modalMode !== 'detail' && <Th>アクション</Th>}
             </Tr>
-          ))}
-        </Tbody>
-      </Table>
+          </Thead>
+          <Tbody>
+            {customer?.purchaseHistory?.map(purchase => (
+              <Tr key={purchase.id}>
+                <Td>
+                  {modalMode === 'detail' ? (
+                    purchase.id
+                  ) : (
+                    <Input defaultValue={purchase.id} size="sm" />
+                  )}
+                </Td>
+                <Td>
+                  {modalMode === 'detail' ? (
+                    purchase.date
+                  ) : (
+                    <Input defaultValue={purchase.date} size="sm" />
+                  )}
+                </Td>
+                <Td>
+                  {modalMode === 'detail' ? (
+                    `¥${purchase.amount.toLocaleString()}`
+                  ) : (
+                    <Input defaultValue={purchase.amount} size="sm" />
+                  )}
+                </Td>
+                {modalMode !== 'detail' && (
+                  <Td>
+                    <CommonButton
+                      variant="danger"
+                      size="sm"
+                      withIcon={<DeleteIcon />}
+                      colorScheme="red"
+                      aria-label="Delete purchase">
+                      削除
+                    </CommonButton>
+                  </Td>
+                )}
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </Box>
       {modalMode !== 'detail' && (
-        <CommonButton size="sm" withIcon={<AddIcon />} mt={4}>
+        <CommonButton
+          variant="secondary"
+          size="sm"
+          withIcon={<AddIcon />}
+          mt={4}>
           購入履歴を追加
         </CommonButton>
       )}
-    </Box>
+    </>
   );
 };
 

@@ -1,9 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Flex,
-  Heading,
-  HStack,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -11,9 +8,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  FormControl,
-  FormLabel,
-  Textarea,
   Tabs,
   TabList,
   TabPanels,
@@ -41,6 +35,7 @@ import CommonButton from '../atoms/CommonButton';
 import CustomerSearchForm from '../molecules/CustomerSearchForm';
 import DeleteAlertDialog from '../molecules/DeleteAlertDialog';
 import PageHeader from '../molecules/PageHeader';
+import CustomerPurchaseHistory from '../molecules/CustomerPurchaseHistory';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -236,13 +231,11 @@ const CustomerManagementTemplate: React.FC = () => {
                   )}
                 </TabPanel>
                 <TabPanel>
-                  <FormControl>
-                    <FormLabel>メモ</FormLabel>
-                    <Textarea
-                      placeholder="顧客に関する特記事項を入力"
-                      isReadOnly={modalMode === 'detail'}
-                    />
-                  </FormControl>
+                  <CustomerPurchaseHistory
+                    customer={activeCustomer}
+                    modalMode={modalMode}
+                    isMobile={isMobile ?? false}
+                  />
                 </TabPanel>
               </TabPanels>
             </Tabs>

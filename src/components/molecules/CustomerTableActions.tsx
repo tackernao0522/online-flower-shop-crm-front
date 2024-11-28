@@ -1,5 +1,5 @@
 import React from 'react';
-import { HStack } from '@chakra-ui/react';
+import { HStack, IconButton } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { Customer } from '@/types/customer';
 import CommonButton from '../atoms/CommonButton';
@@ -20,18 +20,17 @@ const CustomerTableActions: React.FC<CustomerTableActionsProps> = ({
   if (isMobile) {
     return (
       <HStack spacing={2}>
-        <CommonButton
-          variant="secondary"
-          size="sm"
-          withIcon={<EditIcon />}
+        <IconButton
           aria-label="Edit customer"
+          icon={<EditIcon />}
+          size="sm"
           onClick={() => onEdit(customer)}
         />
-        <CommonButton
-          variant="danger"
-          size="sm"
-          withIcon={<DeleteIcon />}
+        <IconButton
           aria-label="Delete customer"
+          icon={<DeleteIcon />}
+          size="sm"
+          colorScheme="red"
           onClick={() => onDelete(customer)}
         />
       </HStack>

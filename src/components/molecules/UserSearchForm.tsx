@@ -1,6 +1,7 @@
 import React from 'react';
-import { Input, Select, Stack, VStack, Box } from '@chakra-ui/react';
+import { Select, Stack, VStack, Box } from '@chakra-ui/react';
 import CommonButton from '../atoms/CommonButton';
+import CommonInput from '../atoms/CommonInput';
 
 interface UserSearchFormProps {
   searchTerm: string;
@@ -30,7 +31,7 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({
   if (isMobile) {
     return (
       <VStack spacing={4} align="stretch" width="100%">
-        <Input
+        <CommonInput
           placeholder="ユーザー名またはメールアドレスで検索"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
@@ -76,7 +77,7 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({
   return (
     <>
       <Stack direction="row" mb={5} spacing={3}>
-        <Input
+        <CommonInput
           placeholder="ユーザー名またはメールアドレスで検索"
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}

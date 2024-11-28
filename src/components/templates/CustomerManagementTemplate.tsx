@@ -40,6 +40,7 @@ import ScrollToTopButton from '../atoms/ScrollToTopButton';
 import CommonButton from '../atoms/CommonButton';
 import CustomerSearchForm from '../molecules/CustomerSearchForm';
 import DeleteAlertDialog from '../molecules/DeleteAlertDialog';
+import PageHeader from '../molecules/PageHeader';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -152,28 +153,21 @@ const CustomerManagementTemplate: React.FC = () => {
 
   return (
     <Box>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mb={5}
-        flexDirection={['column', 'row']}>
-        <Heading as="h1" size="xl" mb={[4, 0]}>
-          顧客管理
-        </Heading>
-        <HStack
-          spacing={2}
-          flexWrap="wrap"
-          justifyContent={['center', 'flex-end']}>
-          <CommonButton
-            variant="primary"
-            withIcon={<AddIcon />}
-            onClick={handleAddCustomer}
-            isFullWidthMobile>
-            新規顧客登録
-          </CommonButton>
-          <BackToDashboardButton />
-        </HStack>
-      </Flex>
+      <PageHeader
+        title="顧客管理"
+        buttons={
+          <>
+            <CommonButton
+              variant="primary"
+              withIcon={<AddIcon />}
+              onClick={handleAddCustomer}
+              isFullWidthMobile>
+              新規顧客登録
+            </CommonButton>
+            <BackToDashboardButton />
+          </>
+        }
+      />
 
       <CustomerSearchForm
         searchTerm={searchTerm}

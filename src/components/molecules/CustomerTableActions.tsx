@@ -8,7 +8,7 @@ interface CustomerTableActionsProps {
   customer: Customer;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
-  isMobile: boolean;
+  isMobile?: boolean;
 }
 
 const CustomerTableActions: React.FC<CustomerTableActionsProps> = ({

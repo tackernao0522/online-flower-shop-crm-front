@@ -1,22 +1,22 @@
-import React from "react";
+import React from 'react';
 import {
   VStack,
   Text,
   Box,
   FormControl,
   FormLabel,
-  Input,
   FormErrorMessage,
-} from "@chakra-ui/react";
-import { Customer } from "@/types/customer";
-import { format, parseISO } from "date-fns";
+} from '@chakra-ui/react';
+import { Customer } from '@/types/customer';
+import { format, parseISO } from 'date-fns';
+import CommonInput from '../atoms/CommonInput';
 
 interface CustomerBasicInfoProps {
   customer: Customer | null;
-  modalMode: "detail" | "add" | "edit";
+  modalMode: 'detail' | 'add' | 'edit';
   newCustomer: Omit<
     Customer,
-    "id" | "created_at" | "updated_at" | "purchaseHistory"
+    'id' | 'created_at' | 'updated_at' | 'purchaseHistory'
   >;
   formErrors: Partial<Customer>;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -29,7 +29,7 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
   formErrors,
   handleInputChange,
 }) => {
-  if (modalMode === "detail" && customer) {
+  if (modalMode === 'detail' && customer) {
     return (
       <VStack align="stretch" spacing={4}>
         <Box>
@@ -46,14 +46,14 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
         </Box>
         <Box>
           <Text fontWeight="bold">住所:</Text>
-          <Text>{customer.address || "未登録"}</Text>
+          <Text>{customer.address || '未登録'}</Text>
         </Box>
         <Box>
           <Text fontWeight="bold">生年月日:</Text>
           <Text>
             {customer.birthDate
-              ? format(parseISO(customer.birthDate), "yyyy-MM-dd")
-              : "未登録"}
+              ? format(parseISO(customer.birthDate), 'yyyy-MM-dd')
+              : '未登録'}
           </Text>
         </Box>
       </VStack>
@@ -64,7 +64,7 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
     <VStack spacing={4}>
       <FormControl isInvalid={!!formErrors.name}>
         <FormLabel>名前</FormLabel>
-        <Input
+        <CommonInput
           name="name"
           value={newCustomer.name}
           onChange={handleInputChange}
@@ -73,7 +73,7 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
       </FormControl>
       <FormControl isInvalid={!!formErrors.email}>
         <FormLabel>メールアドレス</FormLabel>
-        <Input
+        <CommonInput
           name="email"
           value={newCustomer.email}
           onChange={handleInputChange}
@@ -82,7 +82,7 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
       </FormControl>
       <FormControl isInvalid={!!formErrors.phoneNumber}>
         <FormLabel>電話番号</FormLabel>
-        <Input
+        <CommonInput
           name="phoneNumber"
           value={newCustomer.phoneNumber}
           onChange={handleInputChange}
@@ -91,7 +91,7 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
       </FormControl>
       <FormControl isInvalid={!!formErrors.address}>
         <FormLabel>住所</FormLabel>
-        <Input
+        <CommonInput
           name="address"
           value={newCustomer.address}
           onChange={handleInputChange}
@@ -100,7 +100,7 @@ const CustomerBasicInfo: React.FC<CustomerBasicInfoProps> = ({
       </FormControl>
       <FormControl isInvalid={!!formErrors.birthDate}>
         <FormLabel>生年月日</FormLabel>
-        <Input
+        <CommonInput
           name="birthDate"
           type="date"
           value={newCustomer.birthDate}

@@ -3,14 +3,6 @@ import {
   Box,
   Flex,
   Heading,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Input,
-  VStack,
   HStack,
   Modal,
   ModalOverlay,
@@ -28,26 +20,26 @@ import {
   Tab,
   TabPanel,
   Text,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Input,
   IconButton,
-  Spinner,
-  Alert,
-  AlertIcon,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
+  VStack,
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { format, parseISO } from 'date-fns';
 import { useCustomerManagement } from '@/hooks/useCustomerManagement';
 import CustomerBasicInfo from '@/components/molecules/CustomerBasicInfo';
-import { Customer } from '@/types/customer';
+import CustomerTable from '@/components/organisms/CustomerTable';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
 import ScrollToTopButton from '../atoms/ScrollToTopButton';
 import CommonButton from '../atoms/CommonButton';
 import CustomerSearchForm from '../molecules/CustomerSearchForm';
+import DeleteAlertDialog from '../molecules/DeleteAlertDialog';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -58,7 +50,6 @@ const CustomerManagementTemplate: React.FC = () => {
     customers,
     status,
     error,
-    loading,
     hasMore,
     isDeleteAlertOpen,
     customerToDelete,
@@ -159,89 +150,6 @@ const CustomerManagementTemplate: React.FC = () => {
     </Table>
   );
 
-  const renderCustomerTable = () => (
-    <Box overflowX="auto">
-      <Table variant="simple" size="md">
-        <Thead>
-          <Tr>
-            <Th>ID</Th>
-            <Th>名前</Th>
-            <Th>メールアドレス</Th>
-            <Th>電話番号</Th>
-            <Th>生年月日</Th>
-            <Th>アクション</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {customers
-            .filter(
-              (customer, index, self) =>
-                index === self.findIndex(t => t.id === customer.id),
-            )
-            .map((customer: Customer, index: number) => (
-              <Tr
-                key={`${customer.id}-${index}`}
-                ref={
-                  index === customers.length - 1 ? lastElementRef : undefined
-                }>
-                <Td>{customer.id}</Td>
-                <Td>
-                  <CommonButton
-                    variant="ghost"
-                    onClick={() => handleCustomerClick(customer)}>
-                    {customer.name}
-                  </CommonButton>
-                </Td>
-                <Td>{customer.email}</Td>
-                <Td whiteSpace="nowrap">{customer.phoneNumber}</Td>
-                <Td whiteSpace="nowrap">
-                  {customer.birthDate
-                    ? format(parseISO(customer.birthDate), 'yyyy-MM-dd')
-                    : '未登録'}
-                </Td>
-                <Td>
-                  {isMobile ? (
-                    <HStack spacing={2}>
-                      <IconButton
-                        aria-label="Edit customer"
-                        icon={<EditIcon />}
-                        size="sm"
-                        onClick={() => handleEditCustomer(customer)}
-                      />
-                      <IconButton
-                        aria-label="Delete customer"
-                        icon={<DeleteIcon />}
-                        size="sm"
-                        colorScheme="red"
-                        onClick={() => handleDeleteCustomer(customer)}
-                      />
-                    </HStack>
-                  ) : (
-                    <HStack spacing={2}>
-                      <CommonButton
-                        variant="secondary"
-                        size="sm"
-                        withIcon={<EditIcon />}
-                        onClick={() => handleEditCustomer(customer)}>
-                        編集
-                      </CommonButton>
-                      <CommonButton
-                        variant="danger"
-                        size="sm"
-                        withIcon={<DeleteIcon />}
-                        onClick={() => handleDeleteCustomer(customer)}>
-                        削除
-                      </CommonButton>
-                    </HStack>
-                  )}
-                </Td>
-              </Tr>
-            ))}
-        </Tbody>
-      </Table>
-    </Box>
-  );
-
   return (
     <Box>
       <Flex
@@ -274,32 +182,17 @@ const CustomerManagementTemplate: React.FC = () => {
         onKeyDown={handleKeyDown}
       />
 
-      {loading && customers.length === 0 ? (
-        <Flex justify="center" align="center" height="200px">
-          <Spinner size="xl" />
-        </Flex>
-      ) : status === 'failed' && error ? (
-        <Alert status="error">
-          <AlertIcon />
-          <Text>{error}</Text>
-        </Alert>
-      ) : (
-        <>
-          {renderCustomerTable()}
-          {!hasMore && customers.length > 0 && (
-            <Flex justify="center" my={4}>
-              <Text color="red">
-                すべての顧客を表示しました ({customers.length}名)
-              </Text>
-            </Flex>
-          )}
-          {hasMore && (
-            <Flex justify="center" my={4}>
-              <Spinner />
-            </Flex>
-          )}
-        </>
-      )}
+      <CustomerTable
+        customers={customers}
+        status={status}
+        error={error}
+        hasMore={hasMore}
+        onCustomerClick={handleCustomerClick}
+        onEditCustomer={handleEditCustomer}
+        onDeleteCustomer={handleDeleteCustomer}
+        isMobile={isMobile ?? false}
+        lastElementRef={lastElementRef}
+      />
 
       <ScrollToTopButton />
 
@@ -374,32 +267,13 @@ const CustomerManagementTemplate: React.FC = () => {
         </ModalContent>
       </Modal>
 
-      <AlertDialog
+      <DeleteAlertDialog
         isOpen={isDeleteAlertOpen}
-        leastDestructiveRef={React.useRef(null)}
-        onClose={cancelDelete}>
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              顧客を削除
-            </AlertDialogHeader>
-
-            <AlertDialogBody>
-              本当に{customerToDelete?.name}
-              を削除しますか？この操作は取り消せません。
-            </AlertDialogBody>
-
-            <AlertDialogFooter>
-              <CommonButton variant="ghost" onClick={cancelDelete}>
-                キャンセル
-              </CommonButton>
-              <CommonButton variant="danger" onClick={confirmDelete} ml={3}>
-                削除
-              </CommonButton>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        itemName={customerToDelete?.name || ''}
+        itemType="顧客"
+      />
     </Box>
   );
 };

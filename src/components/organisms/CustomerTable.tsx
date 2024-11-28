@@ -14,7 +14,6 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { format, parseISO } from 'date-fns';
-import { useInView } from 'react-intersection-observer';
 import { Customer } from '@/types/customer';
 import CustomerTableActions from '@/components/molecules/CustomerTableActions';
 import CommonButton from '../atoms/CommonButton';
@@ -27,8 +26,8 @@ interface CustomerTableProps {
   onCustomerClick: (customer: Customer) => void;
   onEditCustomer: (customer: Customer) => void;
   onDeleteCustomer: (customer: Customer) => void;
-  onLoadMore: () => void;
-  isMobile: boolean;
+  isMobile?: boolean;
+  lastElementRef: (node: HTMLElement | null) => void;
 }
 
 const CustomerTable: React.FC<CustomerTableProps> = ({
@@ -39,17 +38,9 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   onCustomerClick,
   onEditCustomer,
   onDeleteCustomer,
-  onLoadMore,
   isMobile,
+  lastElementRef,
 }) => {
-  const { ref, inView } = useInView();
-
-  React.useEffect(() => {
-    if (inView && hasMore) {
-      onLoadMore();
-    }
-  }, [inView, hasMore, onLoadMore]);
-
   if (status === 'loading' && customers.length === 0) {
     return (
       <Flex justify="center" align="center" height="200px">
@@ -81,8 +72,10 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
           </Tr>
         </Thead>
         <Tbody>
-          {customers.map((customer: Customer) => (
-            <Tr key={customer.id}>
+          {customers.map((customer: Customer, index: number) => (
+            <Tr
+              key={customer.id}
+              ref={index === customers.length - 1 ? lastElementRef : undefined}>
               <Td>{customer.id}</Td>
               <Td>
                 <CommonButton
@@ -103,7 +96,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
                   customer={customer}
                   onEdit={onEditCustomer}
                   onDelete={onDeleteCustomer}
-                  isMobile={isMobile}
+                  isMobile={isMobile ?? false}
                 />
               </Td>
             </Tr>
@@ -118,7 +111,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
         </Flex>
       )}
       {hasMore && (
-        <Flex justify="center" my={4} ref={ref}>
+        <Flex justify="center" my={4}>
           <Spinner />
         </Flex>
       )}

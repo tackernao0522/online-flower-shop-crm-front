@@ -22,9 +22,6 @@ import {
   Td,
   IconButton,
   VStack,
-  FormControl,
-  FormLabel,
-  Textarea,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { format, parseISO } from 'date-fns';
@@ -39,6 +36,7 @@ import DeleteAlertDialog from '../molecules/DeleteAlertDialog';
 import PageHeader from '../molecules/PageHeader';
 import CustomerPurchaseHistory from '../molecules/CustomerPurchaseHistory';
 import CommonInput from '../atoms/CommonInput';
+import CustomerNotes from '../molecules/CustomerNotes';
 
 const CustomerManagementTemplate: React.FC = () => {
   const {
@@ -234,13 +232,10 @@ const CustomerManagementTemplate: React.FC = () => {
                   )}
                 </TabPanel>
                 <TabPanel>
-                  <FormControl>
-                    <FormLabel>メモ</FormLabel>
-                    <Textarea
-                      placeholder="顧客に関する特記事項を入力"
-                      isReadOnly={modalMode === 'detail'}
-                    />
-                  </FormControl>
+                  <CustomerNotes
+                    customer={activeCustomer}
+                    modalMode={modalMode}
+                  />
                 </TabPanel>
                 <TabPanel>
                   <CustomerPurchaseHistory

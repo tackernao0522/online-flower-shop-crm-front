@@ -83,6 +83,7 @@ import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/Da
 import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
 import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
 import CommonButton from '@/components/atoms/CommonButton';
+import PageHeader from '@/components/molecules/PageHeader';
 
 const OrdersPage = () => {
   const toast = useToast();
@@ -622,29 +623,25 @@ const OrdersPage = () => {
 
   return (
     <Container maxW="container.xl" py={5}>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mb={5}
-        flexDirection={{ base: 'column', md: 'row' }}
-        gap={4}>
-        <Heading as="h1" size="xl">
-          注文管理
-        </Heading>
-        <Stack
-          direction={{ base: 'column', md: 'row' }}
-          spacing={2}
-          width={{ base: '100%', md: 'auto' }}>
-          <CommonButton
-            variant="primary"
-            withIcon={<AddIcon />}
-            onClick={handleAddOrder}
-            isFullWidthMobile>
-            新規注文作成
-          </CommonButton>
-          <BackToDashboardButton />
-        </Stack>
-      </Flex>
+      <PageHeader
+        title="注文管理"
+        buttons={
+          <Stack
+            direction={{ base: 'column', md: 'row' }}
+            spacing={2}
+            width={{ base: '100%', md: 'auto' }}>
+            <CommonButton
+              variant="primary"
+              withIcon={<AddIcon />}
+              onClick={handleAddOrder}
+              isFullWidthMobile>
+              新規注文作成
+            </CommonButton>
+            <BackToDashboardButton />
+          </Stack>
+        }
+        mobileStack
+      />
 
       {renderSearchAndFilter()}
 

@@ -22,6 +22,9 @@ import {
   Td,
   IconButton,
   VStack,
+  FormControl,
+  FormLabel,
+  Textarea,
 } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { format, parseISO } from 'date-fns';
@@ -229,6 +232,15 @@ const CustomerManagementTemplate: React.FC = () => {
                       購入履歴を追加
                     </CommonButton>
                   )}
+                </TabPanel>
+                <TabPanel>
+                  <FormControl>
+                    <FormLabel>メモ</FormLabel>
+                    <Textarea
+                      placeholder="顧客に関する特記事項を入力"
+                      isReadOnly={modalMode === 'detail'}
+                    />
+                  </FormControl>
                 </TabPanel>
                 <TabPanel>
                   <CustomerPurchaseHistory

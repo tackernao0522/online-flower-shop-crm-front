@@ -12,6 +12,7 @@ import {
   Flex,
   Alert,
   AlertIcon,
+  useBreakpointValue,
 } from '@chakra-ui/react';
 import { format, parseISO } from 'date-fns';
 import { Customer } from '@/types/customer';
@@ -41,26 +42,65 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
   isMobile,
   lastElementRef,
 }) => {
+  const isMobileView = useBreakpointValue({ base: true, md: false });
+
   if (status === 'loading' && customers.length === 0) {
     return (
-      <Flex justify="center" align="center" height="200px">
-        <Spinner size="xl" />
-      </Flex>
+      <Box overflowX="auto">
+        <Table
+          variant="simple"
+          size="md"
+          style={isMobileView ? { minWidth: '600px' } : undefined}>
+          <Thead>
+            <Tr>
+              <Th>ID</Th>
+              <Th>名前</Th>
+              <Th>メールアドレス</Th>
+              <Th>電話番号</Th>
+              <Th>生年月日</Th>
+              <Th>アクション</Th>
+            </Tr>
+          </Thead>
+        </Table>
+        <Flex justify="center" align="center" height="200px">
+          <Spinner size="xl" />
+        </Flex>
+      </Box>
     );
   }
 
   if (status === 'failed') {
     return (
-      <Alert status="error">
-        <AlertIcon />
-        {error}
-      </Alert>
+      <Box overflowX="auto">
+        <Table
+          variant="simple"
+          size="md"
+          style={isMobileView ? { minWidth: '600px' } : undefined}>
+          <Thead>
+            <Tr>
+              <Th>ID</Th>
+              <Th>名前</Th>
+              <Th>メールアドレス</Th>
+              <Th>電話番号</Th>
+              <Th>生年月日</Th>
+              <Th>アクション</Th>
+            </Tr>
+          </Thead>
+        </Table>
+        <Alert status="error">
+          <AlertIcon />
+          {error}
+        </Alert>
+      </Box>
     );
   }
 
   return (
     <Box overflowX="auto">
-      <Table variant="simple" size="md">
+      <Table
+        variant="simple"
+        size="md"
+        style={isMobileView ? { minWidth: '600px' } : undefined}>
         <Thead>
           <Tr>
             <Th>ID</Th>
@@ -101,6 +141,13 @@ const CustomerTable: React.FC<CustomerTableProps> = ({
               </Td>
             </Tr>
           ))}
+          {customers.length === 0 && (
+            <Tr>
+              <Td colSpan={6} textAlign="center" py={8}>
+                該当する顧客が見つかりませんでした
+              </Td>
+            </Tr>
+          )}
         </Tbody>
       </Table>
       {!hasMore && customers.length > 0 && (

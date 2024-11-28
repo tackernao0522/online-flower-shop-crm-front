@@ -1,8 +1,6 @@
 import React from 'react';
 import {
   Box,
-  Flex,
-  Heading,
   VStack,
   HStack,
   FormControl,
@@ -12,6 +10,8 @@ import {
   Text,
   Spinner,
   Stack,
+  Flex,
+  Heading,
 } from '@chakra-ui/react';
 import { AddIcon, LockIcon } from '@chakra-ui/icons';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,7 @@ import RoleManagement from '../organisms/RoleManagement';
 import BackToDashboardButton from '../atoms/BackToDashboardButton';
 import ScrollToTopButton from '../atoms/ScrollToTopButton';
 import CommonButton from '../atoms/CommonButton';
+import PageHeader from '../molecules/PageHeader';
 
 const UserManagementTemplate: React.FC = () => {
   const router = useRouter();
@@ -227,51 +228,48 @@ const UserManagementTemplate: React.FC = () => {
 
   return (
     <Box p={5}>
-      <Flex
-        justifyContent="space-between"
-        alignItems="center"
-        mb={5}
-        flexDirection={flexDirection}>
-        <Heading as="h1" size="xl" mb={isMobile ? 4 : 0}>
-          {currentView === 'users' ? 'ユーザー管理' : 'ロールと権限管理'}
-        </Heading>
-        <Stack
-          direction={isMobile ? 'column' : 'row'}
-          spacing={2}
-          width={isMobile ? '100%' : 'auto'}>
-          {currentView === 'users' && (
-            <>
-              <CommonButton
-                variant="primary"
-                withIcon={<AddIcon />}
-                onClick={handleAddUser}
-                isFullWidthMobile>
-                新規ユーザー登録
-              </CommonButton>
-              <CommonButton
-                variant="success"
-                withIcon={<LockIcon />}
-                onClick={handleRolesAndPermissions}
-                isFullWidthMobile>
-                ロールと権限管理
-              </CommonButton>
-            </>
-          )}
-          <BackToDashboardButton
-            onClick={() =>
-              currentView === 'roles'
-                ? setCurrentView('users')
-                : router.push('/dashboard')
-            }
-            customText={
-              currentView === 'roles'
-                ? 'ユーザー管理に戻る'
-                : 'ダッシュボードへ戻る'
-            }
-            w={isMobile ? '100%' : 'auto'}
-          />
-        </Stack>
-      </Flex>
+      <PageHeader
+        title={currentView === 'users' ? 'ユーザー管理' : 'ロールと権限管理'}
+        buttons={
+          <Stack
+            direction={{ base: 'column', md: 'row' }}
+            spacing={2}
+            width={{ base: '100%', md: 'auto' }}>
+            {currentView === 'users' && (
+              <>
+                <CommonButton
+                  variant="primary"
+                  withIcon={<AddIcon />}
+                  onClick={handleAddUser}
+                  isFullWidthMobile>
+                  新規ユーザー登録
+                </CommonButton>
+                <CommonButton
+                  variant="success"
+                  withIcon={<LockIcon />}
+                  onClick={handleRolesAndPermissions}
+                  isFullWidthMobile>
+                  ロールと権限管理
+                </CommonButton>
+              </>
+            )}
+            <BackToDashboardButton
+              onClick={() =>
+                currentView === 'roles'
+                  ? setCurrentView('users')
+                  : router.push('/dashboard')
+              }
+              customText={
+                currentView === 'roles'
+                  ? 'ユーザー管理に戻る'
+                  : 'ダッシュボードへ戻る'
+              }
+              w={{ base: '100%', md: 'auto' }}
+            />
+          </Stack>
+        }
+        mobileStack
+      />
 
       {currentView === 'users'
         ? renderUserManagement()

@@ -9,7 +9,6 @@ import {
   ModalCloseButton,
   FormControl,
   FormLabel,
-  Input,
   Text,
   VStack,
   Box,
@@ -18,6 +17,7 @@ import {
 import { format, isValid, parseISO, startOfDay, endOfDay } from 'date-fns';
 import ja from 'date-fns/locale/ja';
 import CommonButton from '@/components/atoms/CommonButton';
+import CommonInput from '@/components/atoms/CommonInput';
 
 interface DateRangePickerModalProps {
   isOpen: boolean;
@@ -152,7 +152,7 @@ const DateRangePickerModal: React.FC<DateRangePickerModalProps> = ({
           <VStack spacing={4}>
             <FormControl isRequired>
               <FormLabel htmlFor="start-date">開始日</FormLabel>
-              <Input
+              <CommonInput
                 id="start-date"
                 type="date"
                 value={formatDateForInput(startDate)}
@@ -164,7 +164,7 @@ const DateRangePickerModal: React.FC<DateRangePickerModalProps> = ({
 
             <FormControl isRequired>
               <FormLabel htmlFor="end-date">終了日</FormLabel>
-              <Input
+              <CommonInput
                 id="end-date"
                 type="date"
                 value={formatDateForInput(endDate)}

@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast, useDisclosure } from '@chakra-ui/react';
 import axios, { AxiosError } from 'axios';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import {
   fetchOrders as fetchOrdersAction,
   setFilterParams,
-  selectOrdersStatus,
-  selectOrdersError,
 } from '@/features/orders/ordersSlice';
 import type {
   Order,
@@ -79,7 +77,6 @@ export const useOrderManagement = () => {
   });
 
   const { isOpen, onOpen, onClose: originalOnClose } = useDisclosure();
-
   const onClose = useCallback(() => {
     originalOnClose();
     setTimeout(() => {
@@ -165,79 +162,6 @@ export const useOrderManagement = () => {
   );
 
   const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
-
-  const handleSubmit = useCallback(async () => {
-    try {
-      if (modalMode === 'add') {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
-          newOrder,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        );
-
-        toast({
-          title: '注文を作成しました',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top',
-        });
-      } else if (modalMode === 'edit' && activeOrder) {
-        await Promise.all([
-          axios.put(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/items`,
-            { orderItems: newOrder.orderItems },
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json',
-              },
-            },
-          ),
-          axios.put(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/status`,
-            { status: newOrder.status },
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json',
-              },
-            },
-          ),
-        ]);
-
-        toast({
-          title: '注文を更新しました',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top',
-        });
-      }
-
-      setPage(1);
-      await fetchOrders(1);
-      onClose();
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      console.error('Error submitting order:', error);
-      toast({
-        title: 'エラーが発生しました',
-        description:
-          axiosError.response?.data?.error?.message ||
-          '注文の処理中にエラーが発生しました',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
-  }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
 
   useEffect(() => {
     if (page > 1) {
@@ -373,12 +297,21 @@ export const useOrderManagement = () => {
       setTotalCount(response.meta.total);
       setHasMore(response.data.data.length === 15);
 
-      toast({
-        title: '検索が完了しました',
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
-      });
+      if (response.data.data.length === 0) {
+        toast({
+          title: '検索結果がありません',
+          status: 'info',
+          duration: 2000,
+          isClosable: true,
+        });
+      } else {
+        toast({
+          title: '検索が完了しました',
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        });
+      }
     } catch (error) {
       console.error('Search operation failed:', error);
       const axiosError = error as AxiosError<ApiErrorResponse>;
@@ -411,6 +344,80 @@ export const useOrderManagement = () => {
     [handleSearchSubmit],
   );
 
+  const handleSubmit = useCallback(async () => {
+    try {
+      if (modalMode === 'add') {
+        await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
+          newOrder,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
+        toast({
+          title: '注文を作成しました',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          position: 'top',
+        });
+      } else if (modalMode === 'edit' && activeOrder) {
+        await Promise.all([
+          axios.put(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/items`,
+            { orderItems: newOrder.orderItems },
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          ),
+          axios.put(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/status`,
+            { status: newOrder.status },
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json',
+              },
+            },
+          ),
+        ]);
+
+        toast({
+          title: '注文を更新しました',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+          position: 'top',
+        });
+      }
+
+      setPage(1);
+      await fetchOrders(1);
+      onClose();
+    } catch (error) {
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      console.error('Error submitting order:', error);
+      toast({
+        title: 'エラーが発生しました',
+        description:
+          axiosError.response?.data?.error?.message ||
+          '注文の処理中にエラーが発生しました',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+        position: 'top',
+      });
+    }
+  }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
+
+  // ここに修正を加えた日付範囲フィルター関数を追加します
   const handleDateRangeFilter = useCallback(
     async (
       range: 'today' | 'week' | 'month' | 'custom',
@@ -419,6 +426,36 @@ export const useOrderManagement = () => {
     ): Promise<void> => {
       try {
         setIsSearching(true);
+
+        if (range === 'custom' && (!customStart || !customEnd)) {
+          // クリアの場合
+          filterStateRef.current.currentDateRange = { start: null, end: null };
+          setDateRange({ start: null, end: null });
+
+          const response = await dispatch(
+            fetchOrdersAction({
+              page: 1,
+              per_page: 15,
+              search: filterStateRef.current.currentSearchTerm || undefined,
+              status: filterStateRef.current.currentStatus || undefined,
+            }),
+          ).unwrap();
+
+          setOrders(response.data.data);
+          setTotalCount(response.meta.total);
+          setHasMore(response.data.data.length === 15);
+          setPage(1);
+
+          toast({
+            title: '期間フィルターをクリアしました',
+            status: 'success',
+            duration: 2000,
+            isClosable: true,
+          });
+
+          setIsSearching(false);
+          return;
+        }
 
         const today = new Date();
         let start: Date;
@@ -445,53 +482,8 @@ export const useOrderManagement = () => {
             );
             break;
           case 'custom':
-            if (!customStart || !customEnd) {
-              setDateRange({ start: null, end: null });
-              filterStateRef.current = {
-                currentStatus: null,
-                currentSearchTerm: '',
-                currentDateRange: { start: null, end: null },
-              };
-              setSearchTerm('');
-              setStatusFilter(null);
-              setPage(1);
-
-              try {
-                await dispatch(setFilterParams({}));
-                const response = await dispatch(
-                  fetchOrdersAction({
-                    page: 1,
-                    per_page: 15,
-                  }),
-                ).unwrap();
-
-                setOrders(response.data.data);
-                setTotalCount(response.meta.total);
-                setHasMore(response.data.data.length === 15);
-
-                toast({
-                  title: 'フィルターをクリアしました',
-                  status: 'success',
-                  duration: 2000,
-                  isClosable: true,
-                });
-              } catch (error) {
-                console.error('Clear filter error:', error);
-                const axiosError = error as AxiosError<ApiErrorResponse>;
-                toast({
-                  title: 'フィルターのクリアに失敗しました',
-                  description: axiosError.response?.data?.error?.message,
-                  status: 'error',
-                  duration: 3000,
-                  isClosable: true,
-                });
-              } finally {
-                setIsSearching(false);
-              }
-              return;
-            }
-            start = startOfDay(customStart);
-            end = endOfDay(customEnd);
+            start = startOfDay(customStart!);
+            end = endOfDay(customEnd!);
             break;
           default:
             return;
@@ -502,12 +494,7 @@ export const useOrderManagement = () => {
 
         const newDateRange = { start, end };
         setDateRange(newDateRange);
-
-        filterStateRef.current = {
-          currentStatus: null,
-          currentSearchTerm: '',
-          currentDateRange: newDateRange,
-        };
+        filterStateRef.current.currentDateRange = newDateRange;
 
         const params: OrderParams = {
           page: 1,
@@ -784,7 +771,6 @@ export const useOrderManagement = () => {
     newOrder,
     formErrors,
     searchTerm,
-    statusFilter,
     dateRange,
     isOpen,
     onClose,

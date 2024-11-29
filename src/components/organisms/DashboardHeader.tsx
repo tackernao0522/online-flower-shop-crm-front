@@ -4,7 +4,6 @@ import {
   Heading,
   InputGroup,
   InputLeftElement,
-  Input,
   IconButton,
   Menu,
   MenuButton,

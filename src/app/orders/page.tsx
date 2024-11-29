@@ -251,7 +251,7 @@ const OrdersPage = () => {
                 <Text>期間を指定...</Text>
               </HStack>
             </MenuItem>
-            {(dateRange.start || dateRange.end) && (
+            {dateRange.start !== null && dateRange.end !== null && (
               <MenuItem
                 onClick={() => handleDateRangeFilter('custom', null, null)}>
                 期間指定をクリア

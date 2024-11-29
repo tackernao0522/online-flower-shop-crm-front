@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import FormField from '../molecules/FormField';
 import CommonButton from '../atoms/CommonButton';
-import Checkbox from '../atoms/Checkbox';
+import CommonCheckbox from '../atoms/CommonCheckbox';
 import { login } from '../../features/auth/authSlice';
 import axios from 'axios';
 import { RootState } from '../../store';
@@ -145,9 +145,9 @@ const LoginForm: React.FC = () => {
           value={password}
           onChange={e => setPassword(e.target.value)}
         />
-        <Checkbox size={{ base: 'sm', md: 'md' }}>
+        <CommonCheckbox size={{ base: 'sm', md: 'md' }}>
           ログイン状態を保持する
-        </Checkbox>
+        </CommonCheckbox>
         <CommonButton
           type="submit"
           variant="primary"

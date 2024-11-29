@@ -84,6 +84,7 @@ import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
 import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
 import CommonButton from '@/components/atoms/CommonButton';
 import PageHeader from '@/components/molecules/PageHeader';
+import CommonInput from '@/components/atoms/CommonInput';
 
 const OrdersPage = () => {
   const toast = useToast();
@@ -185,11 +186,12 @@ const OrdersPage = () => {
           <InputLeftElement pointerEvents="none">
             <SearchIcon color="gray.300" />
           </InputLeftElement>
-          <Input
+          <CommonInput
             placeholder="注文番号、顧客名で検索..."
             value={searchTerm}
             onChange={handleSearchChange}
             onKeyDown={handleSearchKeyDown}
+            paddingLeft="40px"
           />
           <InputRightElement width="4.5rem">
             <CommonButton
@@ -274,7 +276,7 @@ const OrdersPage = () => {
     <VStack spacing={6} align="stretch">
       <FormControl isRequired isInvalid={!!formErrors.customerId}>
         <FormLabel>顧客ID</FormLabel>
-        <Input
+        <CommonInput
           name="customerId"
           value={newOrder.customerId}
           onChange={handleInputChange}
@@ -289,7 +291,7 @@ const OrdersPage = () => {
           {newOrder.orderItems.map((item, index) => (
             <HStack key={`new-order-item-${index}`} spacing={4}>
               <FormControl isRequired>
-                <Input
+                <CommonInput
                   name={`orderItems.${index}.productId`}
                   placeholder="商品ID"
                   value={item.productId}

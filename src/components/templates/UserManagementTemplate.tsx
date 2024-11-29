@@ -5,7 +5,6 @@ import {
   HStack,
   FormControl,
   FormLabel,
-  Checkbox,
   Text,
   Spinner,
   Stack,
@@ -28,6 +27,7 @@ import ScrollToTopButton from '../atoms/ScrollToTopButton';
 import CommonButton from '../atoms/CommonButton';
 import PageHeader from '../molecules/PageHeader';
 import CommonInput from '../atoms/CommonInput';
+import CommonCheckbox from '../atoms/CommonCheckbox';
 
 const UserManagementTemplate: React.FC = () => {
   const router = useRouter();
@@ -105,7 +105,7 @@ const UserManagementTemplate: React.FC = () => {
               <FormLabel>{permission.name}</FormLabel>
               <HStack>
                 {permission.actions.map(action => (
-                  <Checkbox key={action}>{action}</Checkbox>
+                  <CommonCheckbox key={action}>{action}</CommonCheckbox>
                 ))}
               </HStack>
             </FormControl>

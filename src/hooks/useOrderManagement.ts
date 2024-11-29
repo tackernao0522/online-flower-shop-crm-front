@@ -3,10 +3,7 @@ import { useToast, useDisclosure } from '@chakra-ui/react';
 import axios, { AxiosError } from 'axios';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
-import {
-  fetchOrders as fetchOrdersAction,
-  setFilterParams,
-} from '@/features/orders/ordersSlice';
+import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice';
 import type {
   Order,
   OrderStatus,
@@ -76,7 +73,11 @@ export const useOrderManagement = () => {
     currentDateRange: { start: null, end: null },
   });
 
-  const { isOpen, onOpen, onClose: originalOnClose } = useDisclosure();
+  const disclosure = useDisclosure();
+  const isOpen = disclosure.isOpen;
+  const onOpen = disclosure.onOpen;
+  const originalOnClose = disclosure.onClose;
+
   const onClose = useCallback(() => {
     originalOnClose();
     setTimeout(() => {
@@ -98,15 +99,21 @@ export const useOrderManagement = () => {
         const params: OrderParams = {
           page: pageNum,
           per_page: 15,
-          search: filterStateRef.current.currentSearchTerm || undefined,
-          status: filterStateRef.current.currentStatus || undefined,
-          start_date:
-            filterStateRef.current.currentDateRange.start?.toISOString() ||
-            undefined,
-          end_date:
-            filterStateRef.current.currentDateRange.end?.toISOString() ||
-            undefined,
         };
+
+        if (filterStateRef.current.currentSearchTerm) {
+          params.search = filterStateRef.current.currentSearchTerm;
+        } else if (filterStateRef.current.currentStatus) {
+          params.status = filterStateRef.current.currentStatus;
+        } else if (
+          filterStateRef.current.currentDateRange.start &&
+          filterStateRef.current.currentDateRange.end
+        ) {
+          params.start_date =
+            filterStateRef.current.currentDateRange.start.toISOString();
+          params.end_date =
+            filterStateRef.current.currentDateRange.end.toISOString();
+        }
 
         const response = await dispatch(fetchOrdersAction(params)).unwrap();
 
@@ -135,9 +142,9 @@ export const useOrderManagement = () => {
 
   const loadMore = useCallback(() => {
     if (!isSearching && status !== 'loading' && hasMore) {
-      setPage(prevPage => prevPage + 1);
+      void fetchOrders(page + 1);
     }
-  }, [isSearching, status, hasMore]);
+  }, [isSearching, status, hasMore, page, fetchOrders]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
@@ -217,15 +224,12 @@ export const useOrderManagement = () => {
       setDateRange({ start: null, end: null });
       setPage(1);
 
-      const [_, response] = await Promise.all([
-        dispatch(setFilterParams({})),
-        dispatch(
-          fetchOrdersAction({
-            page: 1,
-            per_page: 15,
-          }),
-        ).unwrap(),
-      ]);
+      const response = await dispatch(
+        fetchOrdersAction({
+          page: 1,
+          per_page: 15,
+        }),
+      ).unwrap();
 
       setOrders(response.data.data);
       setTotalCount(response.meta.total);
@@ -263,35 +267,24 @@ export const useOrderManagement = () => {
       setIsSearching(true);
       setPage(1);
 
+      // 他のフィルターをクリア
+      setStatusFilter(null);
+      setDateRange({ start: null, end: null });
+
+      // 検索のみの状態を設定
       filterStateRef.current = {
         currentStatus: null,
         currentSearchTerm: searchTerm,
         currentDateRange: { start: null, end: null },
       };
 
-      setStatusFilter(null);
-      setDateRange({ start: null, end: null });
-
-      const searchParams: OrderParams = {
-        page: 1,
-        per_page: 15,
-        search: searchTerm || undefined,
-      };
-
-      await dispatch(
-        setFilterParams({
-          searchTerm,
-          status: undefined,
-          startDate: undefined,
-          endDate: undefined,
+      const response = await dispatch(
+        fetchOrdersAction({
+          page: 1,
+          per_page: 15,
+          search: searchTerm,
         }),
-      );
-
-      const response = await dispatch(fetchOrdersAction(searchParams)).unwrap();
-
-      if (!response.data || !Array.isArray(response.data.data)) {
-        throw new Error('Invalid response data structure');
-      }
+      ).unwrap();
 
       setOrders(response.data.data);
       setTotalCount(response.meta.total);
@@ -301,13 +294,6 @@ export const useOrderManagement = () => {
         toast({
           title: '検索結果がありません',
           status: 'info',
-          duration: 2000,
-          isClosable: true,
-        });
-      } else {
-        toast({
-          title: '検索が完了しました',
-          status: 'success',
           duration: 2000,
           isClosable: true,
         });
@@ -323,16 +309,11 @@ export const useOrderManagement = () => {
         status: 'error',
         duration: 5000,
         isClosable: true,
-        position: 'top',
       });
-
-      setOrders([]);
-      setTotalCount(0);
-      setHasMore(false);
     } finally {
       setIsSearching(false);
     }
-  }, [isSearching, searchTerm, dispatch, toast]);
+  }, [dispatch, searchTerm, toast, isSearching]);
 
   const handleSearchKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>): void => {
@@ -417,7 +398,52 @@ export const useOrderManagement = () => {
     }
   }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
 
-  // ここに修正を加えた日付範囲フィルター関数を追加します
+  const handleStatusFilter = useCallback(
+    async (status: OrderStatus): Promise<void> => {
+      try {
+        setIsSearching(true);
+
+        // 他のフィルターをクリア
+        setSearchTerm('');
+        setDateRange({ start: null, end: null });
+
+        // ステータスフィルターのみの状態を設定
+        filterStateRef.current = {
+          currentStatus: status,
+          currentSearchTerm: '',
+          currentDateRange: { start: null, end: null },
+        };
+
+        const response = await dispatch(
+          fetchOrdersAction({
+            page: 1,
+            per_page: 15,
+            status: status,
+          }),
+        ).unwrap();
+
+        setOrders(response.data.data);
+        setTotalCount(response.meta.total);
+        setHasMore(response.data.data.length === 15);
+        setPage(1);
+        setStatusFilter(status);
+      } catch (error) {
+        console.error('Status filtering error:', error);
+        const axiosError = error as AxiosError<ApiErrorResponse>;
+        toast({
+          title: 'フィルタリングに失敗しました',
+          description: axiosError.response?.data?.error?.message,
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [dispatch, toast],
+  );
+
   const handleDateRangeFilter = useCallback(
     async (
       range: 'today' | 'week' | 'month' | 'custom',
@@ -428,34 +454,13 @@ export const useOrderManagement = () => {
         setIsSearching(true);
 
         if (range === 'custom' && (!customStart || !customEnd)) {
-          // クリアの場合
-          filterStateRef.current.currentDateRange = { start: null, end: null };
-          setDateRange({ start: null, end: null });
-
-          const response = await dispatch(
-            fetchOrdersAction({
-              page: 1,
-              per_page: 15,
-              search: filterStateRef.current.currentSearchTerm || undefined,
-              status: filterStateRef.current.currentStatus || undefined,
-            }),
-          ).unwrap();
-
-          setOrders(response.data.data);
-          setTotalCount(response.meta.total);
-          setHasMore(response.data.data.length === 15);
-          setPage(1);
-
-          toast({
-            title: '期間フィルターをクリアしました',
-            status: 'success',
-            duration: 2000,
-            isClosable: true,
-          });
-
-          setIsSearching(false);
+          await clearFilters();
           return;
         }
+
+        // 他のフィルターをクリア
+        setSearchTerm('');
+        setStatusFilter(null);
 
         const today = new Date();
         let start: Date;
@@ -489,42 +494,29 @@ export const useOrderManagement = () => {
             return;
         }
 
-        setSearchTerm('');
-        setStatusFilter(null);
-
+        // 日付フィルターのみの状態を設定
         const newDateRange = { start, end };
         setDateRange(newDateRange);
-        filterStateRef.current.currentDateRange = newDateRange;
 
-        const params: OrderParams = {
-          page: 1,
-          per_page: 15,
-          start_date: start.toISOString(),
-          end_date: end.toISOString(),
+        filterStateRef.current = {
+          currentStatus: null,
+          currentSearchTerm: '',
+          currentDateRange: newDateRange,
         };
 
-        await dispatch(
-          setFilterParams({
-            searchTerm: '',
-            status: undefined,
-            startDate: start.toISOString(),
-            endDate: end.toISOString(),
+        const response = await dispatch(
+          fetchOrdersAction({
+            page: 1,
+            per_page: 15,
+            start_date: start.toISOString(),
+            end_date: end.toISOString(),
           }),
-        );
-
-        const response = await dispatch(fetchOrdersAction(params)).unwrap();
+        ).unwrap();
 
         setOrders(response.data.data);
         setTotalCount(response.meta.total);
         setHasMore(response.data.data.length === 15);
         setPage(1);
-
-        toast({
-          title: '期間フィルターを適用しました',
-          status: 'success',
-          duration: 2000,
-          isClosable: true,
-        });
       } catch (error) {
         console.error('Date range filter error:', error);
         const axiosError = error as AxiosError<ApiErrorResponse>;
@@ -541,53 +533,7 @@ export const useOrderManagement = () => {
         setIsSearching(false);
       }
     },
-    [dispatch, toast],
-  );
-
-  const handleStatusFilter = useCallback(
-    async (status: OrderStatus): Promise<void> => {
-      try {
-        setIsSearching(true);
-        setStatusFilter(status);
-
-        filterStateRef.current = {
-          currentStatus: status,
-          currentSearchTerm: '',
-          currentDateRange: { start: null, end: null },
-        };
-
-        setDateRange({ start: null, end: null });
-        setSearchTerm('');
-        setPage(1);
-
-        const response = await dispatch(
-          fetchOrdersAction({
-            page: 1,
-            per_page: 15,
-            status: status || undefined,
-          }),
-        ).unwrap();
-
-        if (response && response.data) {
-          setOrders(response.data.data);
-          setTotalCount(response.meta.total);
-          setHasMore(response.data.data.length === 15);
-        }
-      } catch (error) {
-        console.error('Status filtering error:', error);
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        toast({
-          title: 'フィルタリングに失敗しました',
-          description: axiosError.response?.data?.error?.message,
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsSearching(false);
-      }
-    },
-    [dispatch, toast],
+    [dispatch, toast, clearFilters],
   );
 
   const handleOrderClick = useCallback(

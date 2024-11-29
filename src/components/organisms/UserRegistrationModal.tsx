@@ -10,11 +10,11 @@ import {
   VStack,
   FormControl,
   FormLabel,
-  Input,
   Select,
   useBreakpointValue,
 } from '@chakra-ui/react';
 import CommonButton from '../atoms/CommonButton';
+import CommonInput from '../atoms/CommonInput';
 
 interface UserRegistrationModalProps {
   isOpen: boolean;
@@ -53,7 +53,7 @@ const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
             <VStack spacing={4}>
               <FormControl isRequired>
                 <FormLabel>ユーザー名</FormLabel>
-                <Input
+                <CommonInput
                   name="username"
                   value={newUserFormData.username}
                   onChange={handleNewUserChange}
@@ -61,7 +61,7 @@ const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>メールアドレス</FormLabel>
-                <Input
+                <CommonInput
                   name="email"
                   type="email"
                   value={newUserFormData.email}
@@ -70,7 +70,7 @@ const UserRegistrationModal: React.FC<UserRegistrationModalProps> = ({
               </FormControl>
               <FormControl isRequired>
                 <FormLabel>パスワード</FormLabel>
-                <Input
+                <CommonInput
                   name="password"
                   type="password"
                   value={newUserFormData.password}

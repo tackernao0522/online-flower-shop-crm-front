@@ -83,6 +83,7 @@ import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
 import CommonButton from '@/components/atoms/CommonButton';
 import PageHeader from '@/components/molecules/PageHeader';
 import CommonInput from '@/components/atoms/CommonInput';
+import { OrderSearchFilter } from '@/components/molecules/OrderSearchFilter';
 
 const OrdersPage = () => {
   const toast = useToast();
@@ -176,99 +177,6 @@ const OrdersPage = () => {
         onClose,
         size: modalSize,
       };
-
-  const renderSearchAndFilter = () => (
-    <VStack spacing={4} w="full" mb={6}>
-      <Flex w="full" gap={2} flexWrap="wrap">
-        <InputGroup flex={1} minW={{ base: 'full', md: '320px' }}>
-          <InputLeftElement pointerEvents="none">
-            <SearchIcon color="gray.300" />
-          </InputLeftElement>
-          <CommonInput
-            placeholder="注文番号、顧客名で検索..."
-            value={searchTerm}
-            onChange={handleSearchChange}
-            onKeyDown={handleSearchKeyDown}
-            paddingLeft="40px"
-          />
-          <InputRightElement width="4.5rem">
-            <CommonButton
-              size="sm"
-              variant="secondary"
-              onClick={handleSearchSubmit}
-              isLoading={isSearching || status === 'loading'}
-              loadingText="検索中">
-              検索
-            </CommonButton>
-          </InputRightElement>
-        </InputGroup>
-
-        <Menu>
-          <MenuButton
-            as={CommonButton}
-            variant="secondary"
-            withIcon={<ChevronDownIcon />}
-            iconPosition="right">
-            ステータス
-          </MenuButton>
-          <MenuList>
-            {Object.entries(statusDisplayText).map(([value, label]) => (
-              <MenuItem
-                key={value}
-                onClick={() => handleStatusFilter(value as OrderStatus)}>
-                <Badge
-                  colorScheme={statusColorScheme[value as OrderStatus]}
-                  mr={2}>
-                  {label}
-                </Badge>
-              </MenuItem>
-            ))}
-            <MenuItem onClick={clearFilters}>フィルタをクリア</MenuItem>
-          </MenuList>
-        </Menu>
-
-        <Menu>
-          <MenuButton
-            as={CommonButton}
-            variant="secondary"
-            withIcon={<ChevronDownIcon />}
-            iconPosition="right">
-            期間
-          </MenuButton>
-          <MenuList>
-            <MenuItem onClick={() => handleDateRangeFilter('today')}>
-              本日
-            </MenuItem>
-            <MenuItem onClick={() => handleDateRangeFilter('week')}>
-              今週
-            </MenuItem>
-            <MenuItem onClick={() => handleDateRangeFilter('month')}>
-              今月
-            </MenuItem>
-            <MenuItem onClick={onDatePickerOpen}>
-              <HStack>
-                <CalendarIcon />
-                <Text>期間を指定...</Text>
-              </HStack>
-            </MenuItem>
-            {dateRange.start !== null && dateRange.end !== null && (
-              <MenuItem
-                onClick={() => handleDateRangeFilter('custom', null, null)}>
-                期間指定をクリア
-              </MenuItem>
-            )}
-          </MenuList>
-        </Menu>
-
-        {dateRange.start && dateRange.end && (
-          <Text color="gray.600" fontSize="sm">
-            期間: {format(dateRange.start, 'yyyy/MM/dd', { locale: ja })} -{' '}
-            {format(dateRange.end, 'yyyy/MM/dd', { locale: ja })}
-          </Text>
-        )}
-      </Flex>
-    </VStack>
-  );
 
   const renderOrderForm = () => (
     <VStack spacing={6} align="stretch">
@@ -643,7 +551,21 @@ const OrdersPage = () => {
         mobileStack
       />
 
-      {renderSearchAndFilter()}
+      <OrderSearchFilter
+        searchTerm={searchTerm}
+        dateRange={dateRange}
+        isSearching={isSearching}
+        status={status}
+        statusColorScheme={statusColorScheme}
+        statusDisplayText={statusDisplayText}
+        onSearchChange={handleSearchChange}
+        onSearchSubmit={handleSearchSubmit}
+        onSearchKeyDown={handleSearchKeyDown}
+        onStatusFilter={handleStatusFilter}
+        onDateRangeFilter={handleDateRangeFilter}
+        onDatePickerOpen={onDatePickerOpen}
+        clearFilters={clearFilters}
+      />
 
       <Text mb={4} color="gray.600">
         総注文リスト数: {totalCount.toLocaleString()}

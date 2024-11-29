@@ -1,7 +1,8 @@
 import React from 'react';
-import { Flex, Input } from '@chakra-ui/react';
+import { Flex } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
 import CommonButton from '../atoms/CommonButton';
+import CommonInput from '../atoms/CommonInput';
 
 interface CustomerSearchFormProps {
   searchTerm: string;
@@ -18,7 +19,7 @@ const CustomerSearchForm: React.FC<CustomerSearchFormProps> = ({
 }) => {
   return (
     <Flex mb={5} flexDirection={['column', 'row']}>
-      <Input
+      <CommonInput
         placeholder="顧客名または電話番号( - は除く)"
         mr={[0, 3]}
         mb={[2, 0]}

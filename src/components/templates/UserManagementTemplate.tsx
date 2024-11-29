@@ -5,7 +5,6 @@ import {
   HStack,
   FormControl,
   FormLabel,
-  Input,
   Checkbox,
   Text,
   Spinner,
@@ -28,6 +27,7 @@ import BackToDashboardButton from '../atoms/BackToDashboardButton';
 import ScrollToTopButton from '../atoms/ScrollToTopButton';
 import CommonButton from '../atoms/CommonButton';
 import PageHeader from '../molecules/PageHeader';
+import CommonInput from '../atoms/CommonInput';
 
 const UserManagementTemplate: React.FC = () => {
   const router = useRouter();
@@ -41,7 +41,6 @@ const UserManagementTemplate: React.FC = () => {
     activeItem,
     modalMode,
     currentView,
-    hasMore,
     searchTerm,
     searchRole,
     lastSearch,
@@ -58,7 +57,6 @@ const UserManagementTemplate: React.FC = () => {
     isOpen,
     onClose,
     isMobile,
-    flexDirection,
     modalSize,
 
     // Handlers
@@ -92,11 +90,11 @@ const UserManagementTemplate: React.FC = () => {
       <VStack spacing={4} align="stretch">
         <FormControl>
           <FormLabel>ロール名</FormLabel>
-          <Input defaultValue={roleItem?.name} />
+          <CommonInput defaultValue={roleItem?.name} />
         </FormControl>
         <FormControl>
           <FormLabel>説明</FormLabel>
-          <Input defaultValue={roleItem?.description} />
+          <CommonInput defaultValue={roleItem?.description} />
         </FormControl>
         <Heading size="md" mt={4}>
           権限設定

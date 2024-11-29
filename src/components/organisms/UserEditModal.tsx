@@ -10,7 +10,6 @@ import {
   VStack,
   FormControl,
   FormLabel,
-  Input,
   Select,
   Badge,
   Box,
@@ -25,6 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { User } from '@/types/user';
 import CommonButton from '../atoms/CommonButton';
+import CommonInput from '../atoms/CommonInput';
 
 interface UserEditModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
     <VStack spacing={4} align="stretch">
       <FormControl>
         <FormLabel>ユーザー名</FormLabel>
-        <Input
+        <CommonInput
           name="username"
           defaultValue={activeItem?.username || ''}
           onChange={handleEditUserChange}
@@ -60,7 +60,7 @@ const UserEditModal: React.FC<UserEditModalProps> = ({
       </FormControl>
       <FormControl>
         <FormLabel>メールアドレス</FormLabel>
-        <Input
+        <CommonInput
           name="email"
           type="email"
           defaultValue={activeItem?.email || ''}

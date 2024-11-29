@@ -1,8 +1,9 @@
 import React from 'react';
-import { Table, Thead, Tbody, Tr, Th, Td, Input, Box } from '@chakra-ui/react';
+import { Table, Thead, Tbody, Tr, Th, Td, Box } from '@chakra-ui/react';
 import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import { Customer } from '@/types/customer';
 import CommonButton from '../atoms/CommonButton';
+import CommonInput from '../atoms/CommonInput';
 
 interface CustomerPurchaseHistoryProps {
   customer: Customer | null;
@@ -34,21 +35,21 @@ const CustomerPurchaseHistory: React.FC<CustomerPurchaseHistoryProps> = ({
                   {modalMode === 'detail' ? (
                     purchase.id
                   ) : (
-                    <Input defaultValue={purchase.id} size="sm" />
+                    <CommonInput defaultValue={purchase.id} size="sm" />
                   )}
                 </Td>
                 <Td>
                   {modalMode === 'detail' ? (
                     purchase.date
                   ) : (
-                    <Input defaultValue={purchase.date} size="sm" />
+                    <CommonInput defaultValue={purchase.date} size="sm" />
                   )}
                 </Td>
                 <Td>
                   {modalMode === 'detail' ? (
                     `¥${purchase.amount.toLocaleString()}`
                   ) : (
-                    <Input defaultValue={purchase.amount} size="sm" />
+                    <CommonInput defaultValue={purchase.amount} size="sm" />
                   )}
                 </Td>
                 {modalMode !== 'detail' && (

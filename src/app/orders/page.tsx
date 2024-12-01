@@ -14,7 +14,6 @@ import {
   HStack,
   Badge,
   Text,
-  IconButton,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -22,10 +21,6 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
-  Select,
   Tabs,
   TabList,
   TabPanels,
@@ -46,15 +41,10 @@ import {
   useToast,
   DrawerProps,
   ModalProps,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
   Stack,
   Tooltip,
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon, WarningIcon } from '@chakra-ui/icons';
+import { AddIcon, WarningIcon } from '@chakra-ui/icons';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
@@ -65,10 +55,10 @@ import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
 import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
 import CommonButton from '@/components/atoms/CommonButton';
 import PageHeader from '@/components/molecules/PageHeader';
-import CommonInput from '@/components/atoms/CommonInput';
 import { OrderSearchFilter } from '@/components/molecules/OrderSearchFilter';
 import OrderTable from '@/components/organisms/OrderTable';
 import { formatDate } from '@/utils/dateFormatter';
+import OrderForm from '@/components/organisms/OrderForm';
 
 const OrdersPage = () => {
   const toast = useToast();
@@ -163,86 +153,24 @@ const OrdersPage = () => {
         size: modalSize,
       };
 
-  const renderOrderForm = () => (
-    <VStack spacing={6} align="stretch">
-      <FormControl isRequired isInvalid={!!formErrors.customerId}>
-        <FormLabel>顧客ID</FormLabel>
-        <CommonInput
-          name="customerId"
-          value={newOrder.customerId}
-          onChange={handleInputChange}
-          placeholder="顧客IDを入力"
+  const renderOrderForm = () => {
+    if (modalMode === 'add' || modalMode === 'edit') {
+      return (
+        <OrderForm
+          newOrder={newOrder}
+          formErrors={formErrors}
+          modalMode={modalMode}
+          statusDisplayText={statusDisplayText}
+          handleInputChange={handleInputChange}
+          handleOrderItemChange={handleOrderItemChange}
+          handleAddOrderItem={handleAddOrderItem}
+          handleRemoveOrderItem={handleRemoveOrderItem}
         />
-        <FormErrorMessage>{formErrors.customerId}</FormErrorMessage>
-      </FormControl>
+      );
+    }
 
-      <FormControl isRequired isInvalid={!!formErrors.orderItems}>
-        <FormLabel>注文商品</FormLabel>
-        <VStack spacing={4} align="stretch">
-          {newOrder.orderItems.map((item, index) => (
-            <HStack key={`new-order-item-${index}`} spacing={4}>
-              <FormControl isRequired>
-                <CommonInput
-                  name={`orderItems.${index}.productId`}
-                  placeholder="商品ID"
-                  value={item.productId}
-                  onChange={e =>
-                    handleOrderItemChange(index, 'productId', e.target.value)
-                  }
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <NumberInput
-                  min={1}
-                  value={item.quantity}
-                  onChange={(valueString, valueNumber) =>
-                    handleOrderItemChange(index, 'quantity', valueNumber || 1)
-                  }>
-                  <NumberInputField
-                    name={`orderItems.${index}.quantity`}
-                    placeholder="数量"
-                  />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
-              </FormControl>
-              <IconButton
-                aria-label="商品を削除"
-                icon={<DeleteIcon />}
-                colorScheme="red"
-                onClick={() => handleRemoveOrderItem(index)}
-              />
-            </HStack>
-          ))}
-          <CommonButton
-            variant="outline"
-            withIcon={<AddIcon />}
-            onClick={handleAddOrderItem}>
-            商品を追加
-          </CommonButton>
-        </VStack>
-        <FormErrorMessage>{formErrors.orderItems}</FormErrorMessage>
-      </FormControl>
-
-      {modalMode === 'edit' && (
-        <FormControl>
-          <FormLabel>ステータス</FormLabel>
-          <Select
-            name="status"
-            value={newOrder.status}
-            onChange={handleInputChange}>
-            {Object.entries(statusDisplayText).map(([value, label]) => (
-              <option key={`status-${value}`} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
-        </FormControl>
-      )}
-    </VStack>
-  );
+    return null;
+  };
 
   const renderOrderDetails = () => {
     if (!activeOrder) {

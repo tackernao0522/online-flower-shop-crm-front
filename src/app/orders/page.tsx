@@ -35,13 +35,6 @@ import {
   AlertIcon,
   Spinner,
   Container,
-  InputGroup,
-  InputLeftElement,
-  InputRightElement,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
   Drawer,
   DrawerBody,
   DrawerFooter,
@@ -61,21 +54,11 @@ import {
   Stack,
   Tooltip,
 } from '@chakra-ui/react';
-import {
-  AddIcon,
-  EditIcon,
-  DeleteIcon,
-  ViewIcon,
-  SearchIcon,
-  ChevronDownIcon,
-  WarningIcon,
-  CalendarIcon,
-} from '@chakra-ui/icons';
+import { AddIcon, DeleteIcon, WarningIcon } from '@chakra-ui/icons';
 import { format } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
 import { OrderStatus } from '@/types/order';
-import { formatDate } from '@/utils/dateFormatter';
 import { useDisclosure } from '@chakra-ui/react';
 import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
 import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
@@ -84,10 +67,12 @@ import CommonButton from '@/components/atoms/CommonButton';
 import PageHeader from '@/components/molecules/PageHeader';
 import CommonInput from '@/components/atoms/CommonInput';
 import { OrderSearchFilter } from '@/components/molecules/OrderSearchFilter';
+import OrderTable from '@/components/organisms/OrderTable';
+import { formatDate } from '@/utils/dateFormatter';
 
 const OrdersPage = () => {
   const toast = useToast();
-  const isMobile = useBreakpointValue({ base: true, md: false });
+  const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
   const modalSize = useBreakpointValue({ base: 'full', md: '4xl' });
 
   const {
@@ -129,8 +114,8 @@ const OrdersPage = () => {
     handleOrderItemChange,
     clearFilters,
     isSearching,
-    hasMore,
     lastElementRef,
+    hasMore,
   } = useOrderManagement();
 
   const statusColorScheme: Record<OrderStatus, string> = {
@@ -571,98 +556,17 @@ const OrdersPage = () => {
         総注文リスト数: {totalCount.toLocaleString()}
       </Text>
 
-      <Box overflowX="auto">
-        <Table variant="simple">
-          <Thead>
-            <Tr>
-              <Th whiteSpace="nowrap">注文番号</Th>
-              <Th whiteSpace="nowrap">顧客名</Th>
-              <Th whiteSpace="nowrap">注文日</Th>
-              <Th whiteSpace="nowrap">合計金額</Th>
-              <Th whiteSpace="nowrap">ステータス</Th>
-              <Th whiteSpace="nowrap">アクション</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {orders.map((order, index) => (
-              <Tr
-                key={`${order.id}-${order.orderNumber}-${index}`}
-                ref={index === orders.length - 1 ? lastElementRef : undefined}>
-                <Td whiteSpace="nowrap">{order.orderNumber}</Td>
-                <Td whiteSpace="nowrap">{order.customer.name}</Td>
-                <Td whiteSpace="nowrap">{formatDate(order.orderDate)}</Td>
-                <Td whiteSpace="nowrap">
-                  ¥{order.totalAmount.toLocaleString()}
-                </Td>
-                <Td whiteSpace="nowrap">
-                  <Badge colorScheme={statusColorScheme[order.status]}>
-                    {statusDisplayText[order.status]}
-                  </Badge>
-                </Td>
-                <Td whiteSpace="nowrap">
-                  {isMobile ? (
-                    <HStack spacing={2}>
-                      <IconButton
-                        aria-label="詳細を表示"
-                        icon={<ViewIcon />}
-                        size="sm"
-                        onClick={() => handleOrderClick(order)}
-                      />
-                      <IconButton
-                        aria-label="注文を編集"
-                        icon={<EditIcon />}
-                        size="sm"
-                        isDisabled={
-                          order.status === 'DELIVERED' ||
-                          order.status === 'CANCELLED'
-                        }
-                        onClick={() => handleEditOrder(order)}
-                      />
-                      <IconButton
-                        aria-label="注文を削除"
-                        icon={<DeleteIcon />}
-                        size="sm"
-                        colorScheme="red"
-                        isDisabled={order.status === 'DELIVERED'}
-                        onClick={() => handleDeleteOrder(order)}
-                      />
-                    </HStack>
-                  ) : (
-                    <HStack spacing={2}>
-                      <CommonButton
-                        variant="secondary"
-                        size="sm"
-                        withIcon={<ViewIcon />}
-                        onClick={() => handleOrderClick(order)}>
-                        詳細
-                      </CommonButton>
-                      <CommonButton
-                        variant="secondary"
-                        size="sm"
-                        leftIcon={<EditIcon />}
-                        isDisabled={
-                          order.status === 'DELIVERED' ||
-                          order.status === 'CANCELLED'
-                        }
-                        onClick={() => handleEditOrder(order)}>
-                        編集
-                      </CommonButton>
-                      <CommonButton
-                        variant="danger"
-                        size="sm"
-                        withIcon={<DeleteIcon />}
-                        isDisabled={order.status === 'DELIVERED'}
-                        onClick={() => handleDeleteOrder(order)}>
-                        削除
-                      </CommonButton>
-                    </HStack>
-                  )}
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Box>
+      <OrderTable
+        orders={orders}
+        statusColorScheme={statusColorScheme}
+        statusDisplayText={statusDisplayText}
+        isMobile={isMobile}
+        lastElementRef={lastElementRef}
+        handleOrderClick={handleOrderClick}
+        handleEditOrder={handleEditOrder}
+        handleDeleteOrder={handleDeleteOrder}
+        formatDate={formatDate}
+      />
 
       <Flex justify="center" my={4}>
         <Text color="red">

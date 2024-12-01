@@ -37,7 +37,6 @@ export const useOrderManagement = () => {
   const dispatch = useDispatch<AppDispatch>();
   const toast = useToast();
 
-  // Local State
   const [status, setStatus] = useState<
     'idle' | 'loading' | 'succeeded' | 'failed'
   >('idle');
@@ -403,11 +402,9 @@ export const useOrderManagement = () => {
       try {
         setIsSearching(true);
 
-        // 他のフィルターをクリア
         setSearchTerm('');
         setDateRange({ start: null, end: null });
 
-        // ステータスフィルターのみの状態を設定
         filterStateRef.current = {
           currentStatus: status,
           currentSearchTerm: '',
@@ -458,7 +455,6 @@ export const useOrderManagement = () => {
           return;
         }
 
-        // 他のフィルターをクリア
         setSearchTerm('');
         setStatusFilter(null);
 

@@ -3,9 +3,6 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import OrderModal from '../OrderModal';
 import { ChakraProvider } from '@chakra-ui/react';
 import { Order, OrderStatus, OrderForm, OrderItem } from '@/types/order';
-import { Product } from '@/types/product';
-import { Customer } from '@/types/customer';
-import { User } from '@/types/user';
 
 import '@testing-library/jest-dom';
 

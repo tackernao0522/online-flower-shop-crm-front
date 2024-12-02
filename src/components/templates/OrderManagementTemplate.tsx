@@ -3,25 +3,15 @@
 import React from 'react';
 import {
   Flex,
-  VStack,
-  HStack,
   Text,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   Alert,
   AlertIcon,
   Spinner,
   Container,
   useBreakpointValue,
-  useToast,
   Stack,
 } from '@chakra-ui/react';
-import { AddIcon, WarningIcon } from '@chakra-ui/icons';
+import { AddIcon } from '@chakra-ui/icons';
 import { OrderStatus } from '@/types/order';
 import { useDisclosure } from '@chakra-ui/react';
 import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
@@ -34,6 +24,7 @@ import OrderTable from '@/components/organisms/OrderTable';
 import OrderModal from '@/components/organisms/OrderModal/OrderModal';
 import { formatDate } from '@/utils/dateFormatter';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
+import DeleteConfirmModal from '../organisms/DeleteConfirmModal/DeleteConfirmModal';
 
 const OrderManagementTemplate = () => {
   const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
@@ -205,37 +196,13 @@ const OrderManagementTemplate = () => {
         handleSubmit={handleSubmit}
       />
 
-      <Modal
+      <DeleteConfirmModal
         isOpen={isDeleteAlertOpen}
         onClose={cancelDelete}
-        isCentered
-        size="sm">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>注文の削除</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <HStack spacing={2}>
-                <WarningIcon color="red.500" />
-                <Text>この操作は取り消せません。</Text>
-              </HStack>
-              <Text>
-                注文番号: {orderToDelete?.orderNumber}{' '}
-                を削除してもよろしいですか？
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <CommonButton variant="danger" mr={3} onClick={confirmDelete}>
-              削除
-            </CommonButton>
-            <CommonButton variant="ghost" onClick={cancelDelete}>
-              キャンセル
-            </CommonButton>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+        onConfirm={confirmDelete}
+        title="注文の削除"
+        targetName={`注文番号: ${orderToDelete?.orderNumber}`}
+      />
 
       <DateRangePickerModal
         isOpen={isDatePickerOpen}

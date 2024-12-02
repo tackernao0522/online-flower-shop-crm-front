@@ -24,6 +24,8 @@ export interface OrderItem {
   deleted_at: string | null;
 }
 
+export type OrderItemField = keyof OrderFormItem;
+
 export interface FetchOrdersResponse {
   data: {
     data: Order[];

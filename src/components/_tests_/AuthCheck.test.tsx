@@ -1,38 +1,52 @@
-import React from "react";
-import { render } from "@testing-library/react";
-import { useRouter } from "next/navigation";
-import { useSelector, useDispatch } from "react-redux";
-import AuthCheck from "../AuthCheck";
-import { setAuthState, logout } from "../../features/auth/authSlice";
+import React from 'react';
+import { render } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
+import {
+  useSelector as useSelectorOriginal,
+  useDispatch as useDispatchOriginal,
+} from 'react-redux';
+import AuthCheck from '../AuthCheck';
+import { setAuthState, logout } from '../../features/auth/authSlice';
+import { isTokenExpired } from '@/utils/tokenUtils';
 
-// モックの設定
-jest.mock("next/navigation", () => ({
+type MockedFunction<T = any> = jest.Mock<T>;
+
+const useSelector = useSelectorOriginal as unknown as MockedFunction;
+const useDispatch = useDispatchOriginal as unknown as MockedFunction;
+
+jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }));
-jest.mock("react-redux", () => ({
+jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
   useDispatch: jest.fn(),
 }));
-jest.mock("../../features/auth/authSlice", () => ({
+jest.mock('../../features/auth/authSlice', () => ({
   setAuthState: jest.fn(),
   logout: jest.fn(),
 }));
+jest.mock('@/utils/tokenUtils', () => ({
+  isTokenExpired: jest.fn(),
+}));
 
-describe("AuthCheck", () => {
-  let mockRouter: { push: jest.Mock };
-  let mockDispatch: jest.Mock;
-  let mockUseSelector: jest.Mock;
+describe('AuthCheck', () => {
+  let mockRouter: { push: MockedFunction };
+  let mockDispatch: MockedFunction;
+  let mockUseSelector: MockedFunction;
 
   beforeEach(() => {
     mockRouter = { push: jest.fn() };
-    (useRouter as jest.Mock).mockReturnValue(mockRouter);
-    mockDispatch = jest.fn();
-    (useDispatch as jest.Mock).mockReturnValue(mockDispatch);
-    mockUseSelector = jest.fn();
-    (useSelector as jest.Mock).mockImplementation(mockUseSelector);
+    (useRouter as MockedFunction).mockReturnValue(mockRouter);
 
-    // localStorageのモック
-    Object.defineProperty(window, "localStorage", {
+    mockDispatch = jest.fn();
+    (useDispatch as MockedFunction).mockReturnValue(mockDispatch);
+
+    mockUseSelector = jest.fn();
+    (useSelector as MockedFunction).mockImplementation(mockUseSelector);
+
+    (isTokenExpired as MockedFunction).mockReturnValue(false);
+
+    Object.defineProperty(window, 'localStorage', {
       value: {
         getItem: jest.fn(),
         setItem: jest.fn(),
@@ -42,15 +56,15 @@ describe("AuthCheck", () => {
     });
   });
 
-  it("認証済みで、トークンとユーザー情報が存在する場合、何も行わない", () => {
+  it('認証済みで、トークンとユーザー情報が存在する場合、何も行わない', () => {
     mockUseSelector.mockReturnValue({
       isAuthenticated: true,
-      token: "token",
+      token: 'token',
       user: {},
     });
-    (window.localStorage.getItem as jest.Mock).mockImplementation((key) => {
-      if (key === "token") return "token";
-      if (key === "user") return JSON.stringify({});
+    (window.localStorage.getItem as MockedFunction).mockImplementation(key => {
+      if (key === 'token') return 'token';
+      if (key === 'user') return JSON.stringify({});
       return null;
     });
 
@@ -60,17 +74,18 @@ describe("AuthCheck", () => {
     expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
-  it("未認証だが、localStorageにトークンとユーザー情報が存在する場合、認証状態を設定する", () => {
+  it('未認証だが、localStorageにトークンとユーザー情報が存在し、トークンが有効な場合、認証状態を設定する', () => {
     mockUseSelector.mockReturnValue({
       isAuthenticated: false,
       token: null,
       user: null,
     });
-    (window.localStorage.getItem as jest.Mock).mockImplementation((key) => {
-      if (key === "token") return "token";
-      if (key === "user") return JSON.stringify({});
+    (window.localStorage.getItem as MockedFunction).mockImplementation(key => {
+      if (key === 'token') return 'token';
+      if (key === 'user') return JSON.stringify({});
       return null;
     });
+    (isTokenExpired as MockedFunction).mockReturnValue(false);
 
     render(<AuthCheck />);
 
@@ -78,17 +93,36 @@ describe("AuthCheck", () => {
     expect(mockRouter.push).not.toHaveBeenCalled();
   });
 
-  it("未認証で、localStorageにトークンまたはユーザー情報が存在しない場合、ログアウトしてログインページにリダイレクトする", () => {
+  it('未認証で、localStorageにトークンまたはユーザー情報が存在しない場合、ログアウトしてログインページにリダイレクトする', () => {
     mockUseSelector.mockReturnValue({
       isAuthenticated: false,
       token: null,
       user: null,
     });
-    (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
+    (window.localStorage.getItem as MockedFunction).mockReturnValue(null);
 
     render(<AuthCheck />);
 
     expect(mockDispatch).toHaveBeenCalledWith(logout());
-    expect(mockRouter.push).toHaveBeenCalledWith("/login");
+    expect(mockRouter.push).toHaveBeenCalledWith('/login');
+  });
+
+  it('トークンが期限切れの場合、ログアウトしてログインページにリダイレクトする', () => {
+    mockUseSelector.mockReturnValue({
+      isAuthenticated: false,
+      token: 'expired-token',
+      user: null,
+    });
+    (window.localStorage.getItem as MockedFunction).mockImplementation(key => {
+      if (key === 'token') return 'expired-token';
+      if (key === 'user') return JSON.stringify({});
+      return null;
+    });
+    (isTokenExpired as MockedFunction).mockReturnValue(true);
+
+    render(<AuthCheck />);
+
+    expect(mockDispatch).toHaveBeenCalledWith(logout());
+    expect(mockRouter.push).toHaveBeenCalledWith('/login');
   });
 });

@@ -1,27 +1,26 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { SimpleGrid, useToast, Fade, Box, Text } from "@chakra-ui/react";
-import { useSelector, useDispatch } from "react-redux";
-import axios, { AxiosError } from "axios";
-import StatCard from "../atoms/StatCard";
-import { StatCardSkeleton } from "../atoms/SkeletonComponents";
-import { useCustomerManagement } from "../../hooks/useCustomerManagement";
-import { useWebSocket } from "../../hooks/useWebSocket";
-import { AppDispatch } from "@/store";
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { SimpleGrid, useToast, Fade, Box, Text } from '@chakra-ui/react';
+import { useSelector, useDispatch } from 'react-redux';
+import axios, { AxiosError } from 'axios';
+import StatCard from '../atoms/StatCard';
+import { StatCardSkeleton } from '../atoms/SkeletonComponents';
+import { useCustomerManagement } from '../../hooks/useCustomerManagement';
+import { useWebSocket } from '../../hooks/useWebSocket';
+import { AppDispatch } from '@/store';
 import {
   setOrderStats,
   selectOrderStats,
   selectOrderStatsStatus,
-} from "@/features/orders/ordersSlice";
+} from '@/features/orders/ordersSlice';
 import {
   setSalesStats,
   selectSalesStats,
   selectSalesStatsStatus,
   selectSalesStatsError,
-} from "@/features/stats/statsSlice";
+} from '@/features/stats/statsSlice';
 
-// 型定義
 interface StatsResponse {
   stats?: {
     totalCount: number;
@@ -74,13 +73,13 @@ const DashboardStats: React.FC = () => {
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
           },
           params: {
             page: 1,
             per_page: 1,
           },
-        }
+        },
       );
 
       if (response.data.stats) {
@@ -90,7 +89,7 @@ const DashboardStats: React.FC = () => {
             totalCount: response.data.stats.totalCount,
             previousCount: response.data.stats.previousCount,
             changeRate: response.data.stats.changeRate,
-          })
+          }),
         );
 
         // 売上統計を更新
@@ -100,32 +99,32 @@ const DashboardStats: React.FC = () => {
               totalSales: Number(response.data.stats.totalSales),
               changeRate: Number(response.data.stats.salesChangeRate || 0),
               lastUpdatedAt: new Date().toISOString(),
-            })
+            }),
           );
         }
       } else {
         setHasError(true);
         toast({
-          title: "データの取得に失敗しました",
-          description: "統計情報が見つかりませんでした",
-          status: "error",
+          title: 'データの取得に失敗しました',
+          description: '統計情報が見つかりませんでした',
+          status: 'error',
           duration: 5000,
           isClosable: true,
-          position: "top",
+          position: 'top',
         });
       }
     } catch (error) {
       const axiosError = error as AxiosError<ApiError>;
       setHasError(true);
       toast({
-        title: "エラーが発生しました",
+        title: 'エラーが発生しました',
         description:
           axiosError.response?.data?.message ||
-          "データの取得中に問題が発生しました",
-        status: "error",
+          'データの取得中に問題が発生しました',
+        status: 'error',
         duration: 5000,
         isClosable: true,
-        position: "top",
+        position: 'top',
       });
     } finally {
       setLoading(false);
@@ -151,7 +150,7 @@ const DashboardStats: React.FC = () => {
 
   // WebSocket接続監視
   useEffect(() => {
-    if (connectionStatus === "connected") {
+    if (connectionStatus === 'connected') {
       fetchInitialStats();
     }
   }, [connectionStatus, fetchInitialStats]);
@@ -168,12 +167,12 @@ const DashboardStats: React.FC = () => {
   // 表示値の計算
   const displayValues = useMemo<DisplayValues>(
     () => ({
-      customerCount: totalCount ? totalCount.toLocaleString() : "0",
+      customerCount: totalCount ? totalCount.toLocaleString() : '0',
       customerChange: changeRate ?? 0,
       orderCount:
         orderStats.totalCount !== null
           ? orderStats.totalCount.toLocaleString()
-          : "0",
+          : '0',
       orderChange: orderStats.changeRate ?? 0,
       salesTotal: `¥${(salesStats?.totalSales ?? 0).toLocaleString()}`,
       salesChange: salesStats?.changeRate ?? 0,
@@ -187,13 +186,13 @@ const DashboardStats: React.FC = () => {
       salesStats?.totalSales,
       salesStats?.changeRate,
       salesStats?.lastUpdatedAt,
-    ]
+    ],
   );
 
   // デバッグログ（開発環境のみ）
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
-      console.log("DashboardStats state:", {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('DashboardStats state:', {
         loading: customerLoading || loading,
         customerCount: totalCount,
         customerChange: changeRate,
@@ -220,8 +219,8 @@ const DashboardStats: React.FC = () => {
   if (
     customerLoading ||
     loading ||
-    orderStatsStatus === "loading" ||
-    salesStatsStatus === "loading" ||
+    orderStatsStatus === 'loading' ||
+    salesStatsStatus === 'loading' ||
     (totalCount === null && !initialLoadTimeout)
   ) {
     return (
@@ -247,7 +246,7 @@ const DashboardStats: React.FC = () => {
 
   // メインコンテンツの表示
   return (
-    <Fade in={!loading} style={{ width: "100%" }}>
+    <Fade in={!loading} style={{ width: '100%' }}>
       <SimpleGrid
         columns={{ base: 1, md: 3 }}
         spacing={10}

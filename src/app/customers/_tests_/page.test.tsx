@@ -1,37 +1,45 @@
-import React from "react";
-import { render } from "@testing-library/react";
-import "@testing-library/jest-dom";
-import CustomerManagementPage from "../../customers/page";
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import CustomerManagementPage from '../page';
 
-// ReduxのProviderをモックするために必要な設定
-jest.mock("react-redux", () => ({
-  ...jest.requireActual("react-redux"),
+jest.mock('react-redux', () => ({
+  ...jest.requireActual('react-redux'),
   useDispatch: () => jest.fn(),
-  useSelector: () => jest.fn(),
+  useSelector: jest.fn(selector => {
+    return true;
+  }),
 }));
 
-// ChakraProviderのモック
-jest.mock("@chakra-ui/react", () => ({
-  ...jest.requireActual("@chakra-ui/react"),
-  ChakraProvider: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+  }),
 }));
 
-// CustomerManagementTemplateコンポーネントのモック
-jest.mock("@/components/templates/CustomerManagementTemplate", () => {
+jest.mock('@/components/templates/CustomerManagementTemplate', () => {
   const MockCustomerManagementTemplate = () => (
-    <div>Customer Management Template</div>
+    <div data-testid="customer-management">Customer Management Template</div>
   );
-  MockCustomerManagementTemplate.displayName = "MockCustomerManagementTemplate";
   return MockCustomerManagementTemplate;
 });
 
-describe("CustomerManagementPage", () => {
-  it("ページが正常にレンダリングされる", () => {
-    const { getByText } = render(<CustomerManagementPage />);
+jest.mock('@/components/templates/ProtectedPageTemplate', () => ({
+  ProtectedPageTemplate: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="protected-template">{children}</div>
+  ),
+}));
 
-    // "Customer Management Template"が表示されることを確認
-    expect(getByText("Customer Management Template")).toBeInTheDocument();
+describe('CustomerManagementPage', () => {
+  it('ページが正常にレンダリングされること', () => {
+    render(<CustomerManagementPage />);
+
+    expect(screen.getByTestId('protected-template')).toBeInTheDocument();
+    expect(screen.getByTestId('customer-management')).toBeInTheDocument();
+    expect(
+      screen.getByText('Customer Management Template'),
+    ).toBeInTheDocument();
   });
 });

@@ -3,16 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../store';
-import AuthLayout from '../../components/templates/AuthLayout';
-import LoginForm from '../../components/organisms/LoginForm';
-import LoginSkeleton from '../../components/atoms/LoginSkeleton';
+import AuthLayout from '@/components/templates/AuthLayout';
+import LoginForm from '@/components/organisms/LoginForm';
+import LoginSkeleton from '@/components/atoms/LoginSkeleton';
+import { selectIsAuthenticated } from '@/features/auth/authSlice';
 
 export default function LoginPage() {
   const router = useRouter();
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated,
-  );
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

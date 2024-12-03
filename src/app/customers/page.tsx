@@ -1,20 +1,13 @@
-"use client";
+'use client';
 
-import React from "react";
-import { ChakraProvider, Box } from "@chakra-ui/react";
-import CustomerManagementTemplate from "@/components/templates/CustomerManagementTemplate";
-import { Provider } from "react-redux";
-import store from "@/store";
+import CustomerManagementTemplate from '@/components/templates/CustomerManagementTemplate';
+import { ProtectedPageTemplate } from '@/components/templates/ProtectedPageTemplate';
 
-const CustomerManagementPage: React.FC = () => {
+const CustomerManagementPage = () => {
   return (
-    <Provider store={store}>
-      <ChakraProvider>
-        <Box p={5}>
-          <CustomerManagementTemplate />
-        </Box>
-      </ChakraProvider>
-    </Provider>
+    <ProtectedPageTemplate>
+      <CustomerManagementTemplate />
+    </ProtectedPageTemplate>
   );
 };
 

@@ -1,28 +1,14 @@
-"use client";
+'use client';
 
-import React, { useEffect } from "react";
-import { useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
-import DashboardTemplate from "@/components/templates/DashboardTemplate";
-import PrivateRoute from "@/components/PrivateRoute";
-import { selectIsAuthenticated } from "../../features/auth/authSlice";
+import DashboardTemplate from '@/components/templates/DashboardTemplate';
+import { ProtectedPageTemplate } from '@/components/templates/ProtectedPageTemplate';
 
-export default function DashboardPage() {
-  const isAuthenticated = useSelector(selectIsAuthenticated);
-  const router = useRouter();
-
-  useEffect(() => {
-    console.log("DashboardPage: Mounted or auth state changed, isAuthenticated:", isAuthenticated);
-    if (!isAuthenticated) {
-      console.log("DashboardPage: Not authenticated, redirecting to login");
-      router.push("/login");
-    }
-  }, [isAuthenticated, router]);
-
-  console.log("DashboardPage: Rendering, isAuthenticated:", isAuthenticated);
+const DashboardPage = () => {
   return (
-    <PrivateRoute>
+    <ProtectedPageTemplate>
       <DashboardTemplate />
-    </PrivateRoute>
+    </ProtectedPageTemplate>
   );
-}
+};
+
+export default DashboardPage;

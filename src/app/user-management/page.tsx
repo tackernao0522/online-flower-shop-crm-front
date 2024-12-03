@@ -1,18 +1,13 @@
-"use client";
+'use client';
 
-import React from "react";
-import { ChakraProvider } from "@chakra-ui/react";
-import UserManagementTemplate from "@/components/templates/UserManagementTemplate";
-import { Provider } from "react-redux";
-import store from "@/store";
+import { ProtectedPageTemplate } from '@/components/templates/ProtectedPageTemplate';
+import UserManagementTemplate from '@/components/templates/UserManagementTemplate';
 
 const UserManagementPage: React.FC = () => {
   return (
-    <Provider store={store}>
-      <ChakraProvider>
-        <UserManagementTemplate />
-      </ChakraProvider>
-    </Provider>
+    <ProtectedPageTemplate>
+      <UserManagementTemplate />
+    </ProtectedPageTemplate>
   );
 };
 

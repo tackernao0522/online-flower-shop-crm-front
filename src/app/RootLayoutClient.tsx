@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from "react";
-import { Box } from "@chakra-ui/react";
-import { LoginSkeleton } from "../components/atoms/LoginSkeleton";
+import React, { useState, useEffect } from 'react';
+import { Box } from '@chakra-ui/react';
+import { LoginSkeleton } from '../components/atoms/LoginSkeleton';
 
 interface RootLayoutClientProps {
   children: React.ReactNode;
@@ -17,7 +17,7 @@ const RootLayoutClient: React.FC<RootLayoutClientProps> = ({ children }) => {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, []); // 空の依存配列を使用
+  }, []);
 
   if (isLoading) {
     return (

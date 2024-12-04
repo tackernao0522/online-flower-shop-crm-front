@@ -24,6 +24,8 @@ export interface OrderItem {
   deleted_at: string | null;
 }
 
+export type DateRangeType = 'custom' | 'today' | 'week' | 'month';
+
 export type OrderItemField = keyof OrderFormItem;
 
 export interface FetchOrdersResponse {

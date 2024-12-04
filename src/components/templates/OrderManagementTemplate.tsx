@@ -3,28 +3,22 @@
 import React from 'react';
 import {
   Flex,
-  Text,
   Alert,
   AlertIcon,
   Spinner,
   Container,
   useBreakpointValue,
-  Stack,
 } from '@chakra-ui/react';
-import { AddIcon } from '@chakra-ui/icons';
-import { OrderStatus } from '@/types/order';
 import { useDisclosure } from '@chakra-ui/react';
-import DateRangePickerModal from '@/components/molecules/DateRangePickerModal/DateRangePickerModal';
-import BackToDashboardButton from '@/components/atoms/BackToDashboardButton';
-import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
-import CommonButton from '@/components/atoms/CommonButton';
-import PageHeader from '@/components/molecules/PageHeader';
-import { OrderSearchFilter } from '@/components/molecules/OrderSearchFilter';
-import OrderTable from '@/components/organisms/OrderTable';
-import OrderModal from '@/components/organisms/OrderModal/OrderModal';
-import { formatDate } from '@/utils/dateFormatter';
+import { OrderStatus } from '@/types/order';
 import { useOrderManagement } from '@/hooks/useOrderManagement';
-import DeleteConfirmModal from '../organisms/DeleteConfirmModal/DeleteConfirmModal';
+import { OrderManagementHeader } from '@/components/molecules/OrderManagementHeader';
+import { OrderSearchFilter } from '@/components/molecules/OrderSearchFilter';
+import { OrderCountDisplay } from '@/components/molecules/OrderCountDisplay';
+import { ModalGroup } from '@/components/molecules/ModalGroup';
+import ScrollToTopButton from '@/components/atoms/ScrollToTopButton';
+import { formatDate } from '@/utils/dateFormatter';
+import OrderTable from '../organisms/OrderTable';
 
 const OrderManagementTemplate = () => {
   const isMobile = useBreakpointValue({ base: true, md: false }) ?? false;
@@ -110,25 +104,7 @@ const OrderManagementTemplate = () => {
 
   return (
     <Container maxW="container.xl" py={5}>
-      <PageHeader
-        title="注文管理"
-        buttons={
-          <Stack
-            direction={{ base: 'column', md: 'row' }}
-            spacing={2}
-            width={{ base: '100%', md: 'auto' }}>
-            <CommonButton
-              variant="primary"
-              withIcon={<AddIcon />}
-              onClick={handleAddOrder}
-              isFullWidthMobile>
-              新規注文作成
-            </CommonButton>
-            <BackToDashboardButton />
-          </Stack>
-        }
-        mobileStack
-      />
+      <OrderManagementHeader onAddOrder={handleAddOrder} />
 
       <OrderSearchFilter
         searchTerm={searchTerm}
@@ -146,9 +122,11 @@ const OrderManagementTemplate = () => {
         clearFilters={clearFilters}
       />
 
-      <Text mb={4} color="gray.600">
-        総注文リスト数: {totalCount.toLocaleString()}
-      </Text>
+      <OrderCountDisplay
+        totalCount={totalCount}
+        currentCount={orders.length}
+        showTotalCountOnly={true}
+      />
 
       <OrderTable
         orders={orders}
@@ -162,13 +140,7 @@ const OrderManagementTemplate = () => {
         formatDate={formatDate}
       />
 
-      <Flex justify="center" my={4}>
-        <Text color="red">
-          {orders.length >= totalCount
-            ? `全 ${totalCount.toLocaleString()} 件を表示中`
-            : `${orders.length.toLocaleString()} 件を表示中 (全 ${totalCount.toLocaleString()} 件)`}
-        </Text>
-      </Flex>
+      <OrderCountDisplay totalCount={totalCount} currentCount={orders.length} />
 
       {hasMore && status === 'loading' && (
         <Flex justify="center" my={4}>
@@ -178,9 +150,10 @@ const OrderManagementTemplate = () => {
 
       <ScrollToTopButton />
 
-      <OrderModal
+      <ModalGroup
         isOpen={isOpen}
         onClose={onClose}
+        isDeleteAlertOpen={isDeleteAlertOpen}
         isMobile={isMobile}
         modalSize={modalSize}
         modalMode={modalMode}
@@ -194,25 +167,13 @@ const OrderManagementTemplate = () => {
         handleAddOrderItem={handleAddOrderItem}
         handleRemoveOrderItem={handleRemoveOrderItem}
         handleSubmit={handleSubmit}
-      />
-
-      <DeleteConfirmModal
-        isOpen={isDeleteAlertOpen}
-        onClose={cancelDelete}
-        onConfirm={confirmDelete}
-        title="注文の削除"
-        targetName={`注文番号: ${orderToDelete?.orderNumber}`}
-      />
-
-      <DateRangePickerModal
-        isOpen={isDatePickerOpen}
-        onClose={onDatePickerClose}
-        onApply={(start, end) => {
-          handleDateRangeFilter('custom', start, end);
-          onDatePickerClose();
-        }}
-        initialStartDate={dateRange.start}
-        initialEndDate={dateRange.end}
+        cancelDelete={cancelDelete}
+        confirmDelete={confirmDelete}
+        orderToDelete={orderToDelete}
+        isDatePickerOpen={isDatePickerOpen}
+        onDatePickerClose={onDatePickerClose}
+        handleDateRangeFilter={handleDateRangeFilter}
+        dateRange={dateRange}
       />
     </Container>
   );

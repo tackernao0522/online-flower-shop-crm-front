@@ -4,6 +4,7 @@ import axios, { AxiosError } from 'axios';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice';
+import { useOrderSearch } from './order/useOrderSearch';
 import type {
   Order,
   OrderStatus,
@@ -76,6 +77,61 @@ export const useOrderManagement = () => {
   const isOpen = disclosure.isOpen;
   const onOpen = disclosure.onOpen;
   const originalOnClose = disclosure.onClose;
+
+  const clearFilters = useCallback(async (): Promise<void> => {
+    try {
+      setIsSearching(true);
+
+      filterStateRef.current = {
+        currentStatus: null,
+        currentSearchTerm: '',
+        currentDateRange: { start: null, end: null },
+      };
+
+      setSearchTerm('');
+      setStatusFilter(null);
+      setDateRange({ start: null, end: null });
+      setPage(1);
+
+      const response = await dispatch(
+        fetchOrdersAction({
+          page: 1,
+          per_page: 15,
+        }),
+      ).unwrap();
+
+      setOrders(response.data.data);
+      setTotalCount(response.meta.total);
+      setHasMore(response.data.data.length === 15);
+    } catch (error) {
+      console.error('Clear filters error:', error);
+      const axiosError = error as AxiosError<ApiErrorResponse>;
+      toast({
+        title: 'フィルターのクリアに失敗しました',
+        description: axiosError.response?.data?.error?.message,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  }, [dispatch, toast]);
+
+  const { handleSearchChange, handleSearchSubmit, handleSearchKeyDown } =
+    useOrderSearch({
+      searchTerm,
+      setSearchTerm,
+      setStatusFilter,
+      setDateRange,
+      setPage,
+      setOrders,
+      setTotalCount,
+      setHasMore,
+      setIsSearching,
+      clearFilters,
+      filterStateRef,
+    });
 
   const onClose = useCallback(() => {
     originalOnClose();
@@ -207,122 +263,6 @@ export const useOrderManagement = () => {
       void initialFetch();
     }
   }, [dispatch, statusFilter, dateRange, totalCount, isInitialLoad]);
-
-  const clearFilters = useCallback(async (): Promise<void> => {
-    try {
-      setIsSearching(true);
-
-      filterStateRef.current = {
-        currentStatus: null,
-        currentSearchTerm: '',
-        currentDateRange: { start: null, end: null },
-      };
-
-      setSearchTerm('');
-      setStatusFilter(null);
-      setDateRange({ start: null, end: null });
-      setPage(1);
-
-      const response = await dispatch(
-        fetchOrdersAction({
-          page: 1,
-          per_page: 15,
-        }),
-      ).unwrap();
-
-      setOrders(response.data.data);
-      setTotalCount(response.meta.total);
-      setHasMore(response.data.data.length === 15);
-    } catch (error) {
-      console.error('Clear filters error:', error);
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      toast({
-        title: 'フィルターのクリアに失敗しました',
-        description: axiosError.response?.data?.error?.message,
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  }, [dispatch, toast]);
-
-  const handleSearchChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>): void => {
-      const value = e.target.value;
-      setSearchTerm(value);
-      if (!value) {
-        void clearFilters();
-      }
-    },
-    [clearFilters],
-  );
-
-  const handleSearchSubmit = useCallback(async (): Promise<void> => {
-    if (isSearching) return;
-
-    try {
-      setIsSearching(true);
-      setPage(1);
-
-      // 他のフィルターをクリア
-      setStatusFilter(null);
-      setDateRange({ start: null, end: null });
-
-      // 検索のみの状態を設定
-      filterStateRef.current = {
-        currentStatus: null,
-        currentSearchTerm: searchTerm,
-        currentDateRange: { start: null, end: null },
-      };
-
-      const response = await dispatch(
-        fetchOrdersAction({
-          page: 1,
-          per_page: 15,
-          search: searchTerm,
-        }),
-      ).unwrap();
-
-      setOrders(response.data.data);
-      setTotalCount(response.meta.total);
-      setHasMore(response.data.data.length === 15);
-
-      if (response.data.data.length === 0) {
-        toast({
-          title: '検索結果がありません',
-          status: 'info',
-          duration: 2000,
-          isClosable: true,
-        });
-      }
-    } catch (error) {
-      console.error('Search operation failed:', error);
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      toast({
-        title: 'エラーが発生しました',
-        description:
-          axiosError.response?.data?.error?.message ||
-          '検索中にエラーが発生しました',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  }, [dispatch, searchTerm, toast, isSearching]);
-
-  const handleSearchKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>): void => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        void handleSearchSubmit();
-      }
-    },
-    [handleSearchSubmit],
-  );
 
   const handleSubmit = useCallback(async () => {
     try {

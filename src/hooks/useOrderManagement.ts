@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice';
 import { useOrderSearch } from './order/useOrderSearch';
+import { handleDateRangeFilter, handleStatusFilter } from '@/utils/filterUtils';
 import type {
   Order,
   OrderStatus,
@@ -14,7 +15,6 @@ import type {
   FormErrors,
 } from '@/types/order';
 import type { ApiErrorResponse } from '@/types/api';
-import { startOfDay, endOfDay } from 'date-fns';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 type OrderItemField = keyof OrderFormItem;
@@ -337,139 +337,74 @@ export const useOrderManagement = () => {
     }
   }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
 
-  const handleStatusFilter = useCallback(
+  const handleStatusFilterWrapper = useCallback(
     async (status: OrderStatus): Promise<void> => {
-      try {
-        setIsSearching(true);
-
-        setSearchTerm('');
-        setDateRange({ start: null, end: null });
-
-        filterStateRef.current = {
-          currentStatus: status,
-          currentSearchTerm: '',
-          currentDateRange: { start: null, end: null },
-        };
-
-        const response = await dispatch(
-          fetchOrdersAction({
-            page: 1,
-            per_page: 15,
-            status: status,
-          }),
-        ).unwrap();
-
-        setOrders(response.data.data);
-        setTotalCount(response.meta.total);
-        setHasMore(response.data.data.length === 15);
-        setPage(1);
-        setStatusFilter(status);
-      } catch (error) {
-        console.error('Status filtering error:', error);
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        toast({
-          title: 'フィルタリングに失敗しました',
-          description: axiosError.response?.data?.error?.message,
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsSearching(false);
-      }
+      await handleStatusFilter(status, {
+        dispatch,
+        setIsSearching,
+        setSearchTerm,
+        setDateRange,
+        filterStateRef,
+        setOrders,
+        setTotalCount,
+        setHasMore,
+        setPage,
+        setStatusFilter,
+        toast,
+      });
     },
-    [dispatch, toast],
+    [
+      dispatch,
+      setIsSearching,
+      setSearchTerm,
+      setDateRange,
+      filterStateRef,
+      setOrders,
+      setTotalCount,
+      setHasMore,
+      setPage,
+      setStatusFilter,
+      toast,
+    ],
   );
 
-  const handleDateRangeFilter = useCallback(
+  const handleDateRangeFilterWrapper = useCallback(
     async (
       range: 'today' | 'week' | 'month' | 'custom',
       customStart?: Date | null,
       customEnd?: Date | null,
     ): Promise<void> => {
-      try {
-        setIsSearching(true);
-
-        if (range === 'custom' && (!customStart || !customEnd)) {
-          await clearFilters();
-          return;
-        }
-
-        setSearchTerm('');
-        setStatusFilter(null);
-
-        const today = new Date();
-        let start: Date;
-        let end: Date;
-
-        switch (range) {
-          case 'today':
-            start = startOfDay(today);
-            end = endOfDay(today);
-            break;
-          case 'week':
-            const dayOfWeek = today.getDay();
-            start = startOfDay(
-              new Date(today.getTime() - dayOfWeek * 24 * 60 * 60 * 1000),
-            );
-            end = endOfDay(new Date(start.getTime() + 6 * 24 * 60 * 60 * 1000));
-            break;
-          case 'month':
-            start = startOfDay(
-              new Date(today.getFullYear(), today.getMonth(), 1),
-            );
-            end = endOfDay(
-              new Date(today.getFullYear(), today.getMonth() + 1, 0),
-            );
-            break;
-          case 'custom':
-            start = startOfDay(customStart!);
-            end = endOfDay(customEnd!);
-            break;
-          default:
-            return;
-        }
-
-        // 日付フィルターのみの状態を設定
-        const newDateRange = { start, end };
-        setDateRange(newDateRange);
-
-        filterStateRef.current = {
-          currentStatus: null,
-          currentSearchTerm: '',
-          currentDateRange: newDateRange,
-        };
-
-        const response = await dispatch(
-          fetchOrdersAction({
-            page: 1,
-            per_page: 15,
-            start_date: start.toISOString(),
-            end_date: end.toISOString(),
-          }),
-        ).unwrap();
-
-        setOrders(response.data.data);
-        setTotalCount(response.meta.total);
-        setHasMore(response.data.data.length === 15);
-        setPage(1);
-      } catch (error) {
-        console.error('Date range filter error:', error);
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        toast({
-          title: 'フィルタリングに失敗しました',
-          description:
-            axiosError.response?.data?.error?.message ||
-            '期間フィルターの適用中にエラーが発生しました',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsSearching(false);
-      }
+      await handleDateRangeFilter(range, {
+        dispatch,
+        setIsSearching,
+        setSearchTerm,
+        setStatusFilter,
+        setDateRange,
+        filterStateRef,
+        setOrders,
+        setTotalCount,
+        setHasMore,
+        setPage,
+        clearFilters,
+        toast,
+        customStart,
+        customEnd,
+      });
     },
-    [dispatch, toast, clearFilters],
+    [
+      dispatch,
+      setIsSearching,
+      setSearchTerm,
+      setStatusFilter,
+      setDateRange,
+      filterStateRef,
+      setOrders,
+      setTotalCount,
+      setHasMore,
+      setPage,
+      clearFilters,
+      toast,
+    ],
   );
 
   const handleOrderClick = useCallback(
@@ -662,8 +597,8 @@ export const useOrderManagement = () => {
     handleSearchChange,
     handleSearchSubmit,
     handleSubmit,
-    handleStatusFilter,
-    handleDateRangeFilter,
+    handleStatusFilter: handleStatusFilterWrapper,
+    handleDateRangeFilter: handleDateRangeFilterWrapper,
     handleOrderClick,
     handleAddOrder,
     handleEditOrder,

@@ -6,6 +6,7 @@ import { AppDispatch } from '@/store';
 import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice';
 import { useOrderSearch } from './order/useOrderSearch';
 import { handleDateRangeFilter, handleStatusFilter } from '@/utils/filterUtils';
+import { fetchOrdersHelper } from '@/api/orderApi';
 import type {
   Order,
   OrderStatus,
@@ -170,16 +171,16 @@ export const useOrderManagement = () => {
             filterStateRef.current.currentDateRange.end.toISOString();
         }
 
-        const response = await dispatch(fetchOrdersAction(params)).unwrap();
+        const { data, meta } = await fetchOrdersHelper(dispatch, params);
 
         if (pageNum === 1) {
-          setOrders(response.data.data);
+          setOrders(data);
         } else {
-          setOrders(prev => [...prev, ...response.data.data]);
+          setOrders(prev => [...prev, ...data]);
         }
 
-        setHasMore(response.data.data.length === 15);
-        setTotalCount(response.meta.total);
+        setHasMore(data.length === 15);
+        setTotalCount(meta.total);
         setPage(pageNum);
         setStatus('succeeded');
       } catch (error) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast, useDisclosure } from '@chakra-ui/react';
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice';
@@ -8,6 +8,7 @@ import { useOrderSearch } from './order/useOrderSearch';
 import { fetchOrdersHelper } from '@/api/orderApi';
 import { useOrderFilters } from './order/useOrderFilters';
 import { useOrderItems } from './order/useOrderItems';
+import { useOrderOperations } from './order/useOrderOperations';
 import type {
   Order,
   OrderStatus,
@@ -76,49 +77,6 @@ export const useOrderManagement = () => {
   const isOpen = disclosure.isOpen;
   const onOpen = disclosure.onOpen;
   const originalOnClose = disclosure.onClose;
-
-  const {
-    clearFilters,
-    handleStatusFilter: handleStatusFilterWrapper,
-    handleDateRangeFilter: handleDateRangeFilterWrapper,
-  } = useOrderFilters({
-    orders,
-    setOrders,
-    setTotalCount,
-    setHasMore,
-    setPage,
-    filterStateRef,
-    setIsSearching,
-    setStatusFilter,
-    setDateRange,
-    setSearchTerm,
-  });
-
-  const {
-    handleOrderItemChange,
-    handleInputChange,
-    handleAddOrderItem,
-    handleRemoveOrderItem,
-  } = useOrderItems({
-    newOrder,
-    setNewOrder,
-    setFormErrors,
-  });
-
-  const { handleSearchChange, handleSearchSubmit, handleSearchKeyDown } =
-    useOrderSearch({
-      searchTerm,
-      setSearchTerm,
-      setStatusFilter,
-      setDateRange,
-      setPage,
-      setOrders,
-      setTotalCount,
-      setHasMore,
-      setIsSearching,
-      clearFilters,
-      filterStateRef,
-    });
 
   const onClose = useCallback(() => {
     originalOnClose();
@@ -229,203 +187,78 @@ export const useOrderManagement = () => {
     }
   }, [dispatch, statusFilter, dateRange, totalCount, isInitialLoad]);
 
-  const handleSubmit = useCallback(async () => {
-    try {
-      if (modalMode === 'add') {
-        await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders`,
-          newOrder,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        );
+  const {
+    clearFilters,
+    handleStatusFilter: handleStatusFilterWrapper,
+    handleDateRangeFilter: handleDateRangeFilterWrapper,
+  } = useOrderFilters({
+    orders,
+    setOrders,
+    setTotalCount,
+    setHasMore,
+    setPage,
+    filterStateRef,
+    setIsSearching,
+    setStatusFilter,
+    setDateRange,
+    setSearchTerm,
+  });
 
-        toast({
-          title: '注文を作成しました',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top',
-        });
-      } else if (modalMode === 'edit' && activeOrder) {
-        await Promise.all([
-          axios.put(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/items`,
-            { orderItems: newOrder.orderItems },
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json',
-              },
-            },
-          ),
-          axios.put(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${activeOrder.id}/status`,
-            { status: newOrder.status },
-            {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json',
-              },
-            },
-          ),
-        ]);
+  const {
+    handleOrderItemChange,
+    handleInputChange,
+    handleAddOrderItem,
+    handleRemoveOrderItem,
+  } = useOrderItems({
+    newOrder,
+    setNewOrder,
+    setFormErrors,
+  });
 
-        toast({
-          title: '注文を更新しました',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-          position: 'top',
-        });
-      }
-
-      setPage(1);
-      await fetchOrders(1);
-      onClose();
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      console.error('Error submitting order:', error);
-      toast({
-        title: 'エラーが発生しました',
-        description:
-          axiosError.response?.data?.error?.message ||
-          '注文の処理中にエラーが発生しました',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
-  }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
-
-  const handleOrderClick = useCallback(
-    async (order: Order): Promise<void> => {
-      try {
-        setModalMode('detail');
-        const response = await axios.get<Order>(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${order.id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          },
-        );
-
-        const data = response.data;
-        data.orderItems = data.order_items;
-        setActiveOrder(data);
-        onOpen();
-      } catch (error) {
-        const axiosError = error as AxiosError<ApiErrorResponse>;
-        console.error('注文詳細データの取得に失敗しました:', axiosError);
-        toast({
-          title: 'エラーが発生しました',
-          description: '注文詳細の取得に失敗しました',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      }
-    },
-    [onOpen, toast],
-  );
-
-  const handleAddOrder = useCallback((): void => {
-    setActiveOrder(null);
-    setNewOrder({
-      customerId: '',
-      orderItems: [],
-      status: 'PENDING',
+  const { handleSearchChange, handleSearchSubmit, handleSearchKeyDown } =
+    useOrderSearch({
+      searchTerm,
+      setSearchTerm,
+      setStatusFilter,
+      setDateRange,
+      setPage,
+      setOrders,
+      setTotalCount,
+      setHasMore,
+      setIsSearching,
+      clearFilters,
+      filterStateRef,
     });
-    setFormErrors({});
-    setModalMode('add');
-    onOpen();
-  }, [onOpen]);
 
-  const handleEditOrder = useCallback(
-    (order: Order): void => {
-      setActiveOrder(order);
-      const formattedOrderItems = (order.order_items ?? []).map(item => ({
-        productId: item.product.id,
-        quantity: Number(item.quantity),
-      }));
-
-      setNewOrder({
-        customerId: order.customer.id,
-        orderItems: formattedOrderItems,
-        status: order.status,
-      });
-      setFormErrors({});
-      setModalMode('edit');
-      onOpen();
-    },
-    [onOpen],
-  );
-
-  const handleDeleteOrder = useCallback((order: Order): void => {
-    setOrderToDelete(order);
-    setIsDeleteAlertOpen(true);
-  }, []);
-
-  const confirmDelete = useCallback(async (): Promise<void> => {
-    if (!orderToDelete) return;
-
-    try {
-      await axios.delete(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/orders/${orderToDelete.id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-          },
-        },
-      );
-
-      const response = await dispatch(
-        fetchOrdersAction({
-          page: 1,
-          per_page: 15,
-          search: searchTerm || undefined,
-          status: statusFilter || undefined,
-          start_date: dateRange.start?.toISOString() || undefined,
-          end_date: dateRange.end?.toISOString() || undefined,
-        }),
-      ).unwrap();
-
-      setOrders(response.data.data);
-      setTotalCount(response.meta.total);
-
-      toast({
-        title: '注文を削除しました',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-        position: 'top',
-      });
-      setIsDeleteAlertOpen(false);
-      setOrderToDelete(null);
-    } catch (error) {
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      toast({
-        title: '削除に失敗しました',
-        description:
-          axiosError.response?.data?.error?.message ||
-          '注文の削除中にエラーが発生しました。',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-        position: 'top',
-      });
-    }
-  }, [orderToDelete, toast, dispatch, statusFilter, dateRange, searchTerm]);
-
-  const cancelDelete = useCallback((): void => {
-    setIsDeleteAlertOpen(false);
-    setOrderToDelete(null);
-  }, []);
+  const {
+    handleSubmit,
+    handleOrderClick,
+    handleAddOrder,
+    handleEditOrder,
+    handleDeleteOrder,
+    confirmDelete,
+    cancelDelete,
+  } = useOrderOperations({
+    modalMode,
+    activeOrder,
+    orderToDelete,
+    newOrder,
+    searchTerm,
+    statusFilter,
+    dateRange,
+    onOpen,
+    onClose,
+    setOrders,
+    setTotalCount,
+    setPage,
+    setActiveOrder,
+    setModalMode,
+    setNewOrder,
+    setFormErrors,
+    setIsDeleteAlertOpen,
+    setOrderToDelete,
+    fetchOrders,
+  });
 
   return {
     orders,

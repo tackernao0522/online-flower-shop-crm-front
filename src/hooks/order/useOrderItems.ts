@@ -12,7 +12,6 @@ interface UseOrderItemsProps {
 }
 
 export const useOrderItems = ({
-  newOrder,
   setNewOrder,
   setFormErrors,
 }: UseOrderItemsProps) => {

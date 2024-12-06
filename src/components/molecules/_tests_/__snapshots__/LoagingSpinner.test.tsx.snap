@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`LoadingSpinner コンポーネント Spinnerが中央に表示される 1`] = `
+<div
+  class="css-1evii0e"
+>
+  <div
+    class="chakra-spinner css-1y7joxr"
+  >
+    <span
+      class="css-8b45rq"
+    >
+      Loading...
+    </span>
+  </div>
+</div>
+`;

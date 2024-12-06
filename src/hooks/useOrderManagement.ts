@@ -7,18 +7,16 @@ import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice'
 import { useOrderSearch } from './order/useOrderSearch';
 import { fetchOrdersHelper } from '@/api/orderApi';
 import { useOrderFilters } from './order/useOrderFilters';
+import { useOrderItems } from './order/useOrderItems';
 import type {
   Order,
   OrderStatus,
   OrderForm,
-  OrderFormItem,
   DateRange,
   FormErrors,
 } from '@/types/order';
 import type { ApiErrorResponse } from '@/types/api';
 import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
-
-type OrderItemField = keyof OrderFormItem;
 
 interface FilterState {
   currentStatus: OrderStatus | null;
@@ -94,6 +92,17 @@ export const useOrderManagement = () => {
     setStatusFilter,
     setDateRange,
     setSearchTerm,
+  });
+
+  const {
+    handleOrderItemChange,
+    handleInputChange,
+    handleAddOrderItem,
+    handleRemoveOrderItem,
+  } = useOrderItems({
+    newOrder,
+    setNewOrder,
+    setFormErrors,
   });
 
   const { handleSearchChange, handleSearchSubmit, handleSearchKeyDown } =
@@ -178,28 +187,6 @@ export const useOrderManagement = () => {
       void fetchOrders(page + 1);
     }
   }, [isSearching, status, hasMore, page, fetchOrders]);
-
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
-      const { name, value } = e.target;
-      if (name.startsWith('orderItems.')) {
-        const [, index, field] = name.split('.');
-        setNewOrder(prev => {
-          const items = [...prev.orderItems];
-          items[Number(index)] = {
-            ...items[Number(index)],
-            [field]:
-              field === 'quantity' ? Math.max(1, parseInt(value) || 1) : value,
-          };
-          return { ...prev, orderItems: items };
-        });
-      } else {
-        setNewOrder(prev => ({ ...prev, [name]: value }));
-      }
-      setFormErrors(prev => ({ ...prev, [name]: undefined }));
-    },
-    [],
-  );
 
   const { lastElementRef } = useInfiniteScroll(loadMore, hasMore);
 
@@ -438,50 +425,6 @@ export const useOrderManagement = () => {
   const cancelDelete = useCallback((): void => {
     setIsDeleteAlertOpen(false);
     setOrderToDelete(null);
-  }, []);
-
-  const handleOrderItemChange = useCallback(
-    (index: number, field: OrderItemField, value: string | number): void => {
-      setNewOrder(prev => {
-        const items = [...prev.orderItems];
-        const parsedValue =
-          field === 'quantity'
-            ? Math.max(
-                1,
-                typeof value === 'number'
-                  ? value
-                  : parseInt(String(value), 10) || 1,
-              )
-            : value;
-
-        items[index] = {
-          ...items[index],
-          [field]: parsedValue,
-        };
-        return { ...prev, orderItems: items };
-      });
-    },
-    [],
-  );
-
-  const handleAddOrderItem = useCallback((): void => {
-    setNewOrder(prev => ({
-      ...prev,
-      orderItems: [
-        ...prev.orderItems,
-        {
-          productId: '',
-          quantity: 1,
-        },
-      ],
-    }));
-  }, []);
-
-  const handleRemoveOrderItem = useCallback((index: number): void => {
-    setNewOrder(prev => ({
-      ...prev,
-      orderItems: prev.orderItems.filter((_, i) => i !== index),
-    }));
   }, []);
 
   return {

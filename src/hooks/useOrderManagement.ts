@@ -5,8 +5,8 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { fetchOrders as fetchOrdersAction } from '@/features/orders/ordersSlice';
 import { useOrderSearch } from './order/useOrderSearch';
-import { handleDateRangeFilter, handleStatusFilter } from '@/utils/filterUtils';
 import { fetchOrdersHelper } from '@/api/orderApi';
+import { useOrderFilters } from './order/useOrderFilters';
 import type {
   Order,
   OrderStatus,
@@ -79,45 +79,22 @@ export const useOrderManagement = () => {
   const onOpen = disclosure.onOpen;
   const originalOnClose = disclosure.onClose;
 
-  const clearFilters = useCallback(async (): Promise<void> => {
-    try {
-      setIsSearching(true);
-
-      filterStateRef.current = {
-        currentStatus: null,
-        currentSearchTerm: '',
-        currentDateRange: { start: null, end: null },
-      };
-
-      setSearchTerm('');
-      setStatusFilter(null);
-      setDateRange({ start: null, end: null });
-      setPage(1);
-
-      const response = await dispatch(
-        fetchOrdersAction({
-          page: 1,
-          per_page: 15,
-        }),
-      ).unwrap();
-
-      setOrders(response.data.data);
-      setTotalCount(response.meta.total);
-      setHasMore(response.data.data.length === 15);
-    } catch (error) {
-      console.error('Clear filters error:', error);
-      const axiosError = error as AxiosError<ApiErrorResponse>;
-      toast({
-        title: 'フィルターのクリアに失敗しました',
-        description: axiosError.response?.data?.error?.message,
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setIsSearching(false);
-    }
-  }, [dispatch, toast]);
+  const {
+    clearFilters,
+    handleStatusFilter: handleStatusFilterWrapper,
+    handleDateRangeFilter: handleDateRangeFilterWrapper,
+  } = useOrderFilters({
+    orders,
+    setOrders,
+    setTotalCount,
+    setHasMore,
+    setPage,
+    filterStateRef,
+    setIsSearching,
+    setStatusFilter,
+    setDateRange,
+    setSearchTerm,
+  });
 
   const { handleSearchChange, handleSearchSubmit, handleSearchKeyDown } =
     useOrderSearch({
@@ -337,76 +314,6 @@ export const useOrderManagement = () => {
       });
     }
   }, [modalMode, newOrder, activeOrder, toast, onClose, fetchOrders]);
-
-  const handleStatusFilterWrapper = useCallback(
-    async (status: OrderStatus): Promise<void> => {
-      await handleStatusFilter(status, {
-        dispatch,
-        setIsSearching,
-        setSearchTerm,
-        setDateRange,
-        filterStateRef,
-        setOrders,
-        setTotalCount,
-        setHasMore,
-        setPage,
-        setStatusFilter,
-        toast,
-      });
-    },
-    [
-      dispatch,
-      setIsSearching,
-      setSearchTerm,
-      setDateRange,
-      filterStateRef,
-      setOrders,
-      setTotalCount,
-      setHasMore,
-      setPage,
-      setStatusFilter,
-      toast,
-    ],
-  );
-
-  const handleDateRangeFilterWrapper = useCallback(
-    async (
-      range: 'today' | 'week' | 'month' | 'custom',
-      customStart?: Date | null,
-      customEnd?: Date | null,
-    ): Promise<void> => {
-      await handleDateRangeFilter(range, {
-        dispatch,
-        setIsSearching,
-        setSearchTerm,
-        setStatusFilter,
-        setDateRange,
-        filterStateRef,
-        setOrders,
-        setTotalCount,
-        setHasMore,
-        setPage,
-        clearFilters,
-        toast,
-        customStart,
-        customEnd,
-      });
-    },
-    [
-      dispatch,
-      setIsSearching,
-      setSearchTerm,
-      setStatusFilter,
-      setDateRange,
-      filterStateRef,
-      setOrders,
-      setTotalCount,
-      setHasMore,
-      setPage,
-      clearFilters,
-      toast,
-    ],
-  );
 
   const handleOrderClick = useCallback(
     async (order: Order): Promise<void> => {

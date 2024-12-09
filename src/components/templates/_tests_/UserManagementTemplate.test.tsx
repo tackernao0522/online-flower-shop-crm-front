@@ -4,7 +4,6 @@ import UserManagementTemplate from '../UserManagementTemplate';
 import { useUserManagement } from '@/hooks/useUserManagement';
 import { useRouter } from 'next/navigation';
 
-// useUserManagementのモック
 jest.mock('@/hooks/useUserManagement');
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),

@@ -3,15 +3,12 @@ import { fetchOrders } from '@/features/orders/ordersSlice';
 import { OrderStatus, DateRange } from '@/types/order';
 import { UseToastOptions } from '@chakra-ui/react';
 import { AppDispatch } from '@/store';
-import { UnknownAction } from '@reduxjs/toolkit';
 
-// fetchOrdersのモックを作成
 jest.mock('@/features/orders/ordersSlice', () => ({
   fetchOrders: jest.fn(),
 }));
 
 describe('フィルタリング機能', () => {
-  // モックレスポンスの型定義
   interface MockResponse {
     data: {
       data: Array<{ id: number }>;
@@ -21,7 +18,6 @@ describe('フィルタリング機能', () => {
     };
   }
 
-  // モックレスポンスの作成
   const mockResponse: MockResponse = {
     data: {
       data: Array(5).fill({ id: 1 }),
@@ -31,12 +27,6 @@ describe('フィルタリング機能', () => {
     },
   };
 
-  // dispatchの返り値の型定義
-  type MockDispatchResult = {
-    unwrap: () => Promise<MockResponse>;
-  } & UnknownAction;
-
-  // モックオプションの型定義
   interface MockOptions {
     dispatch: jest.MockedFunction<AppDispatch>;
     setIsSearching: jest.Mock<void, [boolean]>;

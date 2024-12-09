@@ -12,7 +12,6 @@ import {
   setStatsError,
 } from '@/features/orders/ordersSlice';
 
-// モック関数を型安全に設定
 const useDispatch = originalUseDispatch as unknown as jest.Mock;
 const useSelector = originalUseSelector as unknown as jest.Mock;
 
@@ -27,7 +26,6 @@ jest.mock('@chakra-ui/react', () => ({
 
 jest.mock('axios');
 
-// テストケース
 describe('useOrderStatsのテスト', () => {
   const mockDispatch = jest.fn();
   const mockToast = jest.fn();
@@ -36,7 +34,6 @@ describe('useOrderStatsのテスト', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // モックの初期化
     useDispatch.mockReturnValue(mockDispatch);
     useSelector.mockImplementation(selector =>
       selector({

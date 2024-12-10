@@ -42,7 +42,6 @@ describe('フィルタリング機能', () => {
     clearFilters: jest.Mock<Promise<void>, []>;
   }
 
-  // 共通のモック関数
   const mockDispatch = jest.fn(action => ({
     unwrap: () => Promise.resolve(mockResponse),
     type: 'TEST_ACTION',

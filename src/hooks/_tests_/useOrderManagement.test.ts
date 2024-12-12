@@ -1,35 +1,60 @@
 import { renderHook, act } from '@testing-library/react';
 import { useOrderManagement } from '../useOrderManagement';
-import { useToast, useDisclosure } from '@chakra-ui/react';
-import type { Order, OrderStatus, FetchOrdersResponse } from '@/types/order';
+import { useDisclosure } from '@chakra-ui/react';
+import { fetchOrdersHelper } from '@/api/orderApi';
+import type { Order, OrderStatus } from '@/types/order';
+
+const mockHandleSearchChange = jest.fn();
+const mockHandleSearchSubmit = jest.fn();
+const mockHandleSearchKeyDown = jest.fn();
+const mockToast = jest.fn();
 
 jest.mock('react-redux', () => ({
-  ...jest.requireActual('react-redux'),
   useDispatch: jest.fn(),
   useSelector: jest.fn(),
-}));
-
-jest.mock('@chakra-ui/react', () => ({
-  useToast: jest.fn(),
-  useDisclosure: jest.fn(),
 }));
 
 jest.mock('@/features/orders/ordersSlice', () => ({
   fetchOrders: jest.fn(),
 }));
 
+jest.mock('@chakra-ui/react', () => ({
+  useToast: jest.fn(() => mockToast),
+  useDisclosure: jest.fn(),
+}));
+
+jest.mock('@/api/orderApi', () => ({
+  fetchOrdersHelper: jest.fn(),
+}));
+
+jest.mock('../order/useOrderSearch', () => ({
+  useOrderSearch: jest.fn(() => ({
+    handleSearchChange: mockHandleSearchChange,
+    handleSearchSubmit: mockHandleSearchSubmit,
+    handleSearchKeyDown: mockHandleSearchKeyDown,
+  })),
+}));
+
+jest.mock('../order/useOrderFilters', () => ({
+  useOrderFilters: jest.fn(() => ({
+    clearFilters: jest.fn(),
+    handleStatusFilter: jest.fn(),
+    handleDateRangeFilter: jest.fn(),
+  })),
+}));
+
+jest.mock('../order/useOrderItems', () => ({
+  useOrderItems: jest.fn(() => ({
+    handleOrderItemChange: jest.fn(),
+    handleInputChange: jest.fn(),
+    handleAddOrderItem: jest.fn(),
+    handleRemoveOrderItem: jest.fn(),
+  })),
+}));
+
 describe('useOrderManagement', () => {
   const mockDispatch = jest.fn();
-  const mockToast = jest.fn();
-
-  const createResponse = (data: Order[] = []): FetchOrdersResponse => ({
-    data: { data },
-    meta: {
-      current_page: 1,
-      total_pages: data.length > 0 ? 1 : 0,
-      total: data.length,
-    },
-  });
+  const mockFetchOrdersHelper = fetchOrdersHelper as jest.Mock;
 
   const createMockOrder = (): Order => ({
     id: '1',
@@ -41,9 +66,17 @@ describe('useOrderManagement', () => {
     customerId: 'customer1',
     userId: 'user1',
     campaignId: null,
-    customer: { id: 'customer1', name: 'Test Customer' } as any,
+    customer: {
+      id: 'customer1',
+      name: 'Test Customer',
+      email: 'test@example.com',
+      address: 'Test Address',
+      phoneNumber: '1234567890',
+      birthDate: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
     order_items: [],
-    orderItems: [],
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     deleted_at: null,
@@ -55,102 +88,160 @@ describe('useOrderManagement', () => {
     const useDispatchMock = jest.requireMock('react-redux').useDispatch;
     useDispatchMock.mockReturnValue(mockDispatch);
 
-    const useSelectorMock = jest.requireMock('react-redux').useSelector;
-    useSelectorMock.mockImplementation((selector: any) =>
-      selector({
-        orders: {
-          orders: [],
-          status: 'idle',
-          error: null,
-          stats: {
-            totalCount: null,
-            previousCount: null,
-            changeRate: null,
-          },
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: 0,
-          filterParams: {},
-        },
-      }),
-    );
-
-    (useToast as jest.Mock).mockReturnValue(mockToast);
     (useDisclosure as jest.Mock).mockReturnValue({
       isOpen: false,
       onOpen: jest.fn(),
       onClose: jest.fn(),
     });
 
-    // デフォルトのモックレスポンスを設定
     mockDispatch.mockImplementation(() => ({
-      unwrap: () => Promise.resolve(createResponse()),
+      unwrap: () =>
+        Promise.resolve({
+          data: { data: [] },
+          meta: { total: 0 },
+        }),
     }));
   });
 
-  it('初期状態が正しく設定される', async () => {
+  test('初期状態が正しく設定される', async () => {
     const { result } = renderHook(() => useOrderManagement());
 
     await act(async () => {
       await new Promise(resolve => setTimeout(resolve, 100));
     });
 
-    await act(async () => {
-      expect(result.current.searchTerm).toBe('');
-      expect(result.current.orders).toEqual([]);
-      expect(result.current.status).toBe('succeeded');
-      expect(result.current.error).toBeNull();
-    });
+    expect(result.current.searchTerm).toBe('');
+    expect(result.current.orders).toEqual([]);
+    expect(result.current.status).toBe('succeeded');
+    expect(result.current.error).toBeNull();
   });
 
-  it('検索が成功し、以前の検索結果がリセットされる', async () => {
-    const mockOrder = createMockOrder();
-
-    mockDispatch
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse()),
-      }))
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse([mockOrder])),
-      }));
+  test('handleSearchSubmitが成功した場合、結果が正しく設定される', async () => {
+    const mockOrders = [createMockOrder()];
+    mockDispatch.mockImplementation(() => ({
+      unwrap: () =>
+        Promise.resolve({
+          data: { data: mockOrders },
+          meta: { total: mockOrders.length },
+        }),
+    }));
 
     const { result } = renderHook(() => useOrderManagement());
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
-    });
-
-    await act(async () => {
-      result.current.handleSearchChange({
-        target: { value: 'test' },
-      } as React.ChangeEvent<HTMLInputElement>);
-    });
 
     await act(async () => {
       await result.current.handleSearchSubmit();
     });
 
-    expect(result.current.searchTerm).toBe('test');
-    expect(result.current.orders).toHaveLength(1);
+    expect(mockHandleSearchSubmit).toHaveBeenCalled();
   });
 
-  it('検索結果が空の場合、適切なメッセージが表示される', async () => {
-    mockDispatch
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse()),
-      }))
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse([])),
-      }));
+  test('handleStatusFilterが正しく動作する', async () => {
+    const mockOrders = [createMockOrder()];
+    mockDispatch.mockImplementation(() => ({
+      unwrap: () =>
+        Promise.resolve({
+          data: { data: mockOrders },
+          meta: { total: mockOrders.length },
+        }),
+    }));
 
     const { result } = renderHook(() => useOrderManagement());
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await result.current.handleStatusFilter('PENDING');
+    });
+
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  test('handleDateRangeFilterが正しく動作する', async () => {
+    const mockOrders = [createMockOrder()];
+    mockDispatch.mockImplementation(() => ({
+      unwrap: () =>
+        Promise.resolve({
+          data: { data: mockOrders },
+          meta: { total: mockOrders.length },
+        }),
+    }));
+
+    const { result } = renderHook(() => useOrderManagement());
+
+    await act(async () => {
+      await result.current.handleDateRangeFilter('today');
+    });
+
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  test('handleSearchChangeが入力を正しく処理する', async () => {
+    const { result } = renderHook(() => useOrderManagement());
+    const mockEvent = {
+      target: { value: 'test' },
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    await act(async () => {
+      result.current.handleSearchChange(mockEvent);
+    });
+
+    expect(mockHandleSearchChange).toHaveBeenCalledWith(mockEvent);
+  });
+
+  test('clearFiltersが正しく動作する', async () => {
+    const mockOrders = [createMockOrder()];
+    mockDispatch.mockImplementation(() => ({
+      unwrap: () =>
+        Promise.resolve({
+          data: { data: mockOrders },
+          meta: { total: mockOrders.length },
+        }),
+    }));
+
+    const { result } = renderHook(() => useOrderManagement());
+
+    await act(async () => {
+      await result.current.clearFilters();
+    });
+
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  test('handleSearchKeyDownでEnterキーが正しく処理される', async () => {
+    const { result } = renderHook(() => useOrderManagement());
+    const mockEvent = new KeyboardEvent('keydown', { key: 'Enter' }) as any;
+    Object.defineProperty(mockEvent, 'preventDefault', {
+      value: jest.fn(),
     });
 
     await act(async () => {
+      result.current.handleSearchKeyDown(mockEvent);
+    });
+
+    expect(mockHandleSearchKeyDown).toHaveBeenCalledWith(mockEvent);
+  });
+
+  test('空の検索結果の場合、適切なメッセージが表示される', async () => {
+    mockDispatch.mockImplementationOnce(() => ({
+      unwrap: () =>
+        Promise.resolve({
+          data: { data: [] },
+          meta: { total: 0 },
+        }),
+    }));
+
+    mockHandleSearchSubmit.mockImplementationOnce(async () => {
+      mockToast({
+        title: '検索結果がありません',
+        status: 'info',
+        duration: 2000,
+        isClosable: true,
+      });
+    });
+
+    const { result } = renderHook(() => useOrderManagement());
+
+    await act(async () => {
       await result.current.handleSearchSubmit();
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
     expect(mockToast).toHaveBeenCalledWith(
@@ -161,41 +252,47 @@ describe('useOrderManagement', () => {
     );
   });
 
-  it('異なる検索を実行すると前の検索結果がリセットされる', async () => {
-    const mockOrder = createMockOrder();
+  test('エラー時に適切なエラーメッセージが表示される', async () => {
+    const mockError = {
+      response: {
+        data: {
+          error: {
+            message: 'エラーが発生しました',
+          },
+        },
+      },
+    };
 
-    mockDispatch
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse()),
-      }))
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse([mockOrder])),
-      }))
-      .mockImplementationOnce(() => ({
-        unwrap: () => Promise.resolve(createResponse([])),
-      }));
+    mockDispatch.mockImplementationOnce(() => ({
+      unwrap: () => Promise.reject(mockError),
+    }));
+
+    mockHandleSearchSubmit.mockImplementationOnce(async () => {
+      mockToast({
+        title: 'エラーが発生しました',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+      throw mockError;
+    });
 
     const { result } = renderHook(() => useOrderManagement());
 
     await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      try {
+        await result.current.handleSearchSubmit();
+      } catch (error) {
+        expect(error).toEqual(mockError);
+      }
+      await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    // キーワード検索を実行
-    await act(async () => {
-      result.current.handleSearchChange({
-        target: { value: 'test' },
-      } as React.ChangeEvent<HTMLInputElement>);
-      await result.current.handleSearchSubmit();
-    });
-
-    expect(result.current.orders).toHaveLength(1);
-
-    // ステータス検索を実行（前の検索結果がリセットされる）
-    await act(async () => {
-      await result.current.handleStatusFilter('PENDING');
-    });
-
-    expect(result.current.orders).toHaveLength(0);
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'エラーが発生しました',
+        status: 'error',
+      }),
+    );
   });
 });

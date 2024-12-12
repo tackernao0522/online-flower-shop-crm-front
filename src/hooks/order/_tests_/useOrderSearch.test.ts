@@ -1,10 +1,8 @@
 import { renderHook } from '@testing-library/react';
 import { useOrderSearch } from '../useOrderSearch';
 import { useToast } from '@chakra-ui/react';
-import { fetchOrders } from '@/features/orders/ordersSlice';
 import type { OrderStatus } from '@/types/order';
 
-// モックの設定
 jest.mock('react-redux', () => ({
   useDispatch: () => mockDispatch,
 }));
@@ -20,7 +18,6 @@ jest.mock('@/features/orders/ordersSlice', () => ({
 const mockDispatch = jest.fn();
 
 describe('useOrderSearch', () => {
-  // 共通のモック変数
   const mockToast = jest.fn();
   const mockSetSearchTerm = jest.fn();
   const mockSetStatusFilter = jest.fn();
@@ -40,7 +37,6 @@ describe('useOrderSearch', () => {
     },
   };
 
-  // 基本のprops
   const defaultProps = {
     searchTerm: '',
     setSearchTerm: mockSetSearchTerm,

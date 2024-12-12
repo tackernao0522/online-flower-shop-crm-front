@@ -5,14 +5,12 @@ import type { OrderForm, OrderFormItem, FormErrors } from '@/types/order';
 describe('useOrderItems フック', () => {
   let mockSetNewOrder: jest.Mock;
   let mockSetFormErrors: jest.Mock;
+  let initialOrder: OrderForm;
 
   beforeEach(() => {
     mockSetNewOrder = jest.fn();
     mockSetFormErrors = jest.fn();
-  });
-
-  test('handleOrderItemChange が正しく動作する', () => {
-    const initialOrder: OrderForm = {
+    initialOrder = {
       customerId: 'customer1',
       status: 'PENDING',
       orderItems: [
@@ -20,126 +18,348 @@ describe('useOrderItems フック', () => {
         { productId: 'product2', quantity: 2 },
       ],
     };
-
-    const { result } = renderHook(() =>
-      useOrderItems({
-        newOrder: initialOrder,
-        setNewOrder: mockSetNewOrder,
-        setFormErrors: mockSetFormErrors,
-      }),
-    );
-
-    act(() => {
-      result.current.handleOrderItemChange(1, 'quantity', 3);
-    });
-
-    expect(mockSetNewOrder).toHaveBeenCalledWith(expect.any(Function));
   });
 
-  test('handleInputChange が正しく動作する（orderItems に対応）', () => {
-    const initialOrder: OrderForm = {
-      customerId: 'customer1',
-      status: 'PENDING',
-      orderItems: [
-        { productId: 'product1', quantity: 1 },
-        { productId: 'product2', quantity: 2 },
-      ],
-    };
+  describe('handleOrderItemChange', () => {
+    test('数量を正の整数に正規化する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
 
-    const { result } = renderHook(() =>
-      useOrderItems({
-        newOrder: initialOrder,
-        setNewOrder: mockSetNewOrder,
-        setFormErrors: mockSetFormErrors,
-      }),
-    );
+      act(() => {
+        result.current.handleOrderItemChange(0, 'quantity', -1);
+      });
 
-    act(() => {
-      result.current.handleInputChange({
-        target: {
-          name: 'orderItems.1.quantity',
-          value: '4',
-        },
-      } as React.ChangeEvent<HTMLInputElement>);
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].quantity).toBe(1);
     });
 
-    expect(mockSetNewOrder).toHaveBeenCalledWith(expect.any(Function));
+    test('文字列の数値を適切に処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleOrderItemChange(0, 'quantity', '5');
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].quantity).toBe(5);
+    });
+
+    test('不正な数値入力を1に正規化する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleOrderItemChange(0, 'quantity', 'invalid');
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].quantity).toBe(1);
+    });
+
+    test('数値型のquantity値を適切に処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleOrderItemChange(0, 'quantity', 5);
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].quantity).toBe(5);
+    });
+
+    test('productIdフィールドの変更を処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleOrderItemChange(0, 'productId', 'newProduct');
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].productId).toBe('newProduct');
+    });
   });
 
-  test('handleInputChange が正しく動作する（トップレベルのフィールドに対応）', () => {
-    const initialOrder: OrderForm = {
-      customerId: 'customer1',
-      status: 'PENDING',
-      orderItems: [
-        { productId: 'product1', quantity: 1 },
-        { productId: 'product2', quantity: 2 },
-      ],
-    };
+  describe('handleInputChange', () => {
+    test('orderItemsの数量に対して最小値1を保証する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
 
-    const { result } = renderHook(() =>
-      useOrderItems({
-        newOrder: initialOrder,
-        setNewOrder: mockSetNewOrder,
-        setFormErrors: mockSetFormErrors,
-      }),
-    );
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'orderItems.0.quantity',
+            value: '-5',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
 
-    act(() => {
-      result.current.handleInputChange({
-        target: {
-          name: 'customerId',
-          value: 'customer2',
-        },
-      } as React.ChangeEvent<HTMLInputElement>);
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].quantity).toBe(1);
     });
 
-    expect(mockSetNewOrder).toHaveBeenCalledWith(expect.any(Function));
+    test('フォームエラーをクリアする', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'customerId',
+            value: 'customer2',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      const setErrorsCallback = mockSetFormErrors.mock.calls[0][0];
+      const updatedErrors = setErrorsCallback({ customerId: 'Required' });
+      expect(updatedErrors.customerId).toBeUndefined();
+    });
+
+    test('select要素の変更を処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'orderItems.0.productId',
+            value: 'product3',
+          },
+        } as React.ChangeEvent<HTMLSelectElement>);
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[0].productId).toBe('product3');
+    });
+
+    test('通常のフォームフィールド（orderItems以外）の変更を処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'notes',
+            value: 'テスト注文',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.notes).toBe('テスト注文');
+    });
+
+    test('様々な通常フィールドの型に対する変更を正しく処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      // 文字列フィールド
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'notes',
+            value: 'テスト注文',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      // 数値フィールド
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'totalAmount',
+            value: '1000',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      // boolean フィールド
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'isPriority',
+            value: 'true',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      // 空文字列
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'comments',
+            value: '',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      // すべての更新が正しく処理されたことを確認
+      const setOrderCallbacks = mockSetNewOrder.mock.calls;
+      const finalUpdate = setOrderCallbacks.reduce(
+        (prev, [callback]) => callback(prev),
+        initialOrder,
+      );
+
+      expect(finalUpdate.notes).toBe('テスト注文');
+      expect(finalUpdate.totalAmount).toBe('1000');
+      expect(finalUpdate.isPriority).toBe('true');
+      expect(finalUpdate.comments).toBe('');
+      expect(mockSetNewOrder).toHaveBeenCalledTimes(4);
+      expect(mockSetFormErrors).toHaveBeenCalledTimes(4);
+    });
+
+    test('非orderItemsフィールドの特殊文字を含む名前を正しく処理する', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleInputChange({
+          target: {
+            name: 'special.field', // ドットを含むが orderItems. で始まらないフィールド
+            value: 'test',
+          },
+        } as React.ChangeEvent<HTMLInputElement>);
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder['special.field']).toBe('test');
+    });
   });
 
-  test('handleAddOrderItem が正しく動作する', () => {
-    const initialOrder: OrderForm = {
-      customerId: 'customer1',
-      status: 'PENDING',
-      orderItems: [{ productId: 'product1', quantity: 1 }],
-    };
+  describe('handleAddOrderItem', () => {
+    test('新規商品アイテムのデフォルト値が正しい', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
 
-    const { result } = renderHook(() =>
-      useOrderItems({
-        newOrder: initialOrder,
-        setNewOrder: mockSetNewOrder,
-        setFormErrors: mockSetFormErrors,
-      }),
-    );
+      act(() => {
+        result.current.handleAddOrderItem();
+      });
 
-    act(() => {
-      result.current.handleAddOrderItem();
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems[2]).toEqual({
+        productId: '',
+        quantity: 1,
+      });
     });
-
-    expect(mockSetNewOrder).toHaveBeenCalledWith(expect.any(Function));
   });
 
-  test('handleRemoveOrderItem が正しく動作する', () => {
-    const initialOrder: OrderForm = {
-      customerId: 'customer1',
-      status: 'PENDING',
-      orderItems: [
-        { productId: 'product1', quantity: 1 },
-        { productId: 'product2', quantity: 2 },
-      ],
-    };
+  describe('handleRemoveOrderItem', () => {
+    test('指定したインデックスの商品が削除される', () => {
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: initialOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
 
-    const { result } = renderHook(() =>
-      useOrderItems({
-        newOrder: initialOrder,
-        setNewOrder: mockSetNewOrder,
-        setFormErrors: mockSetFormErrors,
-      }),
-    );
+      act(() => {
+        result.current.handleRemoveOrderItem(0);
+      });
 
-    act(() => {
-      result.current.handleRemoveOrderItem(0);
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(initialOrder);
+      expect(updatedOrder.orderItems).toHaveLength(1);
+      expect(updatedOrder.orderItems[0]).toEqual({
+        productId: 'product2',
+        quantity: 2,
+      });
     });
 
-    expect(mockSetNewOrder).toHaveBeenCalledWith(expect.any(Function));
+    test('最後のアイテムが削除された後の状態が正しい', () => {
+      const singleItemOrder = {
+        ...initialOrder,
+        orderItems: [{ productId: 'product1', quantity: 1 }],
+      };
+
+      const { result } = renderHook(() =>
+        useOrderItems({
+          newOrder: singleItemOrder,
+          setNewOrder: mockSetNewOrder,
+          setFormErrors: mockSetFormErrors,
+        }),
+      );
+
+      act(() => {
+        result.current.handleRemoveOrderItem(0);
+      });
+
+      const setOrderCallback = mockSetNewOrder.mock.calls[0][0];
+      const updatedOrder = setOrderCallback(singleItemOrder);
+      expect(updatedOrder.orderItems).toHaveLength(0);
+    });
   });
 });

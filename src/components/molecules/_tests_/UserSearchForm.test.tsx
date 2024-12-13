@@ -1,8 +1,8 @@
-import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
-import "@testing-library/jest-dom";
-import UserSearchForm from "../UserSearchForm";
-import { ChakraProvider } from "@chakra-ui/react";
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import UserSearchForm from '../UserSearchForm';
+import { ChakraProvider } from '@chakra-ui/react';
 
 // モック関数を作成
 const mockSetSearchTerm = jest.fn();
@@ -12,9 +12,9 @@ const mockHandleKeyPress = jest.fn();
 const mockHandleResetSearch = jest.fn();
 
 const defaultProps = {
-  searchTerm: "",
+  searchTerm: '',
   setSearchTerm: mockSetSearchTerm,
-  searchRole: "",
+  searchRole: '',
   setSearchRole: mockSetSearchRole,
   handleSearch: mockHandleSearch,
   handleKeyPress: mockHandleKeyPress,
@@ -28,102 +28,345 @@ const renderWithChakra = (props = defaultProps) =>
   render(
     <ChakraProvider>
       <UserSearchForm {...props} />
-    </ChakraProvider>
+    </ChakraProvider>,
   );
 
-describe("UserSearchFormのテスト", () => {
-  test("初期状態で検索ボタンが無効になっていることを確認", () => {
-    renderWithChakra();
-
-    const termSearchButton = screen.getByText("名前またはメール検索");
-    const roleSearchButton = screen.getByText("役割検索");
-
-    expect(termSearchButton).toBeDisabled();
-    expect(roleSearchButton).toBeDisabled();
+describe('UserSearchFormのテスト', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  test("ユーザー名を入力すると検索ボタンが有効になることを確認", () => {
-    renderWithChakra({
-      ...defaultProps,
-      searchTerm: "テストユーザー",
-      isSearchTermEmpty: false,
+  describe('デスクトップ表示', () => {
+    test('初期状態で検索ボタンが無効になっていることを確認', () => {
+      renderWithChakra();
+      const termSearchButton = screen.getByText('名前またはメール検索');
+      const roleSearchButton = screen.getByText('役割検索');
+      expect(termSearchButton).toBeDisabled();
+      expect(roleSearchButton).toBeDisabled();
     });
 
-    const termSearchButton = screen.getByText("名前またはメール検索");
+    test('ユーザー名の入力処理が正しく動作する', () => {
+      renderWithChakra();
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      fireEvent.change(searchInput, { target: { value: 'test user' } });
+      expect(mockSetSearchTerm).toHaveBeenCalledWith('test user');
+    });
 
-    expect(termSearchButton).not.toBeDisabled();
+    test('検索ボタンのクリックで正しいハンドラーが呼ばれる', () => {
+      renderWithChakra({
+        ...defaultProps,
+        searchTerm: 'test',
+        isSearchTermEmpty: false,
+      });
+      const searchButton = screen.getByText('名前またはメール検索');
+      fireEvent.click(searchButton);
+      expect(mockHandleSearch).toHaveBeenCalledWith('term');
+    });
+
+    test('役割選択の変更が正しく処理される', () => {
+      renderWithChakra();
+      const roleSelect = screen.getByRole('combobox');
+      fireEvent.change(roleSelect, { target: { value: 'ADMIN' } });
+      expect(mockSetSearchRole).toHaveBeenCalledWith('ADMIN');
+    });
+
+    test('役割検索ボタンのクリックで正しいハンドラーが呼ばれる', () => {
+      renderWithChakra({
+        ...defaultProps,
+        searchRole: 'ADMIN',
+        isSearchRoleEmpty: false,
+      });
+      const roleSearchButton = screen.getByText('役割検索');
+      fireEvent.click(roleSearchButton);
+      expect(mockHandleSearch).toHaveBeenCalledWith('role');
+    });
+
+    test('すべての役割オプションが表示される', () => {
+      renderWithChakra();
+      const roleSelect = screen.getByRole('combobox');
+      expect(roleSelect).toContainElement(screen.getByText('管理者'));
+      expect(roleSelect).toContainElement(screen.getByText('マネージャー'));
+      expect(roleSelect).toContainElement(screen.getByText('スタッフ'));
+    });
+
+    test('デスクトップレイアウトのスタイル確認', () => {
+      const { container } = renderWithChakra();
+      const stackElements = container.querySelectorAll('.chakra-stack');
+      expect(stackElements).toHaveLength(2); // 2つのStack要素
+    });
   });
 
-  test("役割を選択すると役割検索ボタンが有効になることを確認", () => {
-    renderWithChakra({
-      ...defaultProps,
-      searchRole: "STAFF",
-      isSearchRoleEmpty: false,
+  describe('モバイル表示', () => {
+    test('モバイルレイアウトで正しく表示される', () => {
+      renderWithChakra({ ...defaultProps, isMobile: true });
+      const vStack = screen.getByTestId('mobile-form');
+      expect(vStack).toBeInTheDocument();
     });
 
-    const roleSearchButton = screen.getByText("役割検索");
+    test('モバイルでの検索入力が正しく動作する', () => {
+      renderWithChakra({ ...defaultProps, isMobile: true });
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      fireEvent.change(searchInput, { target: { value: 'mobile test' } });
+      expect(mockSetSearchTerm).toHaveBeenCalledWith('mobile test');
+    });
 
-    expect(roleSearchButton).not.toBeDisabled();
+    test('モバイルでの役割選択が正しく動作する', () => {
+      renderWithChakra({ ...defaultProps, isMobile: true });
+      const roleSelect = screen.getByRole('combobox');
+      fireEvent.change(roleSelect, { target: { value: 'MANAGER' } });
+      expect(mockSetSearchRole).toHaveBeenCalledWith('MANAGER');
+    });
+
+    test('モバイルでのボタン配置が正しい', () => {
+      renderWithChakra({ ...defaultProps, isMobile: true });
+      const buttons = screen.getAllByRole('button');
+      expect(buttons).toHaveLength(3); // 名前検索、役割検索、リセットの3つ
+      buttons.forEach(button => {
+        expect(button).toBeInTheDocument();
+      });
+    });
+
+    test('モバイルでの検索実行が正しく動作する', () => {
+      renderWithChakra({
+        ...defaultProps,
+        isMobile: true,
+        searchTerm: 'test',
+        isSearchTermEmpty: false,
+      });
+      const searchButton = screen.getByText('名前またはメール検索');
+      fireEvent.click(searchButton);
+      expect(mockHandleSearch).toHaveBeenCalledWith('term');
+    });
   });
 
-  test("リセットボタンをクリックするとリセットハンドラが呼ばれる", () => {
-    renderWithChakra();
+  describe('キーボードイベント', () => {
+    test('検索フィールドでのEnterキー処理', () => {
+      renderWithChakra();
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      fireEvent.keyPress(searchInput, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.any(Object),
+        'term',
+      );
+    });
 
-    const resetButton = screen.getByText("検索結果をリセット");
+    test('役割選択でのEnterキー処理', () => {
+      renderWithChakra();
+      const roleSelect = screen.getByRole('combobox');
+      fireEvent.keyPress(roleSelect, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.any(Object),
+        'role',
+      );
+    });
 
-    fireEvent.click(resetButton);
+    test('キーボードイベントの処理が期待通りに動作する', () => {
+      renderWithChakra();
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      const roleSelect = screen.getByRole('combobox');
 
-    expect(mockHandleResetSearch).toHaveBeenCalled();
+      // 検索フィールドでのEnterキー
+      fireEvent.keyPress(searchInput, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenLastCalledWith(
+        expect.any(Object),
+        'term',
+      );
+
+      // 役割選択でのEnterキー
+      fireEvent.keyPress(roleSelect, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenLastCalledWith(
+        expect.any(Object),
+        'role',
+      );
+
+      // その他のキーの処理
+      mockHandleKeyPress.mockClear();
+      fireEvent.keyDown(searchInput, { key: 'a', code: 'KeyA' });
+      expect(mockHandleKeyPress).not.toHaveBeenCalled();
+    });
   });
 
-  test("モバイルビューで正しくレンダリングされるか確認", () => {
-    renderWithChakra({
-      ...defaultProps,
-      isMobile: true,
+  describe('フォーム状態の制御', () => {
+    test('検索条件が空の場合のリセットボタンの動作', () => {
+      renderWithChakra();
+      const resetButton = screen.getByText('検索結果をリセット');
+      fireEvent.click(resetButton);
+      expect(mockHandleResetSearch).toHaveBeenCalledTimes(1);
     });
 
-    const searchTermInput =
-      screen.getByPlaceholderText("ユーザー名またはメールアドレスで検索");
-    const roleSearchButton = screen.getByText("役割検索");
+    test('検索条件が存在する場合のボタンの有効化', () => {
+      renderWithChakra({
+        ...defaultProps,
+        searchTerm: 'test',
+        searchRole: 'ADMIN',
+        isSearchTermEmpty: false,
+        isSearchRoleEmpty: false,
+      });
+      const termSearchButton = screen.getByText('名前またはメール検索');
+      const roleSearchButton = screen.getByText('役割検索');
+      expect(termSearchButton).toBeEnabled();
+      expect(roleSearchButton).toBeEnabled();
+    });
 
-    expect(searchTermInput).toBeInTheDocument();
-    expect(roleSearchButton).toBeInTheDocument();
+    test('検索フィールドがクリアされた時の状態', () => {
+      const { rerender } = renderWithChakra({
+        ...defaultProps,
+        searchTerm: 'test',
+        isSearchTermEmpty: false,
+      });
+
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      fireEvent.change(searchInput, { target: { value: '' } });
+      expect(mockSetSearchTerm).toHaveBeenLastCalledWith('');
+
+      // 空の状態での再レンダリング
+      rerender(
+        <ChakraProvider>
+          <UserSearchForm
+            {...defaultProps}
+            searchTerm=""
+            isSearchTermEmpty={true}
+          />
+        </ChakraProvider>,
+      );
+
+      const termSearchButton = screen.getByText('名前またはメール検索');
+      expect(termSearchButton).toBeDisabled();
+    });
+
+    test('役割選択がクリアされた時の状態', () => {
+      const { rerender } = renderWithChakra({
+        ...defaultProps,
+        searchRole: 'ADMIN',
+        isSearchRoleEmpty: false,
+      });
+
+      const roleSelect = screen.getByRole('combobox');
+      fireEvent.change(roleSelect, { target: { value: '' } });
+      expect(mockSetSearchRole).toHaveBeenLastCalledWith('');
+
+      // 空の状態での再レンダリング
+      rerender(
+        <ChakraProvider>
+          <UserSearchForm
+            {...defaultProps}
+            searchRole=""
+            isSearchRoleEmpty={true}
+          />
+        </ChakraProvider>,
+      );
+
+      const roleSearchButton = screen.getByText('役割検索');
+      expect(roleSearchButton).toBeDisabled();
+    });
   });
 
-  test("Enterキーを押すとhandleKeyPressが呼ばれる", () => {
-    renderWithChakra({
-      ...defaultProps,
-      searchTerm: "テストユーザー",
-      isSearchTermEmpty: false,
+  describe('モバイル表示の詳細テスト', () => {
+    test('モバイル表示での全イベントハンドラのテスト', () => {
+      // 初期レンダリング
+      const { rerender } = renderWithChakra({
+        ...defaultProps,
+        isMobile: true,
+      });
+
+      // 検索入力のテスト
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      fireEvent.change(searchInput, { target: { value: 'test' } });
+      expect(mockSetSearchTerm).toHaveBeenCalledWith('test');
+
+      // 状態を更新して再レンダリング
+      rerender(
+        <ChakraProvider>
+          <UserSearchForm
+            {...defaultProps}
+            isMobile={true}
+            searchTerm="test"
+            isSearchTermEmpty={false}
+          />
+        </ChakraProvider>,
+      );
+
+      // data-testidを使用して特定のボタンを取得
+      const searchButton = screen.getByTestId('term-search-button');
+      fireEvent.click(searchButton);
+      expect(mockHandleSearch).toHaveBeenCalledWith('term');
+
+      // 役割選択のテスト
+      const roleSelect = screen.getByRole('combobox');
+      fireEvent.change(roleSelect, { target: { value: 'ADMIN' } });
+      expect(mockSetSearchRole).toHaveBeenCalledWith('ADMIN');
+
+      // リセットボタンのテスト
+      const resetButton = screen.getByText('検索結果をリセット');
+      fireEvent.click(resetButton);
+      expect(mockHandleResetSearch).toHaveBeenCalled();
     });
 
-    const searchTermInput =
-      screen.getByPlaceholderText("ユーザー名またはメールアドレスで検索");
+    test('モバイル表示でのすべてのフォーム要素が正しく表示される', () => {
+      renderWithChakra({ ...defaultProps, isMobile: true });
 
-    fireEvent.keyPress(searchTermInput, {
-      key: "Enter",
-      code: "Enter",
-      charCode: 13,
+      // 全ての要素の存在確認
+      expect(
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索'),
+      ).toBeInTheDocument();
+      expect(screen.getByText('名前またはメール検索')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByText('役割検索')).toBeInTheDocument();
+      expect(screen.getByText('検索結果をリセット')).toBeInTheDocument();
+
+      // スタイルとレイアウトの確認
+      const form = screen.getByTestId('mobile-form');
+      expect(form).toHaveStyle({ width: '100%' });
     });
 
-    expect(mockHandleKeyPress).toHaveBeenCalledWith(expect.any(Object), "term");
-  });
+    test('モバイル表示での状態遷移のテスト', () => {
+      const { rerender } = renderWithChakra({
+        ...defaultProps,
+        isMobile: true,
+      });
 
-  test("役割選択後、Enterキーを押すとhandleKeyPressが呼ばれる", () => {
-    renderWithChakra({
-      ...defaultProps,
-      searchRole: "STAFF",
-      isSearchRoleEmpty: false,
+      // 初期状態の確認
+      expect(screen.getByText('名前またはメール検索')).toBeDisabled();
+      expect(screen.getByText('役割検索')).toBeDisabled();
+
+      // 検索条件ありの状態
+      rerender(
+        <ChakraProvider>
+          <UserSearchForm
+            {...defaultProps}
+            isMobile={true}
+            searchTerm="test"
+            searchRole="ADMIN"
+            isSearchTermEmpty={false}
+            isSearchRoleEmpty={false}
+          />
+        </ChakraProvider>,
+      );
+
+      expect(screen.getByText('名前またはメール検索')).toBeEnabled();
+      expect(screen.getByText('役割検索')).toBeEnabled();
     });
-
-    const roleSelect = screen.getByRole("combobox");
-
-    fireEvent.keyPress(roleSelect, {
-      key: "Enter",
-      code: "Enter",
-      charCode: 13,
-    });
-
-    expect(mockHandleKeyPress).toHaveBeenCalledWith(expect.any(Object), "role");
   });
 });

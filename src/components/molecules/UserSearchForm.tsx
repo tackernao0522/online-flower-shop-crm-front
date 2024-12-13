@@ -30,7 +30,11 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({
 }) => {
   if (isMobile) {
     return (
-      <VStack spacing={4} align="stretch" width="100%">
+      <VStack
+        spacing={4}
+        align="stretch"
+        width="100%"
+        data-testid="mobile-form">
         <CommonInput
           placeholder="ユーザー名またはメールアドレスで検索"
           value={searchTerm}
@@ -41,7 +45,8 @@ const UserSearchForm: React.FC<UserSearchFormProps> = ({
           variant="secondary"
           onClick={() => handleSearch('term')}
           isDisabled={isSearchTermEmpty}
-          isFullWidthMobile>
+          isFullWidthMobile
+          data-testid="term-search-button">
           名前またはメール検索
         </CommonButton>
         <Box position="relative">

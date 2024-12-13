@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useOrderItems } from '../useOrderItems';
-import type { OrderForm, OrderFormItem, FormErrors } from '@/types/order';
+import type { OrderForm } from '@/types/order';
 
 describe('useOrderItems フック', () => {
   let mockSetNewOrder: jest.Mock;
@@ -234,7 +234,6 @@ describe('useOrderItems フック', () => {
         } as React.ChangeEvent<HTMLInputElement>);
       });
 
-      // boolean フィールド
       act(() => {
         result.current.handleInputChange({
           target: {
@@ -244,7 +243,6 @@ describe('useOrderItems フック', () => {
         } as React.ChangeEvent<HTMLInputElement>);
       });
 
-      // 空文字列
       act(() => {
         result.current.handleInputChange({
           target: {
@@ -254,7 +252,6 @@ describe('useOrderItems フック', () => {
         } as React.ChangeEvent<HTMLInputElement>);
       });
 
-      // すべての更新が正しく処理されたことを確認
       const setOrderCallbacks = mockSetNewOrder.mock.calls;
       const finalUpdate = setOrderCallbacks.reduce(
         (prev, [callback]) => callback(prev),
@@ -281,7 +278,7 @@ describe('useOrderItems フック', () => {
       act(() => {
         result.current.handleInputChange({
           target: {
-            name: 'special.field', // ドットを含むが orderItems. で始まらないフィールド
+            name: 'special.field',
             value: 'test',
           },
         } as React.ChangeEvent<HTMLInputElement>);

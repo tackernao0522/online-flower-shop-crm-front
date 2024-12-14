@@ -295,5 +295,7 @@ export const useOrderManagement = () => {
     handleAddOrderItem,
     handleRemoveOrderItem,
     clearFilters,
+    fetchOrders,
+    filterStateRef,
   };
 };

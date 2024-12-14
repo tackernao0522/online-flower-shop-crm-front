@@ -24,7 +24,22 @@ jest.mock('@chakra-ui/react', () => ({
 }));
 
 jest.mock('@/api/orderApi', () => ({
-  fetchOrdersHelper: jest.fn(),
+  fetchOrdersHelper: jest.fn((dispatch, params) =>
+    Promise.resolve({
+      data: [
+        {
+          id: '1',
+          orderNumber: 'ORD-001',
+          orderDate: new Date().toISOString(),
+          totalAmount: 1000,
+          status: 'PENDING',
+        },
+      ],
+      meta: {
+        total: 1,
+      },
+    }),
+  ),
 }));
 
 jest.mock('../order/useOrderSearch', () => ({
@@ -292,6 +307,81 @@ describe('useOrderManagement', () => {
       expect.objectContaining({
         title: 'エラーが発生しました',
         status: 'error',
+      }),
+    );
+  });
+
+  test('fetchOrdersがcurrentSearchTermに応じて正しく動作する', async () => {
+    const { result } = renderHook(() => useOrderManagement());
+
+    act(() => {
+      if (result.current.filterStateRef) {
+        result.current.filterStateRef.current = {
+          currentSearchTerm: 'searchTerm',
+          currentStatus: null,
+          currentDateRange: { start: null, end: null },
+        };
+      }
+    });
+
+    await act(async () => {
+      await result.current.fetchOrders(1);
+    });
+
+    expect(fetchOrdersHelper).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ search: 'searchTerm' }),
+    );
+  });
+
+  test('fetchOrdersがcurrentStatusに応じて正しく動作する', async () => {
+    const { result } = renderHook(() => useOrderManagement());
+
+    act(() => {
+      if (result.current.filterStateRef) {
+        result.current.filterStateRef.current = {
+          currentSearchTerm: '',
+          currentStatus: 'PENDING',
+          currentDateRange: { start: null, end: null },
+        };
+      }
+    });
+
+    await act(async () => {
+      await result.current.fetchOrders(1);
+    });
+
+    expect(fetchOrdersHelper).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ status: 'PENDING' }),
+    );
+  });
+
+  test('fetchOrdersがcurrentDateRangeに応じて正しく動作する', async () => {
+    const { result } = renderHook(() => useOrderManagement());
+
+    act(() => {
+      if (result.current.filterStateRef) {
+        result.current.filterStateRef.current = {
+          currentSearchTerm: '',
+          currentStatus: null,
+          currentDateRange: {
+            start: new Date('2024-01-01'),
+            end: new Date('2024-01-31'),
+          },
+        };
+      }
+    });
+
+    await act(async () => {
+      await result.current.fetchOrders(1);
+    });
+
+    expect(fetchOrdersHelper).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        start_date: new Date('2024-01-01').toISOString(),
+        end_date: new Date('2024-01-31').toISOString(),
       }),
     );
   });

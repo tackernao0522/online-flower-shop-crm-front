@@ -1,5 +1,4 @@
 import { renderHook, act } from '@testing-library/react';
-import { waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import React from 'react';
@@ -7,13 +6,11 @@ import { useUserManagement } from '../useUserManagement';
 import { useDispatch, useSelector } from 'react-redux';
 import { useToast, useDisclosure, useBreakpointValue } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
-import type { UnknownAction } from '@reduxjs/toolkit';
 import { deleteUser } from '@/features/users/usersSlice';
 import { User } from '@/types/user';
 import { Role } from '@/types/role';
 import { AppDispatch, RootState } from '@/store';
 
-// console.log と console.error のモック化
 beforeAll(() => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
   jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -24,7 +21,6 @@ afterAll(() => {
   (console.error as jest.Mock).mockRestore();
 });
 
-// モックデータ作成のヘルパー関数
 const createMockUser = (overrides: Partial<User> = {}): User => ({
   id: '1',
   username: 'Test User',
@@ -42,7 +38,6 @@ const createMockRole = (): Role => ({
   description: 'テストロール',
 });
 
-// Redux状態のモック
 const createMockReduxState = (overrides = {}) =>
   ({
     users: {
@@ -65,13 +60,8 @@ const createMockReduxState = (overrides = {}) =>
     ...overrides,
   }) as unknown as RootState;
 
-// 型定義
-type ThunkAction = (...args: any[]) => Promise<any>;
-type DispatchResult = UnknownAction | { unwrap: () => Promise<any> };
 type MockDispatch = jest.Mock<ReturnType<AppDispatch>>;
-type MockSelector = jest.Mock<any, [selector: (state: RootState) => any]>;
 
-// モック設定
 jest.mock('react-redux', () => ({
   useDispatch: jest.fn(),
   useSelector: jest.fn(),
@@ -100,7 +90,6 @@ jest.mock('@/features/users/usersSlice', () => ({
   resetUsersState: jest.fn(),
 }));
 
-// テスト用のラッパーコンポーネント
 const wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const store = configureStore({
     reducer: {
@@ -155,7 +144,6 @@ describe('useUserManagement フック', () => {
       push: jest.fn(),
     });
 
-    // 型アサーションを追加
     (useDispatch as unknown as jest.Mock).mockReturnValue(mockDispatch);
     (useSelector as unknown as jest.Mock).mockImplementation(mockSelector);
     (useToast as unknown as jest.Mock).mockReturnValue(mockToast);

@@ -4,7 +4,6 @@ import '@testing-library/jest-dom';
 import UserSearchForm from '../UserSearchForm';
 import { ChakraProvider } from '@chakra-ui/react';
 
-// モック関数を作成
 const mockSetSearchTerm = jest.fn();
 const mockSetSearchRole = jest.fn();
 const mockHandleSearch = jest.fn();
@@ -122,7 +121,7 @@ describe('UserSearchFormのテスト', () => {
     test('モバイルでのボタン配置が正しい', () => {
       renderWithChakra({ ...defaultProps, isMobile: true });
       const buttons = screen.getAllByRole('button');
-      expect(buttons).toHaveLength(3); // 名前検索、役割検索、リセットの3つ
+      expect(buttons).toHaveLength(3);
       buttons.forEach(button => {
         expect(button).toBeInTheDocument();
       });
@@ -188,7 +187,6 @@ describe('UserSearchFormのテスト', () => {
         'term',
       );
 
-      // 役割選択でのEnterキー
       fireEvent.keyPress(roleSelect, {
         key: 'Enter',
         code: 'Enter',
@@ -199,7 +197,6 @@ describe('UserSearchFormのテスト', () => {
         'role',
       );
 
-      // その他のキーの処理
       mockHandleKeyPress.mockClear();
       fireEvent.keyDown(searchInput, { key: 'a', code: 'KeyA' });
       expect(mockHandleKeyPress).not.toHaveBeenCalled();
@@ -240,7 +237,6 @@ describe('UserSearchFormのテスト', () => {
       fireEvent.change(searchInput, { target: { value: '' } });
       expect(mockSetSearchTerm).toHaveBeenLastCalledWith('');
 
-      // 空の状態での再レンダリング
       rerender(
         <ChakraProvider>
           <UserSearchForm
@@ -266,7 +262,6 @@ describe('UserSearchFormのテスト', () => {
       fireEvent.change(roleSelect, { target: { value: '' } });
       expect(mockSetSearchRole).toHaveBeenLastCalledWith('');
 
-      // 空の状態での再レンダリング
       rerender(
         <ChakraProvider>
           <UserSearchForm
@@ -284,19 +279,16 @@ describe('UserSearchFormのテスト', () => {
 
   describe('モバイル表示の詳細テスト', () => {
     test('モバイル表示での全イベントハンドラのテスト', () => {
-      // 初期レンダリング
       const { rerender } = renderWithChakra({
         ...defaultProps,
         isMobile: true,
       });
 
-      // 検索入力のテスト
       const searchInput =
         screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
       fireEvent.change(searchInput, { target: { value: 'test' } });
       expect(mockSetSearchTerm).toHaveBeenCalledWith('test');
 
-      // 状態を更新して再レンダリング
       rerender(
         <ChakraProvider>
           <UserSearchForm
@@ -308,17 +300,14 @@ describe('UserSearchFormのテスト', () => {
         </ChakraProvider>,
       );
 
-      // data-testidを使用して特定のボタンを取得
       const searchButton = screen.getByTestId('term-search-button');
       fireEvent.click(searchButton);
       expect(mockHandleSearch).toHaveBeenCalledWith('term');
 
-      // 役割選択のテスト
       const roleSelect = screen.getByRole('combobox');
       fireEvent.change(roleSelect, { target: { value: 'ADMIN' } });
       expect(mockSetSearchRole).toHaveBeenCalledWith('ADMIN');
 
-      // リセットボタンのテスト
       const resetButton = screen.getByText('検索結果をリセット');
       fireEvent.click(resetButton);
       expect(mockHandleResetSearch).toHaveBeenCalled();
@@ -327,7 +316,6 @@ describe('UserSearchFormのテスト', () => {
     test('モバイル表示でのすべてのフォーム要素が正しく表示される', () => {
       renderWithChakra({ ...defaultProps, isMobile: true });
 
-      // 全ての要素の存在確認
       expect(
         screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索'),
       ).toBeInTheDocument();
@@ -336,7 +324,6 @@ describe('UserSearchFormのテスト', () => {
       expect(screen.getByText('役割検索')).toBeInTheDocument();
       expect(screen.getByText('検索結果をリセット')).toBeInTheDocument();
 
-      // スタイルとレイアウトの確認
       const form = screen.getByTestId('mobile-form');
       expect(form).toHaveStyle({ width: '100%' });
     });
@@ -347,11 +334,9 @@ describe('UserSearchFormのテスト', () => {
         isMobile: true,
       });
 
-      // 初期状態の確認
       expect(screen.getByText('名前またはメール検索')).toBeDisabled();
       expect(screen.getByText('役割検索')).toBeDisabled();
 
-      // 検索条件ありの状態
       rerender(
         <ChakraProvider>
           <UserSearchForm

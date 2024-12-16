@@ -19,8 +19,6 @@ const initialState: RolesState = {
 };
 
 export const fetchRoles = createAsyncThunk('roles/fetchRoles', async () => {
-  // ここにAPIコールのロジックを実装します
-  // 今はダミーデータを返します
   return [
     { id: 1, name: '管理者', description: 'システム全体の管理権限を持つ' },
     { id: 2, name: 'スタッフ', description: '日常的な業務操作権限を持つ' },
@@ -28,31 +26,34 @@ export const fetchRoles = createAsyncThunk('roles/fetchRoles', async () => {
   ];
 });
 
-export const addRole = createAsyncThunk('roles/addRole', async (role: Omit<Role, 'id'>) => {
-  // ここにAPIコールのロジックを実装します
-  // 今はダミーの実装を返します
-  return { id: Date.now(), ...role };
-});
+export const addRole = createAsyncThunk(
+  'roles/addRole',
+  async (role: Omit<Role, 'id'>) => {
+    return { id: Date.now(), ...role };
+  },
+);
 
-export const updateRole = createAsyncThunk('roles/updateRole', async (role: Role) => {
-  // ここにAPIコールのロジックを実装します
-  // 今は単に更新されたロールを返します
-  return role;
-});
+export const updateRole = createAsyncThunk(
+  'roles/updateRole',
+  async (role: Role) => {
+    return role;
+  },
+);
 
-export const deleteRole = createAsyncThunk('roles/deleteRole', async (id: number) => {
-  // ここにAPIコールのロジックを実装します
-  // 今は削除されたIDを返します
-  return id;
-});
+export const deleteRole = createAsyncThunk(
+  'roles/deleteRole',
+  async (id: number) => {
+    return id;
+  },
+);
 
 const rolesSlice = createSlice({
   name: 'roles',
   initialState,
   reducers: {},
-  extraReducers: (builder) => {
+  extraReducers: builder => {
     builder
-      .addCase(fetchRoles.pending, (state) => {
+      .addCase(fetchRoles.pending, state => {
         state.status = 'loading';
       })
       .addCase(fetchRoles.fulfilled, (state, action: PayloadAction<Role[]>) => {
@@ -67,7 +68,9 @@ const rolesSlice = createSlice({
         state.roles.push(action.payload);
       })
       .addCase(updateRole.fulfilled, (state, action: PayloadAction<Role>) => {
-        const index = state.roles.findIndex(role => role.id === action.payload.id);
+        const index = state.roles.findIndex(
+          role => role.id === action.payload.id,
+        );
         if (index !== -1) {
           state.roles[index] = action.payload;
         }

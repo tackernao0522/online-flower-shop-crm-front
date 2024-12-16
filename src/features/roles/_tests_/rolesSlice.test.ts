@@ -8,7 +8,6 @@ import rolesReducer, {
 import { AnyAction } from 'redux';
 import { ThunkDispatch } from 'redux-thunk';
 
-// モックのエラーレスポンスを作成するヘルパー関数
 const createAsyncError = (message: string) => {
   return {
     name: 'Error',
@@ -16,7 +15,6 @@ const createAsyncError = (message: string) => {
   };
 };
 
-// ストアのセットアップ
 const createTestStore = () => {
   const store = configureStore({
     reducer: {
@@ -55,7 +53,7 @@ describe('rolesSliceのテスト', () => {
     const newRole = { name: 'エディター', description: 'コンテンツ編集権限' };
     await (store.dispatch as AppDispatch)(addRole(newRole));
     const state = store.getState().roles;
-    expect(state.roles.length).toBe(1); // ストアがリセットされているので1つだけ
+    expect(state.roles.length).toBe(1);
     expect(state.roles[0].name).toBe('エディター');
   });
 
@@ -85,13 +83,12 @@ describe('rolesSliceのテスト', () => {
     await (store.dispatch as AppDispatch)(addRole(role));
     await (store.dispatch as AppDispatch)(deleteRole(1));
     const state = store.getState().roles;
-    expect(state.roles.length).toBe(0); // ストアがリセットされているので削除される
+    expect(state.roles.length).toBe(0);
   });
 
   test('ロールのフェッチが失敗する場合のエラーハンドリング', async () => {
     const errorMessage = 'ネットワークエラーが発生しました';
 
-    // fetchRolesのrejectedアクションを直接ディスパッチ
     store.dispatch(
       fetchRoles.rejected(
         createAsyncError(errorMessage),
@@ -106,7 +103,6 @@ describe('rolesSliceのテスト', () => {
   });
 
   test('ロールのフェッチが失敗し、エラーメッセージがない場合', async () => {
-    // エラーメッセージなしでrejectedアクションをディスパッチ
     store.dispatch(
       fetchRoles.rejected(createAsyncError(''), 'requestId', undefined),
     );

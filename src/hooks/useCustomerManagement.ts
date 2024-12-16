@@ -373,5 +373,6 @@ export const useCustomerManagement = () => {
     lastElementRef,
     setSearchTerm,
     fetchCustomersData,
+    loadMore,
   };
 };

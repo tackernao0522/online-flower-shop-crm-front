@@ -1,8 +1,7 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
-# npmを最新バージョンにアップデート
-RUN npm install -g npm@10.9.2
+RUN npm install -g npm@11.0.0
 
 CMD ["sh", "-c", "npm install && npm run dev"]

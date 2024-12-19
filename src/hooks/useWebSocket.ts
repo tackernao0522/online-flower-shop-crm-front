@@ -190,13 +190,11 @@ export const useWebSocket = () => {
         (data: SalesData) => {
           if (!isUnmountingRef.current) {
             console.log('Received sales update:', data);
-            // ここで明示的に型を指定し、salesChangeRateを使用
             const salesData = {
               totalSales: Number(data.totalSales),
               changeRate: data.changeRate,
             };
 
-            // Reduxストアを更新
             dispatch(setSalesStats(salesData));
 
             if (latestSalesDataRef.current) {
@@ -241,7 +239,6 @@ export const useWebSocket = () => {
     };
   }, [toast, cleanupPusher, initializePusher]);
 
-  // Initialize on mount
   useEffect(() => {
     isUnmountingRef.current = false;
     initializePusher();

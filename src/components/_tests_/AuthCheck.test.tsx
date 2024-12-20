@@ -125,4 +125,46 @@ describe('AuthCheck', () => {
     expect(mockDispatch).toHaveBeenCalledWith(logout());
     expect(mockRouter.push).toHaveBeenCalledWith('/login');
   });
+
+  it('定期チェックでトークンが後から期限切れになった場合、ログアウトとリダイレクトが発生する', () => {
+    jest.useFakeTimers();
+    mockUseSelector.mockReturnValue({
+      isAuthenticated: true,
+      token: 'valid-token',
+      user: {},
+    });
+    (window.localStorage.getItem as MockedFunction).mockImplementation(key => {
+      if (key === 'token') return 'valid-token';
+      if (key === 'user') return JSON.stringify({});
+      return null;
+    });
+
+    (isTokenExpired as MockedFunction).mockReturnValue(false);
+
+    render(<AuthCheck />);
+
+    (isTokenExpired as MockedFunction).mockReturnValue(true);
+
+    jest.advanceTimersByTime(60000);
+
+    expect(mockDispatch).toHaveBeenCalledWith(logout());
+    expect(mockRouter.push).toHaveBeenCalledWith('/login');
+
+    jest.useRealTimers();
+  });
+
+  it('認証済みだがlocalStorageに有効なトークン/ユーザー情報がなく、トークンが期限切れの場合、ログアウトとリダイレクトが発生する', () => {
+    mockUseSelector.mockReturnValue({
+      isAuthenticated: true,
+      token: 'expired-token',
+      user: {},
+    });
+    (window.localStorage.getItem as jest.Mock).mockReturnValue(null);
+    (isTokenExpired as jest.Mock).mockReturnValue(true);
+
+    render(<AuthCheck />);
+
+    expect(mockDispatch).toHaveBeenCalledWith(logout());
+    expect(mockRouter.push).toHaveBeenCalledWith('/login');
+  });
 });

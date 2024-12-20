@@ -1,20 +1,124 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ChakraProvider } from '@chakra-ui/react';
+import {
+  ChakraProvider,
+  theme as chakraTheme,
+  UseToastOptions,
+} from '@chakra-ui/react';
+import * as chakraUI from '@chakra-ui/react';
 import DateRangePickerModal from '../DateRangePickerModal';
 import '@testing-library/jest-dom';
 
-const renderWithChakra = (ui: React.ReactElement) => {
-  return render(<ChakraProvider>{ui}</ChakraProvider>);
+const customTheme = {
+  ...chakraTheme,
+  breakpoints: {
+    base: '0em',
+    sm: '30em',
+    md: '48em',
+    lg: '62em',
+    xl: '80em',
+    '2xl': '96em',
+  },
+  __breakpoints: {
+    keys: ['base', 'sm', 'md', 'lg', 'xl', '2xl'],
+    details: {
+      base: {
+        minMaxQuery: '(min-width: 0em)',
+        maxQuery: '',
+        minQuery: '',
+        max: '',
+        min: '0em',
+      },
+      sm: {
+        minMaxQuery: '(min-width: 30em)',
+        maxQuery: '',
+        minQuery: '',
+        max: '',
+        min: '30em',
+      },
+      md: {
+        minMaxQuery: '(min-width: 48em)',
+        maxQuery: '',
+        minQuery: '',
+        max: '',
+        min: '48em',
+      },
+      lg: {
+        minMaxQuery: '(min-width: 62em)',
+        maxQuery: '',
+        minQuery: '',
+        max: '',
+        min: '62em',
+      },
+      xl: {
+        minMaxQuery: '(min-width: 80em)',
+        maxQuery: '',
+        minQuery: '',
+        max: '',
+        min: '80em',
+      },
+      '2xl': {
+        minMaxQuery: '(min-width: 96em)',
+        maxQuery: '',
+        minQuery: '',
+        max: '',
+        min: '96em',
+      },
+    },
+  },
 };
 
 describe('DateRangePickerModal', () => {
   const mockOnClose = jest.fn();
   const mockOnApply = jest.fn();
 
+  beforeAll(() => {
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
   });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
+  const renderWithChakra = (ui: React.ReactElement) => {
+    const mockToast = jest.fn() as jest.Mock & {
+      (options?: UseToastOptions): string;
+      update: jest.Mock;
+      promise: jest.Mock;
+      closeAll: jest.Mock;
+      close: jest.Mock;
+      isActive: jest.Mock;
+    };
+
+    Object.assign(mockToast, {
+      update: jest.fn(),
+      promise: jest.fn(),
+      closeAll: jest.fn(),
+      close: jest.fn(),
+      isActive: jest.fn(),
+    });
+
+    const mockedUseToast = jest.spyOn(chakraUI, 'useToast');
+    mockedUseToast.mockReturnValue(mockToast);
+
+    const utils = render(
+      <ChakraProvider theme={customTheme}>{ui}</ChakraProvider>,
+    );
+
+    return {
+      ...utils,
+      mockToast,
+    };
+  };
 
   it('モーダルが正しく開閉される', async () => {
     const { rerender } = renderWithChakra(
@@ -182,5 +286,78 @@ describe('DateRangePickerModal', () => {
 
     const applyButton = screen.getByRole('button', { name: '適用' });
     expect(applyButton).toBeDisabled();
+  });
+
+  it('空の日付入力が正しく処理される', async () => {
+    renderWithChakra(
+      <DateRangePickerModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onApply={mockOnApply}
+      />,
+    );
+
+    const startDateInput = screen.getByLabelText(/開始日/);
+
+    fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
+    fireEvent.change(startDateInput, { target: { value: '' } });
+
+    expect(startDateInput).toHaveValue('');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('日付のフォーマットエラーが正しく処理される', async () => {
+    const invalidDate = new Date('invalid');
+
+    renderWithChakra(
+      <DateRangePickerModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onApply={mockOnApply}
+        initialStartDate={invalidDate}
+      />,
+    );
+
+    const startDateInput = screen.getByLabelText(/開始日/);
+    expect(startDateInput).toHaveValue('');
+  });
+
+  it('モーダルが開かれるたびに状態がリセットされる', async () => {
+    const { rerender } = renderWithChakra(
+      <DateRangePickerModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onApply={mockOnApply}
+      />,
+    );
+
+    const startDateInput = screen.getByLabelText(/開始日/);
+    fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
+    expect(startDateInput).toHaveValue('2024-01-01');
+
+    rerender(
+      <ChakraProvider theme={customTheme}>
+        <DateRangePickerModal
+          isOpen={false}
+          onClose={mockOnClose}
+          onApply={mockOnApply}
+        />
+      </ChakraProvider>,
+    );
+
+    rerender(
+      <ChakraProvider theme={customTheme}>
+        <DateRangePickerModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onApply={mockOnApply}
+        />
+      </ChakraProvider>,
+    );
+
+    await waitFor(() => {
+      const newStartDateInput = screen.getByLabelText(/開始日/);
+      expect(newStartDateInput).toHaveValue('');
+    });
   });
 });

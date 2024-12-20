@@ -182,4 +182,46 @@ describe('OrderTable', () => {
     fireEvent.click(screen.getAllByText('削除')[0]);
     expect(mockProps.handleDeleteOrder).toHaveBeenCalledWith(mockOrders[0]);
   });
+
+  it('CANCELLEDステータスの場合、編集ボタンが無効で削除ボタンは有効であること', () => {
+    const cancelledOrder = {
+      ...mockOrders[0],
+      status: 'CANCELLED' as OrderStatus,
+    };
+    const propsWithCancelled = {
+      ...mockProps,
+      orders: [cancelledOrder],
+    };
+    renderWithChakra(<OrderTable {...propsWithCancelled} />);
+
+    const editButton = screen.getByText('編集');
+    const deleteButton = screen.getByText('削除');
+
+    expect(editButton).toBeDisabled();
+    expect(deleteButton).not.toBeDisabled();
+  });
+
+  it('lastElementRefが最後の行に渡されていること', () => {
+    renderWithChakra(<OrderTable {...mockProps} />);
+
+    expect(mockProps.lastElementRef).toHaveBeenCalled();
+  });
+
+  it('モバイル表示時にアイコンボタンクリックでハンドラーが呼び出されること', () => {
+    const propsMobile = { ...mockProps, isMobile: true };
+    renderWithChakra(<OrderTable {...propsMobile} />);
+
+    const viewIcons = screen.getAllByLabelText('詳細を表示');
+    const editIcons = screen.getAllByLabelText('注文を編集');
+    const deleteIcons = screen.getAllByLabelText('注文を削除');
+
+    fireEvent.click(viewIcons[0]);
+    expect(mockProps.handleOrderClick).toHaveBeenCalledWith(mockOrders[0]);
+
+    fireEvent.click(editIcons[0]);
+    expect(mockProps.handleEditOrder).toHaveBeenCalledWith(mockOrders[0]);
+
+    fireEvent.click(deleteIcons[0]);
+    expect(mockProps.handleDeleteOrder).toHaveBeenCalledWith(mockOrders[0]);
+  });
 });

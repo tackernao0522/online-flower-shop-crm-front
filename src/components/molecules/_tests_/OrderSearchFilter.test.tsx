@@ -144,4 +144,76 @@ describe('OrderSearchFilter', () => {
       screen.getByText('期間: 2024/01/01 - 2024/01/31'),
     ).toBeInTheDocument();
   });
+
+  it('Enterキー押下時にonSearchKeyDownが呼び出される', () => {
+    setup();
+    const searchInput =
+      screen.getByPlaceholderText('注文番号、顧客名で検索...');
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+    expect(mockOnSearchKeyDown).toHaveBeenCalledWith(expect.any(Object));
+  });
+
+  it('statusがloadingの場合、検索ボタンがローディング表示になる', () => {
+    renderWithChakra(
+      <OrderSearchFilter
+        searchTerm=""
+        dateRange={{ start: null, end: null }}
+        isSearching={false}
+        status="loading"
+        statusColorScheme={statusColorScheme}
+        statusDisplayText={statusDisplayText}
+        onSearchChange={mockOnSearchChange}
+        onSearchSubmit={mockOnSearchSubmit}
+        onSearchKeyDown={mockOnSearchKeyDown}
+        onStatusFilter={mockOnStatusFilter}
+        onDateRangeFilter={mockOnDateRangeFilter}
+        onDatePickerOpen={mockOnDatePickerOpen}
+        clearFilters={mockClearFilters}
+      />,
+    );
+
+    const searchButton = screen.getByRole('button', { name: /検索中/ });
+    expect(searchButton).toBeInTheDocument();
+  });
+
+  it('「今週」をクリックした時にonDateRangeFilterがweekで呼ばれる', () => {
+    setup();
+    fireEvent.click(screen.getByText('期間'));
+    fireEvent.click(screen.getByText('今週'));
+    expect(mockOnDateRangeFilter).toHaveBeenCalledWith('week');
+  });
+
+  it('「今月」をクリックした時にonDateRangeFilterがmonthで呼ばれる', () => {
+    setup();
+    fireEvent.click(screen.getByText('期間'));
+    fireEvent.click(screen.getByText('今月'));
+    expect(mockOnDateRangeFilter).toHaveBeenCalledWith('month');
+  });
+
+  it('dateRangeが指定されていて、期間指定をクリアをクリックした時にonDateRangeFilterが呼ばれる', () => {
+    renderWithChakra(
+      <OrderSearchFilter
+        searchTerm=""
+        dateRange={{
+          start: new Date('2024-02-01'),
+          end: new Date('2024-02-15'),
+        }}
+        isSearching={false}
+        status="idle"
+        statusColorScheme={statusColorScheme}
+        statusDisplayText={statusDisplayText}
+        onSearchChange={mockOnSearchChange}
+        onSearchSubmit={mockOnSearchSubmit}
+        onSearchKeyDown={mockOnSearchKeyDown}
+        onStatusFilter={mockOnStatusFilter}
+        onDateRangeFilter={mockOnDateRangeFilter}
+        onDatePickerOpen={mockOnDatePickerOpen}
+        clearFilters={mockClearFilters}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('期間'));
+    fireEvent.click(screen.getByText('期間指定をクリア'));
+    expect(mockOnDateRangeFilter).toHaveBeenCalledWith('custom', null, null);
+  });
 });

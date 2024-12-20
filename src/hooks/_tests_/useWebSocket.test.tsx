@@ -12,6 +12,8 @@ import statsReducer from '../../features/stats/statsSlice';
 
 const mockToast = jest.fn();
 
+type BindCall = [string, (data: unknown) => void];
+
 jest.mock('@chakra-ui/react', () => ({
   ...jest.requireActual('@chakra-ui/react'),
   useToast: () => mockToast,
@@ -298,5 +300,198 @@ describe('useWebSocket', () => {
     });
 
     expect(initialTotalCount).toEqual(result.current.totalCount);
+  });
+
+  it('エラーイベント発生時にhandleConnectionErrorが呼ばれ、エラーステータスやトースト、再接続ロジックが機能する', async () => {
+    jest.useFakeTimers();
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    const { unmount } = renderHook(() => useWebSocket(), {
+      wrapper: createWrapper(),
+    });
+
+    const errorHandlerCall = mockPusherInstance.connection.bind.mock.calls.find(
+      (call: unknown[]) => call[0] === 'error',
+    );
+    const errorHandler = errorHandlerCall[1];
+    act(() => {
+      errorHandler(new Error('Test Error'));
+    });
+
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '接続エラー',
+        description:
+          'リアルタイム更新に問題が発生しました。再接続を試みています。',
+        status: 'error',
+      }),
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    unmount();
+    act(() => {
+      errorHandler(new Error('Another Test Error'));
+    });
+    expect(mockToast).toHaveBeenCalledTimes(1);
+    consoleErrorSpy.mockRestore();
+    jest.useRealTimers();
+  });
+
+  it('エラー後の再接続でconnectedイベントが再度発生すると、connectionStatusがconnectedになる', () => {
+    jest.useFakeTimers();
+    const { unmount } = renderHook(() => useWebSocket(), {
+      wrapper: createWrapper(),
+    });
+
+    const errorHandlerCall = mockPusherInstance.connection.bind.mock.calls.find(
+      (call: unknown[]) => call[0] === 'error',
+    );
+    const errorHandler = errorHandlerCall?.[1];
+    act(() => {
+      errorHandler(new Error('Test Error'));
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    const connectedHandlerCall =
+      mockPusherInstance.connection.bind.mock.calls.find(
+        (call: unknown[]) => call[0] === 'connected',
+      );
+    const connectedHandler = connectedHandlerCall?.[1];
+    act(() => {
+      connectedHandler();
+    });
+
+    unmount();
+    jest.useRealTimers();
+  });
+
+  it('アンマウント前にUserCountUpdatedイベントを受信すると、totalUserCountが更新される (isUnmountingRefがfalseを確認)', () => {
+    const { result } = renderHook(() => useWebSocket(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      const eventData = { totalCount: 500 };
+      mockUserChannel.bind.mock.calls
+        .filter((call: BindCall) => call[0] === 'App\\Events\\UserCountUpdated')
+        .forEach((call: BindCall) => call[1](eventData));
+    });
+
+    expect(result.current.totalUserCount).toBe(500);
+  });
+
+  it('initializePusher中にエラーが発生した場合、console.errorとhandleConnectionErrorが呼ばれる', () => {
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    (Pusher as unknown as jest.Mock).mockImplementation(() => {
+      throw new Error('Initialization error');
+    });
+
+    renderHook(() => useWebSocket(), { wrapper: createWrapper() });
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error initializing Pusher:',
+      expect.any(Error),
+    );
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error' }),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('エラー発生後5秒で再接続が行われ、チャンネル購読が再実行される', () => {
+    jest.useFakeTimers();
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+
+    renderHook(() => useWebSocket(), { wrapper: createWrapper() });
+
+    const errorHandlerCall = mockPusherInstance.connection.bind.mock.calls.find(
+      (call: unknown[]) => call[0] === 'error',
+    );
+    const errorHandler = errorHandlerCall?.[1];
+
+    act(() => {
+      errorHandler(new Error('Test Error'));
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    expect(mockPusherInstance.subscribe).toHaveBeenCalledWith('customer-stats');
+    expect(mockPusherInstance.subscribe).toHaveBeenCalledWith('user-stats');
+    expect(mockPusherInstance.connection.bind).toHaveBeenCalledWith(
+      'connected',
+      expect.any(Function),
+    );
+
+    consoleErrorSpy.mockRestore();
+    jest.useRealTimers();
+  });
+
+  it('production環境でconnectedイベントが発生すると、接続ステータスがconnectedになる', () => {
+    const prevEnv = process.env.NODE_ENV;
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'production',
+      writable: true,
+    });
+
+    renderHook(() => useWebSocket(), { wrapper: createWrapper() });
+
+    const connectedHandlerCall =
+      mockPusherInstance.connection.bind.mock.calls.find(
+        (call: unknown[]) => call[0] === 'connected',
+      );
+    const connectedHandler = connectedHandlerCall && connectedHandlerCall[1];
+
+    act(() => {
+      connectedHandler();
+    });
+
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: prevEnv,
+      writable: true,
+    });
+  });
+
+  it('エラー発生→再接続→再度エラー→再接続を繰り返す', () => {
+    jest.useFakeTimers();
+    renderHook(() => useWebSocket(), { wrapper: createWrapper() });
+
+    const errorHandlerCall = mockPusherInstance.connection.bind.mock.calls.find(
+      (call: unknown[]) => call[0] === 'error',
+    );
+    const errorHandler = errorHandlerCall?.[1];
+
+    act(() => {
+      errorHandler(new Error('Test Error 1'));
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    act(() => {
+      errorHandler(new Error('Test Error 2'));
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    jest.useRealTimers();
   });
 });

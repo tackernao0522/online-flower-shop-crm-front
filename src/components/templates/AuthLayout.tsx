@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React from "react";
+import React from 'react';
 import {
   Flex,
   Box,
@@ -8,7 +8,7 @@ import {
   useColorModeValue,
   useBreakpointValue,
   Skeleton,
-} from "@chakra-ui/react";
+} from '@chakra-ui/react';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -21,15 +21,15 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   title,
   isLoading = false,
 }) => {
-  const bgColor = useColorModeValue("gray.50", "gray.800");
-  const boxBgColor = useColorModeValue("white", "gray.700");
+  const bgColor = useColorModeValue('gray.50', 'gray.800');
+  const boxBgColor = useColorModeValue('white', 'gray.700');
   const boxWidth = useBreakpointValue({
-    base: "90%",
-    sm: "80%",
-    md: "50%",
-    lg: "400px",
+    base: '90%',
+    sm: '80%',
+    md: '50%',
+    lg: '400px',
   });
-  const headingSize = useBreakpointValue({ base: "xl", md: "2xl" });
+  const headingSize = useBreakpointValue({ base: 'xl', md: '2xl' });
 
   return (
     <Flex
@@ -48,7 +48,12 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
         width={boxWidth}
         maxWidth="400px">
         {isLoading ? (
-          <Skeleton height="36px" width="80%" mx="auto" />
+          <Skeleton
+            data-testid="authlayout-skeleton"
+            height="36px"
+            width="80%"
+            mx="auto"
+          />
         ) : (
           <Heading as="h1" size={headingSize} textAlign="center" mb={6}>
             {title}

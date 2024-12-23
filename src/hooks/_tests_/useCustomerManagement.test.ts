@@ -414,4 +414,53 @@ describe('useCustomerManagement フック', () => {
 
     expect(mockDispatch).toHaveBeenCalled();
   });
+
+  // キーボードイベントのテスト
+  test('handleKeyDown が Enter キーで検索を実行する', async () => {
+    const { result } = renderHook(() => useCustomerManagement());
+
+    await act(async () => {
+      result.current.setSearchTerm('test query');
+      result.current.handleKeyDown({
+        key: 'Enter',
+      } as React.KeyboardEvent<HTMLInputElement>);
+    });
+
+    expect(mockDispatch).toHaveBeenCalled();
+  });
+
+  // キャンセル処理のテスト
+  test('cancelDelete が正しく動作する', async () => {
+    const mockCustomer = { id: '1', name: 'Test User' } as Customer;
+    const { result } = renderHook(() => useCustomerManagement());
+
+    await act(async () => {
+      result.current.handleDeleteCustomer(mockCustomer);
+    });
+
+    expect(result.current.isDeleteAlertOpen).toBe(true);
+    expect(result.current.customerToDelete).toEqual(mockCustomer);
+
+    await act(async () => {
+      result.current.cancelDelete();
+    });
+
+    expect(result.current.isDeleteAlertOpen).toBe(false);
+    expect(result.current.customerToDelete).toBeNull();
+  });
+
+  test('validateForm が無効なメールアドレスを検出する', async () => {
+    const { result } = renderHook(() => useCustomerManagement());
+
+    await act(async () => {
+      result.current.handleInputChange({
+        target: { name: 'email', value: 'invalid-email' },
+      } as React.ChangeEvent<HTMLInputElement>);
+      await result.current.handleSubmit();
+    });
+
+    expect(result.current.formErrors.email).toBe(
+      '有効なメールアドレスを入力してください',
+    );
+  });
 });

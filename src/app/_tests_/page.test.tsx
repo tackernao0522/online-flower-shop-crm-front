@@ -1,19 +1,19 @@
-import React from "react";
-import { render, act } from "@testing-library/react";
-import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import Home from "../page";
+import React from 'react';
+import { render, act } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
+import Home from '../page';
+import { RootState } from '../../store';
 
-// モックの設定
-jest.mock("next/navigation", () => ({
+jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }));
 
-jest.mock("react-redux", () => ({
+jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
 }));
 
-describe("Homeコンポーネント", () => {
+describe('Homeコンポーネント', () => {
   const mockPush = jest.fn();
   const mockUseRouter = useRouter as jest.Mock;
   const mockUseSelector = useSelector as jest.Mock;
@@ -22,69 +22,84 @@ describe("Homeコンポーネント", () => {
     mockUseRouter.mockReturnValue({ push: mockPush });
     mockUseSelector.mockClear();
     mockPush.mockClear();
-
-    // console.error のエラーメッセージを抑制
-    jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    // モックをリセット
     jest.restoreAllMocks();
   });
 
-  it("認証されている場合、/dashboardにリダイレクトされること", () => {
-    // isAuthenticatedがtrueの場合
+  it('セレクター関数が正しく動作すること', () => {
+    const mockState = {
+      auth: {
+        isAuthenticated: true,
+      },
+    } as RootState;
+
+    mockUseSelector.mockImplementation(selector => selector(mockState));
+
+    render(<Home />);
+
+    expect(mockUseSelector).toHaveBeenCalled();
+    const selectorFn = mockUseSelector.mock.calls[0][0];
+    expect(selectorFn(mockState)).toBe(true);
+  });
+
+  it('useEffect のクリーンアップ関数が呼ばれること', () => {
+    mockUseSelector.mockReturnValue(true);
+
+    const { unmount } = render(<Home />);
+
+    act(() => {
+      unmount();
+    });
+
+    expect(mockPush).toHaveBeenCalledTimes(1);
+  });
+
+  it('認証されている場合、/dashboardにリダイレクトされること', () => {
     mockUseSelector.mockReturnValue(true);
 
     render(<Home />);
 
-    // /dashboardにリダイレクトされることを確認
-    expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    expect(mockPush).toHaveBeenCalledWith('/dashboard');
   });
 
-  it("認証されていない場合、/loginにリダイレクトされること", () => {
-    // isAuthenticatedがfalseの場合
+  it('認証されていない場合、/loginにリダイレクトされること', () => {
     mockUseSelector.mockReturnValue(false);
 
     render(<Home />);
 
-    // /loginにリダイレクトされることを確認
-    expect(mockPush).toHaveBeenCalledWith("/login");
+    expect(mockPush).toHaveBeenCalledWith('/login');
   });
 
-  it("isAuthenticated が undefined の場合、/login にリダイレクトされること", () => {
-    mockUseSelector.mockReturnValue(undefined); // isAuthenticated が undefined の場合
+  it('isAuthenticated が undefined の場合、/login にリダイレクトされること', () => {
+    mockUseSelector.mockReturnValue(undefined);
 
     render(<Home />);
 
-    expect(mockPush).toHaveBeenCalledWith("/login");
+    expect(mockPush).toHaveBeenCalledWith('/login');
   });
 
-  it("isAuthenticated が true から false に変わった場合、/login にリダイレクトされること", () => {
-    mockUseSelector
-      .mockReturnValueOnce(true) // 初回は true (認証済み)
-      .mockReturnValueOnce(false); // 次回は false (認証解除)
+  it('isAuthenticated が true から false に変わった場合、/login にリダイレクトされること', () => {
+    mockUseSelector.mockReturnValueOnce(true).mockReturnValueOnce(false);
 
-    // 初回レンダリング
     const { rerender } = render(<Home />);
-    expect(mockPush).toHaveBeenCalledWith("/dashboard");
+    expect(mockPush).toHaveBeenCalledWith('/dashboard');
 
-    // 再レンダリングをシミュレートして認証が解除された場合をテスト
     act(() => {
       rerender(<Home />);
     });
 
-    expect(mockPush).toHaveBeenCalledWith("/login");
+    expect(mockPush).toHaveBeenCalledWith('/login');
   });
 
-  it("router.push が呼ばれない場合、エラーハンドリングが行われること", () => {
+  it('router.push が呼ばれない場合、エラーハンドリングが行われること', () => {
     mockUseRouter.mockReturnValue({
       push: jest.fn(() => {
-        throw new Error("Router error");
+        throw new Error('Router error');
       }),
     });
 
-    // エラーハンドリングをテスト
-    expect(() => render(<Home />)).toThrow("Router error");
+    expect(() => render(<Home />)).toThrow('Router error');
   });
 });

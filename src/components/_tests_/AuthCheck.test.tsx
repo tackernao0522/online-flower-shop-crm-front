@@ -167,4 +167,66 @@ describe('AuthCheck', () => {
     expect(mockDispatch).toHaveBeenCalledWith(logout());
     expect(mockRouter.push).toHaveBeenCalledWith('/login');
   });
+
+  it('Reduxセレクターが正しく動作する', () => {
+    const mockState = {
+      auth: {
+        isAuthenticated: true,
+        token: 'test-token',
+        user: { id: '1', name: 'Test User' },
+      },
+    };
+
+    mockUseSelector.mockImplementation((selector: any) => selector(mockState));
+    render(<AuthCheck />);
+
+    expect(mockUseSelector).toHaveBeenCalled();
+    const selectorFn = mockUseSelector.mock.calls[0][0];
+    const result = selectorFn(mockState);
+
+    expect(result).toEqual({
+      isAuthenticated: true,
+      token: 'test-token',
+      user: { id: '1', name: 'Test User' },
+    });
+  });
+
+  it('useSelector が正しい状態を取得する', () => {
+    const mockState = {
+      auth: {
+        isAuthenticated: true,
+        token: 'test-token',
+        user: { id: '1', name: 'Test User' },
+      },
+    };
+
+    mockUseSelector.mockImplementation((selector: any) => selector(mockState));
+    render(<AuthCheck />);
+
+    expect(mockUseSelector).toHaveBeenCalled();
+    const lastSelector =
+      mockUseSelector.mock.calls[mockUseSelector.mock.calls.length - 1][0];
+    expect(lastSelector(mockState)).toEqual(mockState.auth);
+  });
+
+  it('useSelector が正しいステート値を返す', () => {
+    const expectedAuthState = {
+      isAuthenticated: true,
+      token: 'test-token',
+      user: { id: '1', name: 'Test User' },
+    };
+
+    mockUseSelector.mockReturnValue(expectedAuthState);
+
+    render(<AuthCheck />);
+
+    const lastCall =
+      mockUseSelector.mock.calls[mockUseSelector.mock.calls.length - 1];
+    const selectorFn = lastCall[0];
+    const mockState = {
+      auth: expectedAuthState,
+    };
+
+    expect(selectorFn(mockState)).toEqual(expectedAuthState);
+  });
 });

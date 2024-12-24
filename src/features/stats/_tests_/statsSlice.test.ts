@@ -34,7 +34,6 @@ describe('statsSlice', () => {
 
   describe('同期アクション', () => {
     it('売上統計を正しく設定できる', () => {
-      // 初期状態で設定
       const initialStatsData = {
         totalSales: 1000,
         changeRate: 5.5,
@@ -92,6 +91,130 @@ describe('statsSlice', () => {
       expect(state.status).toBe('idle');
       expect(state.error).toBeNull();
     });
+
+    it('nullの状態から売上統計を正しく設定できる', () => {
+      const initialState = store.getState().stats;
+      expect(initialState.totalSales).toBeNull();
+      expect(initialState.changeRate).toBeNull();
+
+      const statsData = {
+        totalSales: 1000,
+        changeRate: null,
+      };
+
+      store.dispatch(setSalesStats(statsData));
+      const updatedState = store.getState().stats;
+
+      expect(updatedState.totalSales).toBe(1000);
+      expect(updatedState.changeRate).toBe(0);
+      expect(updatedState.status).toBe('succeeded');
+      expect(updatedState.error).toBeNull();
+    });
+
+    it('初期状態での売上統計の更新が正しく動作する', () => {
+      expect(store.getState().stats.totalSales).toBeNull();
+      expect(store.getState().stats.changeRate).toBeNull();
+
+      store.dispatch(
+        setSalesStats({
+          totalSales: 1000,
+          changeRate: null,
+        }),
+      );
+
+      let state = store.getState().stats;
+      expect(state.totalSales).toBe(1000);
+      expect(state.changeRate).toBe(0);
+      expect(state.status).toBe('succeeded');
+      expect(state.error).toBeNull();
+
+      store.dispatch(
+        setSalesStats({
+          totalSales: 2000,
+          changeRate: 5.5,
+        }),
+      );
+
+      state = store.getState().stats;
+      expect(state.totalSales).toBe(2000);
+      expect(state.changeRate).toBe(5.5);
+      expect(state.status).toBe('succeeded');
+      expect(state.error).toBeNull();
+    });
+
+    it('null値を含むデータでも正しく処理される', () => {
+      store.dispatch(
+        setSalesStats({
+          totalSales: null,
+          changeRate: null,
+        }),
+      );
+
+      const state = store.getState().stats;
+      expect(state.totalSales).toBe(0);
+      expect(state.changeRate).toBe(0);
+      expect(state.status).toBe('succeeded');
+      expect(state.error).toBeNull();
+    });
+
+    it('初期状態（null値）からの統計更新が正しく処理される', () => {
+      store.dispatch(clearStats());
+      const initialState = store.getState().stats;
+      expect(initialState.totalSales).toBeNull();
+      expect(initialState.changeRate).toBeNull();
+
+      const statsData = {
+        totalSales: '1000',
+        changeRate: null,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+
+      store.dispatch(setSalesStats(statsData));
+
+      const resultState = store.getState().stats;
+      expect(resultState.totalSales).toBe(1000);
+      expect(resultState.changeRate).toBe(0);
+      expect(resultState.status).toBe('succeeded');
+      expect(resultState.error).toBeNull();
+      expect(resultState.lastUpdatedAt).toBeDefined();
+    });
+
+    it('非null状態からの統計更新が正しく処理される', () => {
+      const initialStatsData = {
+        totalSales: '1000',
+        changeRate: 0,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+      store.dispatch(setSalesStats(initialStatsData));
+
+      const updateStatsData = {
+        totalSales: '2000',
+        changeRate: 5.5,
+        lastUpdatedAt: new Date().toISOString(),
+      };
+
+      store.dispatch(setSalesStats(updateStatsData));
+
+      const resultState = store.getState().stats;
+      expect(resultState.totalSales).toBe(2000);
+      expect(resultState.changeRate).toBe(5.5);
+      expect(resultState.status).toBe('succeeded');
+      expect(resultState.error).toBeNull();
+    });
+
+    it('文字列型の売上データが正しく数値に変換される', () => {
+      store.dispatch(clearStats());
+      const statsData = {
+        totalSales: '1234.56',
+        changeRate: null,
+      };
+
+      store.dispatch(setSalesStats(statsData));
+
+      const state = store.getState().stats;
+      expect(state.totalSales).toBe(1234.56);
+      expect(state.changeRate).toBe(0);
+    });
   });
 
   describe('非同期アクション', () => {
@@ -135,6 +258,20 @@ describe('statsSlice', () => {
 
       expect(state.status).toBe('failed');
       expect(state.error).toBeDefined();
+    });
+
+    it('非Axiosエラー時に適切に処理される', async () => {
+      mockAxios.restore();
+
+      jest
+        .spyOn(axios, 'get')
+        .mockRejectedValueOnce(new Error('Network Error'));
+
+      await store.dispatch(fetchInitialStats());
+      const state = store.getState().stats;
+
+      expect(state.status).toBe('failed');
+      expect(state.error).toBe('予期せぬエラーが発生しました');
     });
   });
 

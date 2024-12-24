@@ -5,7 +5,6 @@ import { useBreakpointValue } from '@chakra-ui/react';
 import DashboardHeader from '../DashboardHeader';
 import { useUserOnlineStatus } from '../../../hooks/useUserOnlineStatus';
 
-// モックの設定
 jest.mock('react-redux', () => ({
   useSelector: jest.fn(),
 }));
@@ -30,7 +29,6 @@ jest.mock('../../molecules/LogoutButton', () => {
   return MockLogoutButton;
 });
 
-// useRouterのモック設定（next/navigation版）
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
@@ -185,34 +183,27 @@ describe('DashboardHeader', () => {
   });
 
   it('STAFFロールのユーザーにはユーザー管理メニューが表示されないこと', () => {
-    // STAFFロールでモックを更新
     mockedUseSelector.mockReturnValue({ id: 'user-id', role: 'STAFF' });
 
     render(<DashboardHeader />);
 
-    // メニューを開く
     const optionsButton = screen.getByLabelText('Options');
     fireEvent.click(optionsButton);
 
-    // ユーザー管理メニューが存在しないことを確認
     expect(screen.queryByText('ユーザー管理')).not.toBeInTheDocument();
 
-    // 他のメニュー項目は表示されることを確認
     expect(screen.getByText('顧客管理')).toBeInTheDocument();
     expect(screen.getByText('注文管理')).toBeInTheDocument();
   });
 
   it('ADMINロールのユーザーには全てのメニューが表示されること', () => {
-    // ADMINロールでモックを更新
     mockedUseSelector.mockReturnValue({ id: 'user-id', role: 'ADMIN' });
 
     render(<DashboardHeader />);
 
-    // メニューを開く
     const optionsButton = screen.getByLabelText('Options');
     fireEvent.click(optionsButton);
 
-    // 全てのメニュー項目が表示されることを確認
     expect(screen.getByText('ユーザー管理')).toBeInTheDocument();
     expect(screen.getByText('顧客管理')).toBeInTheDocument();
     expect(screen.getByText('注文管理')).toBeInTheDocument();
@@ -224,35 +215,29 @@ describe('DashboardHeader', () => {
     });
 
     it('landscape表示の場合、正しいスタイルが適用されること', () => {
-      // landscape用の設定をモック
       (useBreakpointValue as jest.Mock)
-        .mockReturnValueOnce(true) // isLandscape
-        .mockReturnValueOnce('sm'); // iconSize
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce('sm');
 
       render(<DashboardHeader />);
 
-      // ヘッダーのサイズ確認
       const heading = screen.getByRole('heading', { name: 'ダッシュボード' });
       expect(heading).toHaveStyle({ 'white-space': 'nowrap' });
 
-      // 検索バーの表示確認
       const searchInput = screen.getByTestId('search-input');
       expect(searchInput).toBeInTheDocument();
     });
 
     it('複数のブレークポイントで正しくレンダリングされること', () => {
-      // 異なるブレークポイントをシミュレート
       (useBreakpointValue as jest.Mock)
-        .mockReturnValueOnce(false) // isLandscape
-        .mockReturnValueOnce('md'); // iconSize
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce('md');
 
       const { container } = render(<DashboardHeader />);
 
-      // Flexコンテナが存在することを確認
       const flexContainer = container.firstChild;
-      expect(flexContainer).toHaveClass('css-16y0b38'); // または適切なクラス名
+      expect(flexContainer).toHaveClass('css-16y0b38');
 
-      // 各要素が正しく表示されていることを確認
       expect(
         screen.getByRole('heading', { name: 'ダッシュボード' }),
       ).toBeInTheDocument();
@@ -262,18 +247,15 @@ describe('DashboardHeader', () => {
     });
 
     it('モバイル表示でのスタイルが正しく適用されること', () => {
-      // モバイル用の設定をモック
       (useBreakpointValue as jest.Mock)
-        .mockReturnValueOnce(false) // isLandscape
-        .mockReturnValueOnce('sm'); // iconSize
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce('sm');
 
       const { container } = render(<DashboardHeader />);
 
-      // ヘッダーのレイアウトを確認
       const headerContainer = container.firstChild as HTMLElement;
       expect(headerContainer).toBeInTheDocument();
 
-      // モバイルでの検索バーの幅を確認
       const searchContainer = screen.getByTestId('search-input').parentElement;
       expect(searchContainer).toBeInTheDocument();
     });
@@ -288,11 +270,9 @@ describe('DashboardHeader', () => {
       const consoleSpy = jest.spyOn(console, 'log');
       render(<DashboardHeader />);
 
-      // メニューを開く
       const optionsButton = screen.getByLabelText('Options');
       fireEvent.click(optionsButton);
 
-      // 未定義のルートを持つメニュー項目をクリック
       const undefinedRouteMenuItem = screen.getByText('セキュリティ監査');
       fireEvent.click(undefinedRouteMenuItem);
 
@@ -307,11 +287,9 @@ describe('DashboardHeader', () => {
     it('アバターメニューが正しく動作すること', () => {
       render(<DashboardHeader />);
 
-      // アバターメニューを開く
       const avatarButton = screen.getByTestId('avatar-badge').closest('div');
       fireEvent.click(avatarButton);
 
-      // メニュー項目の表示を確認
       expect(screen.getByText('プロフィール')).toBeInTheDocument();
       expect(screen.getByText('パスワード変更')).toBeInTheDocument();
       expect(screen.getByTestId('logout-button')).toBeInTheDocument();
@@ -320,11 +298,9 @@ describe('DashboardHeader', () => {
     it('アバターメニュー項目がクリック可能であること', () => {
       render(<DashboardHeader />);
 
-      // アバターメニューを開く
       const avatarButton = screen.getByTestId('avatar-badge').closest('div');
       fireEvent.click(avatarButton);
 
-      // メニュー項目をクリック
       const menuItems = ['プロフィール', 'パスワード変更'];
       menuItems.forEach(item => {
         const menuItem = screen.getByText(item);
@@ -337,11 +313,9 @@ describe('DashboardHeader', () => {
       const consoleSpy = jest.spyOn(console, 'log');
       render(<DashboardHeader />);
 
-      // アバターメニューを開く
       const avatarButton = screen.getByTestId('avatar-badge').closest('div');
       fireEvent.click(avatarButton);
 
-      // 各メニュー項目をクリックしてイベントが発火することを確認
       const menuItems = [
         { text: 'プロフィール', expectedLog: 'Profile clicked' },
         { text: 'パスワード変更', expectedLog: 'Password change clicked' },
@@ -350,10 +324,8 @@ describe('DashboardHeader', () => {
       for (const item of menuItems) {
         const menuItem = screen.getByText(item.text);
         fireEvent.click(menuItem);
-        // ログ出力や他のイベントを確認
       }
 
-      // ログアウトボタンのクリックも確認
       const logoutButton = screen.getByTestId('logout-button');
       fireEvent.click(logoutButton);
 
@@ -364,24 +336,20 @@ describe('DashboardHeader', () => {
       render(<DashboardHeader />);
       const avatarButton = screen.getByTestId('avatar-badge').closest('div');
 
-      // メニューを開く
       fireEvent.click(avatarButton);
       expect(screen.getByText('プロフィール')).toBeInTheDocument();
 
-      // メニューを閉じる
       fireEvent.click(avatarButton);
-      // メニューが閉じていることの確認方法はChakra UIの実装に依存
     });
   });
 
   describe('レスポンシブ対応の詳細テスト', () => {
     it('すべてのブレークポイントでアイコンサイズが正しく設定されること', () => {
-      // 各ブレークポイントでのサイズをテスト
       const breakpoints = ['base', 'md', 'landscape'];
       const sizes = ['sm', 'md', 'sm'];
 
       breakpoints.forEach((breakpoint, index) => {
-        cleanup(); // 各テストの前にクリーンアップ
+        cleanup();
 
         (useBreakpointValue as jest.Mock).mockReturnValue(sizes[index]);
         render(<DashboardHeader />);

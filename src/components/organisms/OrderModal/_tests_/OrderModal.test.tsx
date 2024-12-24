@@ -6,6 +6,14 @@ import { Order, OrderStatus, OrderForm, OrderItem } from '@/types/order';
 
 import '@testing-library/jest-dom';
 
+const mockToast = jest.fn();
+
+jest.mock('@chakra-ui/react', () => ({
+  ...jest.requireActual('@chakra-ui/react'),
+  useBreakpointValue: () => false,
+  useToast: () => mockToast,
+}));
+
 const mockOrderItem: OrderItem = {
   id: '1',
   orderId: 'ORD-2024-001',
@@ -123,6 +131,7 @@ const renderWithChakra = (ui: React.ReactElement) => {
 describe('OrderModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockToast.mockClear();
   });
 
   it('注文詳細モードで正しく表示される', () => {
@@ -155,7 +164,7 @@ describe('OrderModal', () => {
     expect(screen.getByText('注文編集')).toBeInTheDocument();
   });
 
-  it('タブが正しく切り替わる', async () => {
+  it('タブが正しく切り替わる', () => {
     renderWithChakra(<OrderModal {...defaultProps} />);
     const customerInfoTab = screen.getByText('顧客情報');
     fireEvent.click(customerInfoTab);
@@ -196,16 +205,196 @@ describe('OrderModal', () => {
     expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('割引が適用されている場合、割引情報が表示される', () => {
+    const orderWithDiscount = {
+      ...mockActiveOrder,
+      discountApplied: 1000,
+    };
+    renderWithChakra(
+      <OrderModal {...defaultProps} activeOrder={orderWithDiscount} />,
+    );
+    expect(screen.getByText('適用割引')).toBeInTheDocument();
+    expect(screen.getByText('¥1,000')).toBeInTheDocument();
+  });
+
+  it('割引が0円の場合、割引情報が表示されない', () => {
+    const orderWithoutDiscount = {
+      ...mockActiveOrder,
+      discountApplied: 0,
+    };
+    renderWithChakra(
+      <OrderModal {...defaultProps} activeOrder={orderWithoutDiscount} />,
+    );
+    expect(screen.queryByText('適用割引')).not.toBeInTheDocument();
+  });
+
+  it('顧客情報が設定されていない場合、適切なメッセージが表示される', () => {
+    const orderWithoutCustomer = {
+      ...mockActiveOrder,
+      customer: null,
+    };
+    renderWithChakra(
+      <OrderModal {...defaultProps} activeOrder={orderWithoutCustomer} />,
+    );
+    const customerInfoTab = screen.getByText('顧客情報');
+    fireEvent.click(customerInfoTab);
+    expect(screen.getByText('顧客情報が見つかりません')).toBeInTheDocument();
+  });
+
+  it('モーダルモードに応じて正しいヘッダーが表示される', () => {
+    renderWithChakra(<OrderModal {...defaultProps} modalMode="detail" />);
+    expect(screen.getByText('注文詳細')).toBeInTheDocument();
+
+    renderWithChakra(<OrderModal {...defaultProps} modalMode="add" />);
+    expect(screen.getByText('新規注文作成')).toBeInTheDocument();
+
+    renderWithChakra(<OrderModal {...defaultProps} modalMode="edit" />);
+    expect(screen.getByText('注文編集')).toBeInTheDocument();
+  });
+
   describe('モバイル表示', () => {
     it('モバイルモードで正しくDrawerとして表示される', () => {
       renderWithChakra(<OrderModal {...defaultProps} isMobile={true} />);
       expect(screen.getByRole('dialog')).toHaveClass('chakra-modal__content');
     });
 
-    it('モバイルモードで商品名をクリックするとtoastが表示される', async () => {
+    it('モバイルモードで商品名をクリックするとtoastが表示される', () => {
       renderWithChakra(<OrderModal {...defaultProps} isMobile={true} />);
       const productName = screen.getByText('テスト商品1');
       fireEvent.click(productName);
+
+      expect(mockToast).toHaveBeenCalledWith({
+        title: '商品名',
+        description: 'テスト商品1',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    });
+  });
+
+  describe('モバイル表示での商品名', () => {
+    it('商品名が長い場合に省略表示される', () => {
+      const longNameOrder = {
+        ...mockActiveOrder,
+        order_items: [
+          {
+            ...mockOrderItem,
+            product: {
+              ...mockOrderItem.product,
+              name: 'とても長い商品名'.repeat(10),
+            },
+          },
+        ],
+      };
+      renderWithChakra(
+        <OrderModal
+          {...defaultProps}
+          activeOrder={longNameOrder}
+          isMobile={true}
+        />,
+      );
+      const productNameElement = screen.getByText(
+        'とても長い商品名'.repeat(10),
+      );
+      expect(productNameElement).toHaveStyle({
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+      });
+    });
+
+    it('商品名クリック時にtoastが正しいパラメータで表示される', () => {
+      renderWithChakra(<OrderModal {...defaultProps} isMobile={true} />);
+      const productName = screen.getByText('テスト商品1');
+      fireEvent.click(productName);
+
+      expect(mockToast).toHaveBeenCalledWith({
+        title: '商品名',
+        description: 'テスト商品1',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+        position: 'top',
+      });
+    });
+  });
+
+  it('ユーザーが未割り当ての場合、適切に表示される', () => {
+    const orderWithoutUser = {
+      ...mockActiveOrder,
+      user: null,
+    };
+    renderWithChakra(
+      <OrderModal {...defaultProps} activeOrder={orderWithoutUser} />,
+    );
+    expect(screen.getByText('未割り当て')).toBeInTheDocument();
+  });
+
+  it('商品のIDがnullの場合でも商品一覧が表示される', () => {
+    const orderWithNullProductId = {
+      ...mockActiveOrder,
+      order_items: [
+        {
+          ...mockOrderItem,
+          id: null,
+        },
+      ],
+    };
+    renderWithChakra(
+      <OrderModal {...defaultProps} activeOrder={orderWithNullProductId} />,
+    );
+    expect(screen.getByText('テスト商品1')).toBeInTheDocument();
+  });
+
+  describe('モーダルのフッターボタン', () => {
+    it('詳細モードでは作成/更新ボタンが表示されない', () => {
+      renderWithChakra(<OrderModal {...defaultProps} modalMode="detail" />);
+      expect(screen.queryByText('作成')).not.toBeInTheDocument();
+      expect(screen.queryByText('更新')).not.toBeInTheDocument();
+    });
+
+    it('追加モードでは作成ボタンが表示される', () => {
+      renderWithChakra(
+        <OrderModal {...defaultProps} modalMode="add" activeOrder={null} />,
+      );
+      expect(screen.getByText('作成')).toBeInTheDocument();
+    });
+
+    it('編集モードでは更新ボタンが表示される', () => {
+      renderWithChakra(<OrderModal {...defaultProps} modalMode="edit" />);
+      expect(screen.getByText('更新')).toBeInTheDocument();
+    });
+  });
+
+  describe('モバイル表示でのモーダルヘッダーとボタン', () => {
+    it('詳細モードではDrawerヘッダーに注文詳細と表示される', () => {
+      renderWithChakra(
+        <OrderModal {...defaultProps} modalMode="detail" isMobile={true} />,
+      );
+      expect(screen.getByText('注文詳細')).toBeInTheDocument();
+    });
+
+    it('追加モードではDrawerヘッダーに新規注文作成と表示され、作成ボタンが表示される', () => {
+      renderWithChakra(
+        <OrderModal
+          {...defaultProps}
+          modalMode="add"
+          isMobile={true}
+          activeOrder={null}
+        />,
+      );
+      expect(screen.getByText('新規注文作成')).toBeInTheDocument();
+      expect(screen.getByText('作成')).toBeInTheDocument();
+    });
+
+    it('編集モードではDrawerヘッダーに注文編集と表示され、更新ボタンが表示される', () => {
+      renderWithChakra(
+        <OrderModal {...defaultProps} modalMode="edit" isMobile={true} />,
+      );
+      expect(screen.getByText('注文編集')).toBeInTheDocument();
+      expect(screen.getByText('更新')).toBeInTheDocument();
     });
   });
 });

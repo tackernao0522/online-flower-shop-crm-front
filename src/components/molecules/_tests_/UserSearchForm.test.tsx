@@ -92,7 +92,7 @@ describe('UserSearchFormのテスト', () => {
     test('デスクトップレイアウトのスタイル確認', () => {
       const { container } = renderWithChakra();
       const stackElements = container.querySelectorAll('.chakra-stack');
-      expect(stackElements).toHaveLength(2); // 2つのStack要素
+      expect(stackElements).toHaveLength(2);
     });
   });
 
@@ -176,7 +176,6 @@ describe('UserSearchFormのテスト', () => {
         screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
       const roleSelect = screen.getByRole('combobox');
 
-      // 検索フィールドでのEnterキー
       fireEvent.keyPress(searchInput, {
         key: 'Enter',
         code: 'Enter',
@@ -352,6 +351,203 @@ describe('UserSearchFormのテスト', () => {
 
       expect(screen.getByText('名前またはメール検索')).toBeEnabled();
       expect(screen.getByText('役割検索')).toBeEnabled();
+    });
+  });
+
+  describe('イベントハンドリングの詳細テスト', () => {
+    test('キーボードイベントの伝播停止のテスト', () => {
+      const { container } = renderWithChakra();
+
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      const roleSelect = screen.getByRole('combobox');
+
+      fireEvent.keyPress(searchInput, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          key: 'Enter',
+          code: 'Enter',
+          charCode: 13,
+        }),
+        'term',
+      );
+
+      fireEvent.keyPress(roleSelect, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          key: 'Enter',
+          code: 'Enter',
+          charCode: 13,
+        }),
+        'role',
+      );
+    });
+
+    test('モバイル表示でのSelect要素のキーボードイベント', () => {
+      renderWithChakra({ ...defaultProps, isMobile: true });
+
+      const roleSelect = screen.getByRole('combobox');
+
+      const mockEvent = {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+        preventDefault: jest.fn(),
+        stopPropagation: jest.fn(),
+      };
+
+      fireEvent.keyPress(roleSelect, mockEvent);
+
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.objectContaining({
+          key: 'Enter',
+          code: 'Enter',
+          charCode: 13,
+        }),
+        'role',
+      );
+    });
+
+    test('検索ボタンのクリックイベントの完全なテスト', () => {
+      const mobileProps = {
+        ...defaultProps,
+        isMobile: true,
+        searchRole: 'ADMIN',
+        isSearchRoleEmpty: false,
+      };
+
+      const { rerender } = renderWithChakra(mobileProps);
+
+      const roleSearchButton = screen.getByText('役割検索');
+      fireEvent.click(roleSearchButton);
+      expect(mockHandleSearch).toHaveBeenCalledWith('role');
+
+      rerender(
+        <ChakraProvider>
+          <UserSearchForm
+            {...defaultProps}
+            isMobile={true}
+            searchTerm="test"
+            isSearchTermEmpty={false}
+          />
+        </ChakraProvider>,
+      );
+
+      const termSearchButton = screen.getAllByText('名前またはメール検索')[0];
+      fireEvent.click(termSearchButton);
+      expect(mockHandleSearch).toHaveBeenCalledWith('term');
+    });
+
+    test('Enter キーイベントでの検索処理テスト', () => {
+      renderWithChakra({
+        ...defaultProps,
+        searchTerm: 'test',
+        isSearchTermEmpty: false,
+      });
+
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      const roleSelect = screen.getByRole('combobox');
+
+      fireEvent.keyPress(searchInput, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.any(Object),
+        'term',
+      );
+
+      fireEvent.change(roleSelect, { target: { value: 'ADMIN' } });
+      fireEvent.keyPress(roleSelect, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.any(Object),
+        'role',
+      );
+    });
+
+    test('検索入力フィールドでの異なるキータイプのテスト', () => {
+      renderWithChakra();
+
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+
+      fireEvent.keyPress(searchInput, {
+        key: 'a',
+        code: 'KeyA',
+        charCode: 65,
+      });
+      expect(mockHandleKeyPress).toHaveBeenCalled();
+
+      fireEvent.keyPress(searchInput, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          key: 'Enter',
+          code: 'Enter',
+          charCode: 13,
+        }),
+        'term',
+      );
+
+      fireEvent.keyPress(searchInput, {
+        key: ' ',
+        code: 'Space',
+        charCode: 32,
+      });
+      expect(mockHandleKeyPress).toHaveBeenCalled();
+    });
+
+    test('searchTermとsearchRoleの両方の入力欄でのキーボード操作', () => {
+      renderWithChakra({
+        ...defaultProps,
+        searchTerm: 'test',
+        searchRole: 'ADMIN',
+        isSearchTermEmpty: false,
+        isSearchRoleEmpty: false,
+      });
+
+      const searchInput =
+        screen.getByPlaceholderText('ユーザー名またはメールアドレスで検索');
+      const roleSelect = screen.getByRole('combobox');
+
+      fireEvent.keyPress(searchInput, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.any(Object),
+        'term',
+      );
+
+      fireEvent.keyPress(roleSelect, {
+        key: 'Enter',
+        code: 'Enter',
+        charCode: 13,
+      });
+      expect(mockHandleKeyPress).toHaveBeenCalledWith(
+        expect.any(Object),
+        'role',
+      );
     });
   });
 });

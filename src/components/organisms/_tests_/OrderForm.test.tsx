@@ -54,7 +54,6 @@ describe('OrderForm', () => {
 
   test('顧客IDの入力フィールドが正しく表示される', () => {
     renderWithChakra(<OrderForm {...defaultProps} />);
-    // ラベルとプレースホルダーの両方をチェック
     expect(screen.getByText('顧客ID')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('顧客IDを入力')).toBeInTheDocument();
   });
@@ -111,5 +110,37 @@ describe('OrderForm', () => {
     renderWithChakra(<OrderForm {...propsWithErrors} />);
     expect(screen.getByText('顧客IDは必須です')).toBeInTheDocument();
     expect(screen.getByText('商品情報を入力してください')).toBeInTheDocument();
+  });
+
+  describe('数量入力のテスト', () => {
+    test('正常な数値を入力した場合、その値で handleOrderItemChange が呼ばれる', () => {
+      renderWithChakra(<OrderForm {...defaultProps} />);
+      const input = screen.getByPlaceholderText('数量');
+      fireEvent.change(input, { target: { value: '5' } });
+      expect(mockHandleOrderItemChange).toHaveBeenCalledWith(0, 'quantity', 5);
+    });
+
+    test('無効な入力の場合、デフォルト値1で handleOrderItemChange が呼ばれる', () => {
+      renderWithChakra(<OrderForm {...defaultProps} />);
+      const input = screen.getByPlaceholderText('数量');
+
+      const numberInput = screen.getByRole('spinbutton');
+      const mockEvent = {
+        target: { value: '' },
+      };
+      fireEvent.change(numberInput, mockEvent);
+
+      expect(mockHandleOrderItemChange).toHaveBeenCalledWith(0, 'quantity', 1);
+    });
+
+    test('数値の直接入力で上限・下限値をテスト', () => {
+      renderWithChakra(<OrderForm {...defaultProps} />);
+      const input = screen.getByPlaceholderText('数量');
+      fireEvent.change(input, { target: { value: '0' } });
+      expect(mockHandleOrderItemChange).toHaveBeenCalledWith(0, 'quantity', 1);
+
+      fireEvent.change(input, { target: { value: '10' } });
+      expect(mockHandleOrderItemChange).toHaveBeenCalledWith(0, 'quantity', 10);
+    });
   });
 });

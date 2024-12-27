@@ -229,4 +229,386 @@ describe('LoginForm', () => {
 
     consoleErrorMock.mockRestore();
   });
+
+  it('認証済み状態でフォーム送信を試みた場合、エラーメッセージが表示されること', async () => {
+    store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: { isAuthenticated: true, token: 'fake-token', user: null },
+      },
+    });
+
+    const { container } = renderLoginForm();
+
+    const form = container.querySelector('form');
+    if (form) {
+      fireEvent.submit(form);
+    }
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          '既にログインしています。新しくログインするには一度ログアウトしてください。',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+  });
+
+  it('axiosエラーレスポンスのメッセージが空の場合、デフォルトメッセージが表示されること', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      response: { data: { error: {} } },
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('axiosエラーレスポンスに特定のエラーメッセージがある場合、そのメッセージが表示されること', async () => {
+    const customErrorMessage = 'カスタムエラーメッセージ';
+    mockedAxios.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {
+        data: {
+          error: { message: customErrorMessage },
+        },
+      },
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages.length).toBeGreaterThan(0);
+    });
+  });
+
+  it('axiosエラーレスポンスがない場合、デフォルトメッセージが表示されること', async () => {
+    mockedAxios.post.mockRejectedValueOnce(new Error('Network Error'));
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages.length).toBeGreaterThan(0);
+
+      expect(
+        errorMessages.some(el =>
+          el.classList.contains('chakra-form__error-message'),
+        ),
+      ).toBe(true);
+    });
+  });
+
+  it('認証済み状態でログインを試みた場合、適切なエラーメッセージが表示され、早期リターンすること', async () => {
+    store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: { isAuthenticated: true, token: 'fake-token', user: null },
+      },
+    });
+
+    renderLoginForm();
+
+    const errorMessage = screen.getByText(
+      '既にログインしています。新しくログインするには一度ログアウトしてください。',
+    );
+    expect(errorMessage).toBeInTheDocument();
+
+    expect(screen.queryByLabelText('メールアドレス')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('パスワード')).not.toBeInTheDocument();
+
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+  });
+
+  it('axiosエラーレスポンスの詳細なエラーメッセージが表示されること', async () => {
+    const specificErrorMessage = 'パスワードが正しくありません。';
+
+    mockedAxios.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {
+        data: {
+          error: {
+            message: specificErrorMessage,
+          },
+        },
+      },
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'wrong-password' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages).toHaveLength(2);
+      expect(
+        errorMessages.some(el =>
+          el.classList.contains('chakra-form__error-message'),
+        ),
+      ).toBe(true);
+      expect(
+        errorMessages.some(el => el.classList.contains('chakra-text')),
+      ).toBe(true);
+    });
+  });
+
+  it('予期せぬエラーレスポンス形式の場合のフォールバックエラーメッセージをテスト', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {
+        data: {
+          someOtherField: 'error',
+        },
+      },
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'password123' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages).toHaveLength(2);
+    });
+
+    expect(console.error).toHaveBeenCalledWith(
+      'Login Error:',
+      expect.any(Object),
+    );
+  });
+
+  it('認証済み状態での早期リターン処理をテスト', async () => {
+    store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: { isAuthenticated: true, token: 'fake-token', user: null },
+      },
+    });
+
+    const { container } = renderLoginForm();
+
+    const form = container.querySelector('form');
+
+    if (form) {
+      fireEvent.submit(form);
+    }
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '既にログインしています。新しくログインするには一度ログアウトしてください。',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('axiosエラーでerror.messageが明示的にnullの場合のフォールバックメッセージをテスト', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {
+        data: {
+          error: {
+            message: null,
+          },
+        },
+      },
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'password123' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages.length).toBe(2);
+
+      expect(
+        errorMessages.some(el =>
+          el.classList.contains('chakra-form__error-message'),
+        ),
+      ).toBe(true);
+      expect(
+        errorMessages.some(el => el.classList.contains('chakra-text')),
+      ).toBe(true);
+    });
+
+    expect(console.error).toHaveBeenCalledWith(
+      'Login Error:',
+      expect.any(Object),
+    );
+  });
+
+  it('axiosエラーでresponse.dataが存在しない場合のエラーハンドリング', async () => {
+    mockedAxios.post.mockRejectedValueOnce({
+      isAxiosError: true,
+      response: {},
+    });
+
+    renderLoginForm();
+
+    fireEvent.change(screen.getByLabelText('メールアドレス'), {
+      target: { value: 'test@example.com' },
+    });
+    fireEvent.change(screen.getByLabelText('パスワード'), {
+      target: { value: 'password123' },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'ログイン' }));
+
+    await waitFor(() => {
+      const errorMessages = screen.getAllByText(
+        'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+      );
+      expect(errorMessages.length).toBe(2);
+    });
+  });
+
+  it('認証済み状態でのログイン試行時の完全なエラーハンドリング', async () => {
+    store = configureStore({
+      reducer: { auth: authReducer },
+      preloadedState: {
+        auth: { isAuthenticated: true, token: 'fake-token', user: null },
+      },
+    });
+
+    renderLoginForm();
+
+    const { container } = renderLoginForm();
+    const form = container.querySelector('form');
+
+    if (form) {
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(
+            '既にログインしています。新しくログインするには一度ログアウトしてください。',
+          ),
+        ).toBeInTheDocument();
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      });
+    }
+
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+  });
+
+  describe('認証済み状態のエラーハンドリング', () => {
+    beforeEach(() => {
+      store = configureStore({
+        reducer: { auth: authReducer },
+        preloadedState: {
+          auth: { isAuthenticated: true, token: 'fake-token', user: null },
+        },
+      });
+    });
+
+    it('handleSubmit関数が早期リターンすること', async () => {
+      const { container } = renderLoginForm();
+
+      const form = container.querySelector('form');
+      if (!form) return;
+
+      const mockEvent = {
+        preventDefault: jest.fn(),
+      };
+
+      fireEvent.submit(form, mockEvent);
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled();
+      expect(
+        screen.getByText(
+          '既にログインしています。新しくログインするには一度ログアウトしてください。',
+        ),
+      ).toBeInTheDocument();
+
+      expect(mockedAxios.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('エラーレスポンスのハンドリング', () => {
+    it('response.data.error.messageのパスが完全に存在しない場合', async () => {
+      mockedAxios.post.mockRejectedValueOnce({
+        isAxiosError: true,
+        response: {},
+      });
+
+      renderLoginForm();
+
+      fireEvent.change(screen.getByLabelText('メールアドレス'), {
+        target: { value: 'test@example.com' },
+      });
+      fireEvent.change(screen.getByLabelText('パスワード'), {
+        target: { value: 'password123' },
+      });
+
+      const submitButton = screen.getByRole('button', { name: 'ログイン' });
+      fireEvent.click(submitButton);
+
+      await waitFor(() => {
+        const errorMessages = screen.getAllByText(
+          'ログインに失敗しました。メールアドレスとパスワードを確認してください。',
+        );
+        expect(errorMessages.length).toBe(2);
+      });
+    });
+  });
 });

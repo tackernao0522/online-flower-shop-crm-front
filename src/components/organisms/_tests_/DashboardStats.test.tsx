@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { ChakraProvider, useToast } from '@chakra-ui/react';
 import { Provider } from 'react-redux';
 import axios from 'axios';
@@ -26,15 +26,19 @@ const createMockStore = () =>
     },
   });
 
-const renderWithProviders = (ui: React.ReactElement) => {
-  const store = createMockStore();
+const renderWithProviders = (
+  ui: React.ReactElement,
+  { store = createMockStore() } = {},
+) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <Provider store={store}>
+      <ChakraProvider>{children}</ChakraProvider>
+    </Provider>
+  );
+
   return {
     store,
-    ...render(
-      <Provider store={store}>
-        <ChakraProvider>{ui}</ChakraProvider>
-      </Provider>,
-    ),
+    ...render(ui, { wrapper: Wrapper }),
   };
 };
 
@@ -167,6 +171,72 @@ describe('DashboardStats', () => {
           status: 'error',
         }),
       );
+    });
+  });
+
+  describe('ローディングとデバッグログのテスト', () => {
+    let consoleSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'test',
+        configurable: true,
+      });
+    });
+
+    it('初期ローディングからデータ表示までの遷移を確認', async () => {
+      (useCustomerManagement as jest.Mock).mockReturnValue({ loading: true });
+      (useWebSocket as jest.Mock).mockReturnValue({
+        totalCount: null,
+        changeRate: null,
+        connectionStatus: 'connecting',
+      });
+
+      const { rerender } = renderWithProviders(<DashboardStats />);
+
+      expect(screen.getAllByTestId('stat-card-skeleton')).toHaveLength(3);
+
+      (useCustomerManagement as jest.Mock).mockReturnValue({ loading: false });
+      (useWebSocket as jest.Mock).mockReturnValue({
+        totalCount: 100,
+        changeRate: 10,
+        connectionStatus: 'connected',
+      });
+
+      rerender(
+        <Provider store={createMockStore()}>
+          <ChakraProvider>
+            <DashboardStats />
+          </ChakraProvider>
+        </Provider>,
+      );
+
+      await waitFor(() => {
+        expect(screen.queryAllByTestId('stat-card-skeleton')).toHaveLength(0);
+        expect(screen.getByText('顧客数')).toBeInTheDocument();
+      });
+    });
+
+    it('環境に応じたデバッグログの出力を確認', async () => {
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        configurable: true,
+      });
+      renderWithProviders(<DashboardStats />);
+      expect(consoleSpy).toHaveBeenCalled();
+      consoleSpy.mockClear();
+
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'production',
+        configurable: true,
+      });
+      renderWithProviders(<DashboardStats />);
+      expect(consoleSpy).not.toHaveBeenCalled();
     });
   });
 });

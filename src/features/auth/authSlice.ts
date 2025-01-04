@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { resetUsers, resetUsersState } from '../users/usersSlice';
+import { resetUsersState } from '../users/usersSlice';
 import { User } from '@/types/user';
 
 export interface AuthState {

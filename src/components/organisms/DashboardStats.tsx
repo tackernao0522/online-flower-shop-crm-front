@@ -47,25 +47,21 @@ interface DisplayValues {
 }
 
 const DashboardStats: React.FC = () => {
-  // State
   const [loading, setLoading] = useState<boolean>(true);
   const [hasError, setHasError] = useState<boolean>(false);
   const [initialLoadTimeout, setInitialLoadTimeout] = useState<boolean>(false);
 
-  // Hooks
   const { loading: customerLoading } = useCustomerManagement();
   const { totalCount, changeRate, connectionStatus } = useWebSocket();
   const dispatch = useDispatch<AppDispatch>();
   const toast = useToast();
 
-  // Redux Selectors
   const orderStats = useSelector(selectOrderStats);
   const orderStatsStatus = useSelector(selectOrderStatsStatus);
   const salesStats = useSelector(selectSalesStats);
   const salesStatsStatus = useSelector(selectSalesStatsStatus);
   const salesStatsError = useSelector(selectSalesStatsError);
 
-  // API呼び出し
   const fetchInitialStats = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
@@ -155,7 +151,6 @@ const DashboardStats: React.FC = () => {
     }
   }, [connectionStatus, fetchInitialStats]);
 
-  // タイムアウト設定
   useEffect(() => {
     const timer = setTimeout(() => {
       setInitialLoadTimeout(true);
@@ -215,7 +210,6 @@ const DashboardStats: React.FC = () => {
     connectionStatus,
   ]);
 
-  // ローディング状態の表示
   if (
     customerLoading ||
     loading ||
@@ -232,7 +226,6 @@ const DashboardStats: React.FC = () => {
     );
   }
 
-  // エラー状態の表示
   if (hasError) {
     return (
       <Box p={4} bg="red.50" borderRadius="md">
@@ -244,7 +237,6 @@ const DashboardStats: React.FC = () => {
     );
   }
 
-  // メインコンテンツの表示
   return (
     <Fade in={!loading} style={{ width: '100%' }}>
       <SimpleGrid

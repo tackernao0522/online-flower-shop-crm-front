@@ -183,6 +183,24 @@ describe('customersSlice', () => {
       expect(result.type).toBe('customers/addCustomer/rejected');
       expect(result.payload).toBe('Validation failed');
     });
+
+    test('未知のエラーが正しく処理される', async () => {
+      const unknownError = new Error('System error');
+      mockedAxios.post.mockRejectedValueOnce(unknownError);
+
+      const result = await dispatch(
+        addCustomer({
+          name: 'Test User',
+          email: 'test@example.com',
+          phoneNumber: '123-456-7890',
+          address: 'Test Address',
+          birthDate: '1990-01-01',
+        }),
+      );
+
+      expect(result.type).toBe('customers/addCustomer/rejected');
+      expect(result.payload).toBe('An unknown error occurred');
+    });
   });
 
   describe('updateCustomer', () => {
@@ -267,6 +285,21 @@ describe('customersSlice', () => {
       expect(result.type).toBe('customers/updateCustomer/rejected');
       expect(result.payload).toBe('Customer not found');
     });
+
+    test('未知のエラーが正しく処理される', async () => {
+      const unknownError = new Error('System error');
+      mockedAxios.put.mockRejectedValueOnce(unknownError);
+
+      const result = await dispatch(
+        updateCustomer({
+          id: '1',
+          customerData: { name: 'Updated Name' },
+        }),
+      );
+
+      expect(result.type).toBe('customers/updateCustomer/rejected');
+      expect(result.payload).toBe('An unknown error occurred');
+    });
   });
 
   describe('deleteCustomer', () => {
@@ -307,6 +340,35 @@ describe('customersSlice', () => {
 
       expect(result.type).toBe('customers/deleteCustomer/rejected');
       expect(result.payload).toBe('Customer has active orders');
+    });
+
+    test('未知のエラーが正しく処理される', async () => {
+      const unknownError = new Error('System error');
+      mockedAxios.delete.mockRejectedValueOnce(unknownError);
+
+      const result = await dispatch(deleteCustomer('1'));
+
+      expect(result.type).toBe('customers/deleteCustomer/rejected');
+      expect(result.payload).toBe('An unknown error occurred');
+    });
+
+    test('レスポンスデータがないAxiosErrorが正しく処理される', async () => {
+      const error = new Error() as AxiosError;
+      error.isAxiosError = true;
+      error.response = {
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: {},
+        config: {} as any,
+        data: undefined,
+      };
+      mockedAxios.get.mockRejectedValueOnce(error);
+
+      await dispatch(fetchCustomers({ page: 1 }));
+      const state = store.getState().customers;
+
+      expect(state.status).toBe('failed');
+      expect(state.error).toBe('An error occurred');
     });
   });
 
@@ -355,6 +417,17 @@ describe('customersSlice', () => {
 
       expect(state.status).toBe('failed');
       expect(state.error).toBe('Error message');
+    });
+
+    test('fetchCustomers.rejected でpayloadがない場合も状態が正しく更新される', () => {
+      const action = {
+        type: fetchCustomers.rejected.type,
+        payload: undefined,
+      };
+      const state = customersReducer(undefined, action);
+
+      expect(state.status).toBe('failed');
+      expect(state.error).toBe('An unknown error occurred');
     });
   });
 });

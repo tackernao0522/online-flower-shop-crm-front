@@ -124,7 +124,6 @@ export const fetchOrderStats = createAsyncThunk(
   },
 );
 
-// Slice
 const ordersSlice = createSlice({
   name: 'orders',
   initialState,

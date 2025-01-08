@@ -31,10 +31,6 @@ import axios from 'axios';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// 以下はテスト用の最低限のモック型定義例です。
-// これまでのエラー内容から、`Product`、`Customer`、`User`に不足しているプロパティを追加しています。
-// また、User.roleは"ADMIN" | "MANAGER" | "STAFF"のいずれかしか許容されないため、"admin"から"ADMIN"へ変更します。
-
 type Product = {
   id: string;
   name: string;
@@ -312,7 +308,7 @@ describe('ordersSlice', () => {
         expect(fulfilledAction.payload).toEqual(mockOrdersResponse.data);
       });
 
-      it('注文データの取得に失敗した場合（AxiosError）', async () => {
+      it('AxiosErrorでのエラーハンドリング', async () => {
         const mockError = {
           isAxiosError: true,
           response: {
@@ -338,7 +334,7 @@ describe('ordersSlice', () => {
         expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
       });
 
-      it('注文データの取得に失敗した場合（通常のエラー）', async () => {
+      it('通常のエラーが発生した場合のエラーハンドリング', async () => {
         const error = new Error('Unknown error');
         mockedAxios.get.mockRejectedValueOnce(error);
 
@@ -384,6 +380,54 @@ describe('ordersSlice', () => {
         expect(fulfilledAction.type).toBe('orders/fetchOrders/fulfilled');
         expect(fulfilledAction.payload).toEqual(responseWithoutStats.data);
       });
+
+      it('レスポンスデータなしのAxiosErrorが正しく処理されること', async () => {
+        const error = {
+          isAxiosError: true,
+          response: {},
+        };
+        mockedAxios.get.mockRejectedValueOnce(error);
+
+        const thunk = fetchOrders({});
+        const dispatch = jest.fn();
+        const getState = jest.fn();
+
+        await thunk(dispatch, getState, undefined);
+
+        const [pendingAction, rejectedAction] = dispatch.mock.calls.map(
+          call => call[0],
+        );
+
+        expect(pendingAction.type).toBe('orders/fetchOrders/pending');
+        expect(rejectedAction.type).toBe('orders/fetchOrders/rejected');
+        expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
+      });
+
+      it('AxiosErrorでresponse.data.messageが存在する場合のエラー処理', async () => {
+        const mockError = {
+          isAxiosError: true,
+          response: {
+            data: {
+              message: 'カスタムエラーメッセージ',
+            },
+          },
+        };
+        mockedAxios.get.mockRejectedValueOnce(mockError);
+
+        const thunk = fetchOrders({});
+        const dispatch = jest.fn();
+        const getState = jest.fn();
+
+        await thunk(dispatch, getState, undefined);
+
+        const [pendingAction, rejectedAction] = dispatch.mock.calls.map(
+          call => call[0],
+        );
+
+        expect(pendingAction.type).toBe('orders/fetchOrders/pending');
+        expect(rejectedAction.type).toBe('orders/fetchOrders/rejected');
+        expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
+      });
     });
 
     describe('fetchOrderStats', () => {
@@ -415,7 +459,7 @@ describe('ordersSlice', () => {
         expect(fulfilledAction.payload).toEqual(mockStatsResponse.data.stats);
       });
 
-      it('統計データの取得に失敗した場合（AxiosError）', async () => {
+      it('AxiosErrorでのエラーハンドリング', async () => {
         const mockError = {
           isAxiosError: true,
           response: {
@@ -441,7 +485,7 @@ describe('ordersSlice', () => {
         expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
       });
 
-      it('統計データの取得に失敗した場合（通常のエラー）', async () => {
+      it('通常のエラーが発生した場合のエラーハンドリング', async () => {
         const error = new Error('Unknown error');
         mockedAxios.get.mockRejectedValueOnce(error);
 
@@ -465,6 +509,54 @@ describe('ordersSlice', () => {
           data: {},
         };
         mockedAxios.get.mockResolvedValueOnce(responseWithoutStats);
+
+        const thunk = fetchOrderStats();
+        const dispatch = jest.fn();
+        const getState = jest.fn();
+
+        await thunk(dispatch, getState, undefined);
+
+        const [pendingAction, rejectedAction] = dispatch.mock.calls.map(
+          call => call[0],
+        );
+
+        expect(pendingAction.type).toBe('orders/fetchOrderStats/pending');
+        expect(rejectedAction.type).toBe('orders/fetchOrderStats/rejected');
+        expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
+      });
+
+      it('レスポンスデータなしのAxiosErrorが正しく処理されること', async () => {
+        const error = {
+          isAxiosError: true,
+          response: {},
+        };
+        mockedAxios.get.mockRejectedValueOnce(error);
+
+        const thunk = fetchOrderStats();
+        const dispatch = jest.fn();
+        const getState = jest.fn();
+
+        await thunk(dispatch, getState, undefined);
+
+        const [pendingAction, rejectedAction] = dispatch.mock.calls.map(
+          call => call[0],
+        );
+
+        expect(pendingAction.type).toBe('orders/fetchOrderStats/pending');
+        expect(rejectedAction.type).toBe('orders/fetchOrderStats/rejected');
+        expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
+      });
+
+      it('AxiosErrorでのメッセージ付きエラーが正しく処理されること', async () => {
+        const mockError = {
+          isAxiosError: true,
+          response: {
+            data: {
+              message: 'カスタムエラーメッセージ',
+            },
+          },
+        };
+        mockedAxios.get.mockRejectedValueOnce(mockError);
 
         const thunk = fetchOrderStats();
         const dispatch = jest.fn();
@@ -587,7 +679,6 @@ describe('ordersSlice', () => {
       });
     });
 
-    // エッジケースのテスト
     describe('エッジケース', () => {
       const emptyState: RootState = {
         auth: {} as ReturnType<typeof import('../../auth/authSlice').default>,
@@ -755,6 +846,71 @@ describe('ordersSlice', () => {
 
         expect(state.status).toBe('failed');
         expect(state.error).toBe('エラーが発生しました');
+      });
+
+      it('fulfilled時に既存の統計データがある場合、状態を正しく更新すること', () => {
+        const existingState = {
+          ...initialState,
+          stats: {
+            totalCount: 90,
+            previousCount: 80,
+            changeRate: 10,
+            lastUpdatedAt: '2024-01-01',
+          },
+        };
+
+        const mockResponse = {
+          data: {
+            data: [mockOrder],
+          },
+          meta: {
+            current_page: 2,
+            total_pages: 5,
+            total: 100,
+          },
+          stats: {
+            totalCount: 100,
+            previousCount: 90,
+            changeRate: 11.11,
+          },
+        };
+
+        const state = reducer(existingState, {
+          type: fetchOrders.fulfilled.type,
+          payload: mockResponse,
+        });
+
+        expect(state.stats.totalCount).toBe(100);
+        expect(state.stats.previousCount).toBe(90);
+        expect(state.stats.changeRate).toBe(11.11);
+        expect(state.stats.lastUpdatedAt).toBeDefined();
+        expect(state.stats.lastUpdatedAt).not.toBe('2024-01-01');
+      });
+
+      it('AxiosErrorでのメッセージ付き統計データエラーが正しく処理されること', async () => {
+        const mockError = {
+          isAxiosError: true,
+          response: {
+            data: {
+              message: 'カスタムエラーメッセージ',
+            },
+          },
+        };
+        mockedAxios.get.mockRejectedValueOnce(mockError);
+
+        const thunk = fetchOrders({});
+        const dispatch = jest.fn();
+        const getState = jest.fn();
+
+        await thunk(dispatch, getState, undefined);
+
+        const [pendingAction, rejectedAction] = dispatch.mock.calls.map(
+          call => call[0],
+        );
+
+        expect(pendingAction.type).toBe('orders/fetchOrders/pending');
+        expect(rejectedAction.type).toBe('orders/fetchOrders/rejected');
+        expect(rejectedAction.payload).toBe('予期せぬエラーが発生しました');
       });
     });
 

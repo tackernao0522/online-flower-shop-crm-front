@@ -360,4 +360,32 @@ describe('DateRangePickerModal', () => {
       expect(newStartDateInput).toHaveValue('');
     });
   });
+
+  it('終了日が開始日より前の場合は適用時にもエラーが表示される', async () => {
+    renderWithChakra(
+      <DateRangePickerModal
+        isOpen={true}
+        onClose={mockOnClose}
+        onApply={mockOnApply}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+    });
+
+    const startDateInput = screen.getByLabelText(/開始日/i);
+    const endDateInput = screen.getByLabelText(/終了日/i);
+    const applyButton = screen.getByRole('button', { name: '適用' });
+
+    fireEvent.change(startDateInput, { target: { value: '2024-01-31' } });
+    fireEvent.change(endDateInput, { target: { value: '2024-01-01' } });
+    fireEvent.click(applyButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        '終了日は開始日より後の日付を選択してください',
+      );
+    });
+  });
 });

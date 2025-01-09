@@ -415,7 +415,6 @@ describe('useCustomerManagement フック', () => {
     expect(mockDispatch).toHaveBeenCalled();
   });
 
-  // キーボードイベントのテスト
   test('handleKeyDown が Enter キーで検索を実行する', async () => {
     const { result } = renderHook(() => useCustomerManagement());
 
@@ -429,7 +428,6 @@ describe('useCustomerManagement フック', () => {
     expect(mockDispatch).toHaveBeenCalled();
   });
 
-  // キャンセル処理のテスト
   test('cancelDelete が正しく動作する', async () => {
     const mockCustomer = { id: '1', name: 'Test User' } as Customer;
     const { result } = renderHook(() => useCustomerManagement());
@@ -462,5 +460,126 @@ describe('useCustomerManagement フック', () => {
     expect(result.current.formErrors.email).toBe(
       '有効なメールアドレスを入力してください',
     );
+  });
+
+  test('fetchCustomersData が重複を正しく排除する', async () => {
+    const mockCustomers = [
+      {
+        id: '1',
+        name: 'Test User 1',
+        email: 'test1@example.com',
+        phoneNumber: '090-1234-5678',
+        address: 'Test Address 1',
+        birthDate: '1990-01-01T00:00:00.000Z',
+        created_at: '2024-01-01T00:00:00.000Z',
+        updated_at: '2024-01-01T00:00:00.000Z',
+        purchaseHistory: [],
+      },
+      {
+        id: '2',
+        name: 'Test User 2',
+        email: 'test2@example.com',
+        phoneNumber: '090-8765-4321',
+        address: 'Test Address 2',
+        birthDate: '1991-01-01T00:00:00.000Z',
+        created_at: '2024-01-01T00:00:00.000Z',
+        updated_at: '2024-01-01T00:00:00.000Z',
+        purchaseHistory: [],
+      },
+    ];
+
+    mockDispatch.mockImplementation(() =>
+      Promise.resolve({
+        type: 'customers/fetchCustomers/fulfilled',
+        payload: { data: mockCustomers },
+        meta: { requestStatus: 'fulfilled' },
+      }),
+    );
+
+    const { result } = renderHook(() => useCustomerManagement());
+
+    await act(async () => {
+      await result.current.fetchCustomersData();
+    });
+
+    await act(async () => {
+      await result.current.fetchCustomersData();
+    });
+
+    expect(result.current.customers).toHaveLength(2);
+    expect(result.current.customers.map(c => c.id).sort()).toEqual(['1', '2']);
+  });
+
+  test('fetchCustomersData がエラー時に適切にトーストを表示する', async () => {
+    const mockError = new Error('API Error');
+    mockDispatch.mockRejectedValueOnce(mockError);
+    const mockToast = jest.fn();
+    (useToast as jest.Mock).mockReturnValue(mockToast);
+
+    const { result } = renderHook(() => useCustomerManagement());
+
+    await act(async () => {
+      await result.current.fetchCustomersData();
+    });
+
+    expect(mockToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'エラーが発生しました',
+        description: '顧客データの取得中に問題が発生しました。',
+        status: 'error',
+      }),
+    );
+  });
+
+  test('loadMore が適切にページを増加させる', async () => {
+    const { result } = renderHook(() => useCustomerManagement());
+
+    mockDispatch.mockImplementation(() =>
+      Promise.resolve({
+        type: 'customers/fetchCustomers/fulfilled',
+        payload: {
+          data: new Array(20).fill(null).map((_, i) => ({
+            id: `${i}`,
+            name: `User ${i}`,
+            email: `user${i}@example.com`,
+            phoneNumber: '090-1234-5678',
+            address: 'Test Address',
+            birthDate: '1990-01-01T00:00:00.000Z',
+            created_at: '2024-01-01T00:00:00.000Z',
+            updated_at: '2024-01-01T00:00:00.000Z',
+            purchaseHistory: [],
+          })),
+        },
+        meta: { requestStatus: 'fulfilled' },
+      }),
+    );
+
+    await act(async () => {
+      await result.current.fetchCustomersData();
+    });
+
+    await act(async () => {
+      result.current.loadMore();
+    });
+
+    expect(result.current.page).toBe(2);
+  });
+
+  test('スクロールイベントが適切に処理される', async () => {
+    const { result } = renderHook(() => useCustomerManagement());
+
+    await act(async () => {
+      window.pageYOffset = 400;
+      window.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(result.current.showScrollTop).toBe(true);
+
+    await act(async () => {
+      window.pageYOffset = 200;
+      window.dispatchEvent(new Event('scroll'));
+    });
+
+    expect(result.current.showScrollTop).toBe(false);
   });
 });

@@ -18,6 +18,18 @@ jest.mock('@/features/orders/ordersSlice', () => ({
   fetchOrders: jest.fn(),
 }));
 
+jest.mock('../order/useOrderOperations', () => ({
+  useOrderOperations: jest.fn(() => ({
+    handleOrderClick: jest.fn(),
+    handleSubmit: jest.fn(),
+    handleAddOrder: jest.fn(),
+    handleEditOrder: jest.fn(),
+    handleDeleteOrder: jest.fn(),
+    confirmDelete: jest.fn(),
+    cancelDelete: jest.fn(),
+  })),
+}));
+
 jest.mock('@chakra-ui/react', () => ({
   useToast: jest.fn(() => mockToast),
   useDisclosure: jest.fn(),
@@ -384,5 +396,259 @@ describe('useOrderManagement', () => {
         end_date: new Date('2024-01-31').toISOString(),
       }),
     );
+  });
+
+  describe('useOrderManagement - Additional Coverage', () => {
+    const mockDispatch = jest.fn();
+    let mockOnClose: jest.Mock;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockOnClose = jest.fn();
+      (useDisclosure as jest.Mock).mockReturnValue({
+        isOpen: false,
+        onOpen: jest.fn(),
+        onClose: mockOnClose,
+      });
+    });
+
+    test('onCloseが正しく状態をリセットする', async () => {
+      const { result } = renderHook(() => useOrderManagement());
+
+      // モーダルを開いて状態を設定
+      act(() => {
+        result.current.handleOrderClick(createMockOrder());
+      });
+
+      // モーダルを閉じる
+      act(() => {
+        result.current.onClose();
+      });
+
+      // 300ms待機してタイムアウト後の状態をチェック
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      });
+
+      expect(result.current.activeOrder).toBeNull();
+      expect(result.current.modalMode).toBe('detail');
+      expect(result.current.newOrder).toEqual({
+        customerId: '',
+        orderItems: [],
+        status: 'PENDING',
+      });
+      expect(result.current.formErrors).toEqual({});
+      expect(mockOnClose).toHaveBeenCalled();
+    });
+
+    test('無限スクロールが条件を満たす場合に次のページを読み込む', async () => {
+      // IntersectionObserver のモックを設定
+      let observerCallback: IntersectionObserverCallback;
+      const mockObserve = jest.fn();
+
+      (window as any).IntersectionObserver = jest.fn(function (callback) {
+        observerCallback = callback;
+        return {
+          observe: mockObserve,
+          disconnect: jest.fn(),
+          unobserve: jest.fn(),
+        };
+      });
+
+      mockFetchOrdersHelper
+        .mockResolvedValueOnce({
+          data: [{ ...createMockOrder() }],
+          meta: { total: 2 },
+        })
+        .mockResolvedValueOnce({
+          data: [{ ...createMockOrder(), id: '2' }],
+          meta: { total: 2 },
+        });
+
+      const { result } = renderHook(() => useOrderManagement());
+
+      // 初期データ読み込みを待機
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+
+      // ref を設定して IntersectionObserver をトリガー
+      const targetElement = document.createElement('div');
+      act(() => {
+        result.current.lastElementRef(targetElement);
+      });
+
+      // IntersectionObserver のコールバックを実行
+      act(() => {
+        if (observerCallback) {
+          observerCallback(
+            [{ isIntersecting: true } as IntersectionObserverEntry],
+            {} as IntersectionObserver,
+          );
+        }
+      });
+
+      // データ読み込みを待機
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      expect(mockObserve).toHaveBeenCalled();
+      expect(mockFetchOrdersHelper).toHaveBeenCalledTimes(2);
+    });
+
+    test('fetchOrdersでエラーが発生した場合の処理', async () => {
+      // モックエラーの定義
+      const mockError = {
+        response: {
+          data: {
+            error: {
+              message: '注文データの取得に失敗しました',
+            },
+          },
+        },
+      };
+
+      // モックの設定
+      mockFetchOrdersHelper.mockRejectedValueOnce(mockError);
+
+      const { result } = renderHook(() => useOrderManagement());
+
+      await act(async () => {
+        try {
+          await result.current.fetchOrders(1);
+        } catch (error) {
+          // エラーオブジェクトの検証を追加
+          expect(error).toEqual(mockError);
+        }
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+
+      // フックの状態の検証
+      expect(result.current.status).toBe('failed');
+      expect(result.current.error).toBe('注文データの取得に失敗しました');
+    });
+
+    test('データ取得の動作確認', async () => {
+      // 既存のグローバルモックをクリア
+      (fetchOrdersHelper as jest.Mock).mockReset();
+
+      const mockOrder = createMockOrder();
+
+      mockFetchOrdersHelper.mockResolvedValueOnce({
+        data: [mockOrder],
+        meta: { total: 1 },
+      });
+
+      const { result } = renderHook(() => useOrderManagement());
+
+      await act(async () => {
+        await result.current.fetchOrders(1);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+
+      expect(result.current.orders).toEqual([mockOrder]);
+    });
+
+    test('新しいページのデータが正しく追加され、重複がマージされる', async () => {
+      // 既存のグローバルモックをクリア
+      (fetchOrdersHelper as jest.Mock).mockReset();
+
+      const initialOrder = createMockOrder();
+      const mockOrder2 = {
+        ...createMockOrder(),
+        id: '2',
+        orderNumber: 'ORD-002',
+      };
+
+      mockFetchOrdersHelper
+        .mockResolvedValueOnce({
+          data: [initialOrder],
+          meta: {
+            total: 2,
+            current_page: 1,
+            per_page: 15,
+          },
+        })
+        .mockResolvedValue({
+          // 2回目以降のコールに対するレスポンス
+          data: [mockOrder2],
+          meta: {
+            total: 2,
+            current_page: 2,
+            per_page: 15,
+          },
+        });
+
+      const { result } = renderHook(() => useOrderManagement());
+
+      // データフェッチと状態更新を待機
+      await act(async () => {
+        await result.current.fetchOrders(1);
+        await new Promise(resolve => setTimeout(resolve, 0));
+      });
+
+      console.log('After first fetch:', result.current.orders);
+
+      await act(async () => {
+        await result.current.fetchOrders(2);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      console.log('After second fetch:', result.current.orders);
+
+      // 結果の検証（重複を考慮）
+      const uniqueOrders = Array.from(
+        new Set(result.current.orders.map(order => order.id)),
+      );
+      expect(uniqueOrders).toHaveLength(2); // ユニークなIDは2つあるはず
+      expect(uniqueOrders).toContain('1');
+      expect(uniqueOrders).toContain('2');
+
+      expect(result.current.orders[0].id).toBe('1');
+      expect(result.current.orders[1].id).toBe('2');
+    });
+  });
+
+  test('fetchOrdersがデフォルトのページ番号で正しく動作する', async () => {
+    const { result } = renderHook(() => useOrderManagement());
+    await act(async () => {
+      await result.current.fetchOrders();
+    });
+    expect(fetchOrdersHelper).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({ page: 1 }),
+    );
+  });
+
+  test('fetchOrdersでエラーレスポンスがない場合のフォールバックメッセージ', async () => {
+    mockFetchOrdersHelper.mockRejectedValueOnce(new Error('Network Error'));
+
+    const { result } = renderHook(() => useOrderManagement());
+    await act(async () => {
+      try {
+        await result.current.fetchOrders(1);
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe('Network Error');
+      }
+    });
+
+    expect(result.current.error).toBe('注文データの取得に失敗しました');
+  });
+
+  test('initialFetchでエラーレスポンスがない場合のフォールバックメッセージ', async () => {
+    mockDispatch.mockImplementationOnce(() => ({
+      unwrap: () => Promise.reject(new Error('Network Error')),
+    }));
+
+    const { result } = renderHook(() => useOrderManagement());
+
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.status).toBe('failed');
+    expect(result.current.error).toBe('注文データの取得に失敗しました');
   });
 });
